@@ -21,7 +21,36 @@ const WORDS = [
   "半", "全", "每", "只", "个", "片", "条", "朵", "双", "两"
 ];
 
+const GAMES = {
+  match: {
+    id: "match",
+    name: "识字消消乐",
+    title: "找到相同的字",
+    boardLabel: "识字消消乐棋盘",
+    startHint: "点一个字，听一听",
+    recordPrefix: "beta_words_match_best"
+  },
+  memory: {
+    id: "memory",
+    name: "识字翻翻乐",
+    title: "翻出相同的字",
+    boardLabel: "识字翻翻乐棋盘",
+    startHint: "先记住这些字",
+    recordPrefix: "beta_words_memory_best"
+  }
+};
+
+const MEMORY_SECONDS = {
+  3: 5,
+  4: 8,
+  5: 12,
+  6: 16,
+  7: 20
+};
+
 const state = {
+  game: GAMES.match.id,
+  phase: "playing",
   size: 3,
   tiles: [],
   selectedId: null,
@@ -31,6 +60,8 @@ const state = {
   timerStarted: false,
   timerStartTime: null,
   timerInterval: null,
+  memoryCountdownInterval: null,
+  memoryRevealTimeout: null,
   lastSpoken: "识字消消乐"
 };
 
@@ -48,10 +79,13 @@ const completePanel = document.querySelector("#complete-panel");
 const completeTime = document.querySelector("#complete-time");
 const bestRecord = document.querySelector("#best-record");
 const gameSubtitle = document.querySelector("#game-subtitle");
+const gameTitle = document.querySelector("#game-title");
+const setupTitle = document.querySelector("#setup-title");
 
 const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
 
-document.querySelector("#open-match").addEventListener("click", () => showScreen("setup"));
+document.querySelector("#open-match").addEventListener("click", () => chooseGame(GAMES.match.id));
+document.querySelector("#open-memory").addEventListener("click", () => chooseGame(GAMES.memory.id));
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
 document.querySelector("#replay-sound").addEventListener("click", () => speak(state.lastSpoken));
 document.querySelector("#next-board").addEventListener("click", () => {
@@ -64,11 +98,17 @@ document.querySelectorAll(".difficulty").forEach((button) => {
 });
 
 document.querySelectorAll("[data-action='back-lobby']").forEach((button) => {
-  button.addEventListener("click", () => showScreen("lobby"));
+  button.addEventListener("click", () => {
+    leaveGame();
+    showScreen("lobby");
+  });
 });
 
 document.querySelectorAll("[data-action='back-setup']").forEach((button) => {
-  button.addEventListener("click", () => showScreen("setup"));
+  button.addEventListener("click", () => {
+    leaveGame();
+    showScreen("setup");
+  });
 });
 
 window.addEventListener("resize", calcTileFont);
@@ -80,26 +120,60 @@ function showScreen(name) {
   screens[name].classList.add("active");
 }
 
+function leaveGame() {
+  stopMemoryCountdown();
+  stopTimer();
+  state.locked = false;
+  state.selectedId = null;
+}
+
+function chooseGame(gameId) {
+  state.game = gameId;
+  const game = getCurrentGame();
+  setupTitle.textContent = `${game.name} · 选择难度`;
+  showScreen("setup");
+}
+
 function startGame(size) {
+  stopMemoryCountdown();
   resetTimer();
   state.size = size;
+  state.phase = state.game === GAMES.memory.id ? "preview" : "playing";
   state.selectedId = null;
   state.locked = false;
   state.matchedCount = 0;
   completePanel.hidden = true;
   bestRecord.hidden = true;
   completeTime.textContent = "本次用时 00:00";
-  gameSubtitle.textContent = `识字消消乐 ${size} x ${size}`;
+  const game = getCurrentGame();
+  gameSubtitle.textContent = `${game.name} ${size} x ${size}`;
+  gameTitle.textContent = game.title;
+  board.setAttribute("aria-label", game.boardLabel);
+  board.classList.toggle("memory", state.game === GAMES.memory.id);
 
   state.tiles = createTiles(size);
+  if (state.game === GAMES.memory.id) {
+    state.tiles.forEach((tile) => {
+      tile.revealed = true;
+      if (tile.kind === "bonus") {
+        tile.matched = true;
+      }
+    });
+  }
   state.totalTargets = state.tiles.filter((tile) => tile.kind === "word").length;
   board.style.setProperty("--size", size);
   renderBoard();
   updateProgress();
-  setHint("点一个字，听一听");
   showScreen("game");
-  speak("开始");
   calcTileFont();
+
+  if (state.game === GAMES.memory.id) {
+    startMemoryPreview(size);
+    return;
+  }
+
+  setHint(game.startHint);
+  speak("开始");
 }
 
 function calcTileFont() {
@@ -135,6 +209,7 @@ function createTile(kind, value) {
   return {
     kind,
     value,
+    revealed: false,
     matched: false
   };
 }
@@ -147,8 +222,7 @@ function renderBoard() {
     button.type = "button";
     button.dataset.id = tile.id;
     button.setAttribute("role", "gridcell");
-    button.setAttribute("aria-label", tile.kind === "bonus" ? "奖励星星" : tile.value);
-    button.textContent = tile.kind === "bonus" ? "★" : tile.value;
+    updateTileButton(button, tile);
     button.style.transitionDelay = `${Math.min(index * 8, 80)}ms`;
     button.addEventListener("click", () => handleTileClick(tile.id));
     board.appendChild(button);
@@ -156,6 +230,15 @@ function renderBoard() {
 }
 
 function handleTileClick(tileId) {
+  if (state.game === GAMES.memory.id) {
+    handleMemoryTileClick(tileId);
+    return;
+  }
+
+  handleMatchTileClick(tileId);
+}
+
+function handleMatchTileClick(tileId) {
   if (state.locked) return;
 
   const tile = state.tiles.find((item) => item.id === tileId);
@@ -220,6 +303,64 @@ function handleTileClick(tileId) {
   }
 }
 
+function handleMemoryTileClick(tileId) {
+  if (state.locked || state.phase !== "playing") return;
+
+  const tile = state.tiles.find((item) => item.id === tileId);
+  if (!tile || tile.matched || tile.revealed) return;
+
+  tile.revealed = true;
+  speak(tile.value);
+  markTile(tileId, "selected");
+  updateTile(tileId);
+
+  if (!state.selectedId) {
+    state.selectedId = tileId;
+    setHint(`再翻一个“${tile.value}”`);
+    return;
+  }
+
+  const selectedTile = state.tiles.find((item) => item.id === state.selectedId);
+  const selectedId = state.selectedId;
+
+  if (selectedTile && selectedTile.value === tile.value) {
+    state.locked = true;
+    tile.matched = true;
+    selectedTile.matched = true;
+    state.matchedCount += 2;
+    setHint("找对了");
+
+    window.setTimeout(() => {
+      markTile(tile.id, "selected", false);
+      markTile(selectedId, "selected", false);
+      markTile(tile.id, "memory-matched");
+      markTile(selectedId, "memory-matched");
+      updateTile(tile.id);
+      updateTile(selectedId);
+      state.selectedId = null;
+      state.locked = false;
+      updateProgress();
+      checkComplete();
+    }, 220);
+  } else {
+    state.locked = true;
+    setHint("再试一次");
+    window.setTimeout(() => {
+      tile.revealed = false;
+      if (selectedTile) {
+        selectedTile.revealed = false;
+      }
+      markTile(tile.id, "selected", false);
+      markTile(selectedId, "selected", false);
+      updateTile(tile.id);
+      updateTile(selectedId);
+      state.selectedId = null;
+      state.locked = false;
+      setHint("翻出两个一样的字");
+    }, 680);
+  }
+}
+
 function markTile(tileId, className, enabled = true) {
   const button = getTileButton(tileId);
   if (!button) return;
@@ -228,6 +369,32 @@ function markTile(tileId, className, enabled = true) {
 
 function getTileButton(tileId) {
   return board.querySelector(`[data-id="${tileId}"]`);
+}
+
+function updateTile(tileId) {
+  const tile = state.tiles.find((item) => item.id === tileId);
+  const button = getTileButton(tileId);
+  if (!tile || !button) return;
+  updateTileButton(button, tile);
+}
+
+function updateTileButton(button, tile) {
+  const isMemory = state.game === GAMES.memory.id;
+  const isHidden = isMemory && tile.kind === "word" && !tile.revealed && !tile.matched;
+  button.classList.toggle("hidden-face", isHidden);
+  button.classList.toggle("memory-matched", isMemory && tile.kind === "word" && tile.matched);
+  button.setAttribute("aria-label", getTileLabel(tile, isHidden));
+  button.textContent = getTileText(tile, isHidden);
+}
+
+function getTileText(tile, isHidden) {
+  if (tile.kind === "bonus") return "★";
+  return isHidden ? "?" : tile.value;
+}
+
+function getTileLabel(tile, isHidden) {
+  if (tile.kind === "bonus") return "奖励星星";
+  return isHidden ? "未翻开的字牌" : tile.value;
 }
 
 function updateProgress() {
@@ -274,15 +441,68 @@ function formatTime(elapsedMs) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function startMemoryPreview(size) {
+  const seconds = MEMORY_SECONDS[size] || 10;
+  let remaining = seconds;
+  state.locked = true;
+  setHint(`记住这些字：${String(remaining).padStart(2, "0")}`);
+  timer.textContent = `00:${String(remaining).padStart(2, "0")}`;
+  speak("先记住这些字");
+
+  state.memoryCountdownInterval = window.setInterval(() => {
+    remaining -= 1;
+    setHint(`记住这些字：${String(Math.max(remaining, 0)).padStart(2, "0")}`);
+    timer.textContent = `00:${String(Math.max(remaining, 0)).padStart(2, "0")}`;
+  }, 1000);
+
+  state.memoryRevealTimeout = window.setTimeout(() => {
+    stopMemoryCountdown();
+    hideMemoryTiles();
+    state.phase = "playing";
+    state.locked = false;
+    state.selectedId = null;
+    resetTimer();
+    startTimer();
+    setHint("翻出两个一样的字");
+    speak("开始翻牌");
+  }, seconds * 1000);
+}
+
+function stopMemoryCountdown() {
+  if (state.memoryCountdownInterval) {
+    window.clearInterval(state.memoryCountdownInterval);
+    state.memoryCountdownInterval = null;
+  }
+
+  if (state.memoryRevealTimeout) {
+    window.clearTimeout(state.memoryRevealTimeout);
+    state.memoryRevealTimeout = null;
+  }
+}
+
+function hideMemoryTiles() {
+  state.tiles.forEach((tile) => {
+    if (tile.kind === "word" && !tile.matched) {
+      tile.revealed = false;
+      updateTile(tile.id);
+    }
+  });
+}
+
 function getBestRecordKey(size) {
-  return `beta_words_best_${size}`;
+  return `${getCurrentGame().recordPrefix}_${size}`;
+}
+
+function getLegacyBestRecordKey(size) {
+  return state.game === GAMES.match.id ? `beta_words_best_${size}` : null;
 }
 
 function getBestRecord(size) {
   const key = getBestRecordKey(size);
 
   try {
-    const raw = window.localStorage.getItem(key);
+    const legacyKey = getLegacyBestRecordKey(size);
+    const raw = window.localStorage.getItem(key) || (legacyKey ? window.localStorage.getItem(legacyKey) : null);
     if (!raw) return null;
 
     const record = JSON.parse(raw);
@@ -321,7 +541,7 @@ function setHint(text) {
 }
 
 function checkComplete() {
-  const allDone = state.tiles.every((tile) => tile.matched);
+  const allDone = state.tiles.every((tile) => tile.kind !== "word" || tile.matched);
   if (!allDone) return;
 
   setHint("完成");
@@ -341,6 +561,10 @@ function checkComplete() {
     const next = nextSize(state.size);
     document.querySelector("#next-board").hidden = !next;
   }, 260);
+}
+
+function getCurrentGame() {
+  return GAMES[state.game] || GAMES.match;
 }
 
 function speak(text) {
