@@ -194,14 +194,52 @@ h2 {
   font-weight: 900;
 }
 
-.status-row {
-  display: flex;
-  justify-content: space-between;
+.game-hud {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) auto minmax(90px, 1fr);
+  align-items: center;
   gap: 12px;
-  min-height: 30px;
-  margin-bottom: 16px;
+  min-height: 64px;
+  margin-bottom: 18px;
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 800;
+}
+
+.hud-progress,
+.hud-hint {
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.hud-progress {
+  justify-self: start;
+  font-size: 1.05rem;
+}
+
+.hud-hint {
+  justify-self: end;
+  max-width: 100%;
+  text-align: right;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.hud-timer {
+  justify-self: center;
+  min-width: 128px;
+  min-height: 58px;
+  padding: 8px 18px;
+  display: grid;
+  place-items: center;
+  background: var(--sun);
+  color: #222222;
+  border: 2px solid #d6ae1d;
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(46, 58, 49, 0.12);
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .board {
@@ -344,7 +382,23 @@ h2 {
     min-height: 112px;
   }
 
-  .status-row {
+  .game-hud {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+    margin-bottom: 14px;
+  }
+
+  .hud-timer {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-width: 126px;
+    min-height: 54px;
+    font-size: 1.8rem;
+  }
+
+  .hud-progress,
+  .hud-hint {
+    grid-row: 2;
     font-size: 0.95rem;
   }
 }
