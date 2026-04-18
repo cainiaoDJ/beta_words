@@ -45,6 +45,14 @@ const GAMES = {
     boardLabel: "拼音找朋友题目",
     startHint: "听一听，选拼音",
     recordPrefix: "beta_words_pinyin_friend_best"
+  },
+  listenCard: {
+    id: "listenCard",
+    name: "听音点卡",
+    title: "听音，点拼音",
+    boardLabel: "听音点卡题目",
+    startHint: "听一听，点拼音",
+    recordPrefix: "beta_words_listen_card_best"
   }
 };
 
@@ -149,6 +157,7 @@ const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
 document.querySelector("#open-match").addEventListener("click", () => chooseGame(GAMES.match.id));
 document.querySelector("#open-memory").addEventListener("click", () => chooseGame(GAMES.memory.id));
 document.querySelector("#open-pinyin-friend").addEventListener("click", () => chooseGame(GAMES.pinyinFriend.id));
+document.querySelector("#open-listen-card").addEventListener("click", () => chooseGame(GAMES.listenCard.id));
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
 document.querySelector("#replay-sound").addEventListener("click", () => playReplayVoice());
 document.querySelector("#next-board").addEventListener("click", () => {
@@ -221,14 +230,14 @@ function startGame(size) {
   gameTitle.textContent = game.title;
   board.setAttribute("aria-label", game.boardLabel);
   board.classList.toggle("memory", state.game === GAMES.memory.id);
-  const isQuizGame = state.game === GAMES.pinyinFriend.id;
+  const isQuizGame = isCurrentQuizGame();
   board.hidden = isQuizGame;
   quiz.hidden = !isQuizGame;
   optionGrid.innerHTML = "";
   quizMain.innerHTML = "";
 
   if (isQuizGame) {
-    startPinyinFriendGame(size);
+    startQuizGame(size);
     showScreen("game");
     return;
   }
@@ -443,14 +452,14 @@ function handleMemoryTileClick(tileId) {
   }
 }
 
-function startPinyinFriendGame(size) {
+function startQuizGame(size) {
   const settings = QUIZ_SETTINGS[size] || QUIZ_SETTINGS[3];
   state.questions = createPinyinQuestions(settings.questionCount);
   state.totalTargets = state.questions.length;
   state.matchedCount = 0;
   updateProgress();
   setHint(getCurrentGame().startHint);
-  showPinyinQuestion();
+  showQuizQuestion();
   startTimer();
 }
 
@@ -463,7 +472,7 @@ function createPinyinQuestions(count) {
   }));
 }
 
-function showPinyinQuestion() {
+function showQuizQuestion() {
   const question = state.questions[state.questionIndex];
   if (!question) {
     completeQuizGame();
@@ -476,11 +485,7 @@ function showPinyinQuestion() {
   state.locked = false;
 
   quizMain.innerHTML = "";
-  const word = document.createElement("div");
-  word.className = "quiz-word";
-  word.textContent = question.word;
-  word.setAttribute("aria-label", `汉字 ${question.word}`);
-  quizMain.appendChild(word);
+  renderQuizMain(question);
 
   optionGrid.innerHTML = "";
   state.options.forEach((option) => {
@@ -490,12 +495,39 @@ function showPinyinQuestion() {
     button.textContent = option;
     button.setAttribute("role", "listitem");
     button.setAttribute("aria-label", `拼音 ${option}`);
-    button.addEventListener("click", () => handlePinyinOptionClick(option, button));
+    button.addEventListener("click", () => handleQuizOptionClick(option, button));
     optionGrid.appendChild(button);
   });
 
-  setHint("听一听，选拼音");
+  setHint(getCurrentGame().startHint);
   playVoice(question.audioKey, question.fallbackText);
+}
+
+function renderQuizMain(question) {
+  if (state.game === GAMES.listenCard.id) {
+    const prompt = document.createElement("div");
+    prompt.className = "listen-prompt";
+    prompt.setAttribute("aria-label", "听音题目");
+
+    const mark = document.createElement("span");
+    mark.className = "listen-mark";
+    mark.textContent = "听";
+
+    const copy = document.createElement("span");
+    copy.className = "listen-copy";
+    copy.textContent = "听一听";
+
+    prompt.appendChild(mark);
+    prompt.appendChild(copy);
+    quizMain.appendChild(prompt);
+    return;
+  }
+
+  const word = document.createElement("div");
+  word.className = "quiz-word";
+  word.textContent = question.word;
+  word.setAttribute("aria-label", `汉字 ${question.word}`);
+  quizMain.appendChild(word);
 }
 
 function createPinyinOptions(question, optionCount) {
@@ -508,7 +540,7 @@ function uniqueValues(items) {
   return [...new Set(items)];
 }
 
-function handlePinyinOptionClick(option, button) {
+function handleQuizOptionClick(option, button) {
   if (state.locked || !state.currentQuestion) return;
 
   if (option === state.currentQuestion.pinyin) {
@@ -521,7 +553,7 @@ function handlePinyinOptionClick(option, button) {
 
     window.setTimeout(() => {
       state.questionIndex += 1;
-      showPinyinQuestion();
+      showQuizQuestion();
     }, 520);
     return;
   }
@@ -761,6 +793,10 @@ function checkComplete() {
 
 function getCurrentGame() {
   return GAMES[state.game] || GAMES.match;
+}
+
+function isCurrentQuizGame() {
+  return state.game === GAMES.pinyinFriend.id || state.game === GAMES.listenCard.id;
 }
 
 function playReplayVoice() {

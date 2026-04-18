@@ -344,6 +344,41 @@ h2 {
   line-height: 1;
 }
 
+.listen-prompt {
+  width: min(100%, 360px);
+  min-height: 210px;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  background: var(--tile);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+
+.listen-mark {
+  width: 92px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  background: var(--sun);
+  border: 2px solid #d6ae1d;
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 2.4rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.listen-copy {
+  color: var(--muted);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
 .option-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -472,6 +507,10 @@ h2 {
   .quiz-main {
     min-height: 180px;
     margin-bottom: 14px;
+  }
+
+  .listen-prompt {
+    min-height: 180px;
   }
 
   .option-grid {
