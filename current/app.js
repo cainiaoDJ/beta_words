@@ -62,8 +62,12 @@ const state = {
   timerInterval: null,
   memoryCountdownInterval: null,
   memoryRevealTimeout: null,
+  lastVoiceKey: null,
   lastSpoken: "识字消消乐"
 };
+
+const AUDIO_MAP = window.BETA_WORDS_AUDIO || {};
+let currentAudio = null;
 
 const screens = {
   lobby: document.querySelector("#lobby"),
@@ -87,7 +91,7 @@ const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
 document.querySelector("#open-match").addEventListener("click", () => chooseGame(GAMES.match.id));
 document.querySelector("#open-memory").addEventListener("click", () => chooseGame(GAMES.memory.id));
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
-document.querySelector("#replay-sound").addEventListener("click", () => speak(state.lastSpoken));
+document.querySelector("#replay-sound").addEventListener("click", () => playVoice(state.lastVoiceKey, state.lastSpoken));
 document.querySelector("#next-board").addEventListener("click", () => {
   const next = nextSize(state.size);
   if (next) startGame(next);
@@ -173,7 +177,7 @@ function startGame(size) {
   }
 
   setHint(game.startHint);
-  speak("开始");
+  playVoice("prompt.start", "开始");
 }
 
 function calcTileFont() {
@@ -246,14 +250,14 @@ function handleMatchTileClick(tileId) {
 
   if (tile.kind === "bonus") {
     tile.matched = true;
-    speak("真棒");
+    playVoice("prompt.bonus", "真棒");
     markTile(tileId, "matched");
     setHint("奖励星星");
     checkComplete();
     return;
   }
 
-  speak(tile.value);
+  playVoice(getWordVoiceKey(tile.value), tile.value);
 
   if (!state.selectedId) {
     state.selectedId = tileId;
@@ -310,7 +314,7 @@ function handleMemoryTileClick(tileId) {
   if (!tile || tile.matched || tile.revealed) return;
 
   tile.revealed = true;
-  speak(tile.value);
+  playVoice(getWordVoiceKey(tile.value), tile.value);
   markTile(tileId, "selected");
   updateTile(tileId);
 
@@ -447,7 +451,7 @@ function startMemoryPreview(size) {
   state.locked = true;
   setHint(`记住这些字：${String(remaining).padStart(2, "0")}`);
   timer.textContent = `00:${String(remaining).padStart(2, "0")}`;
-  speak("先记住这些字");
+  playVoice("prompt.remember", "先记住这些字");
 
   state.memoryCountdownInterval = window.setInterval(() => {
     remaining -= 1;
@@ -464,7 +468,7 @@ function startMemoryPreview(size) {
     resetTimer();
     startTimer();
     setHint("翻出两个一样的字");
-    speak("开始翻牌");
+    playVoice("prompt.flip", "开始翻牌");
   }, seconds * 1000);
 }
 
@@ -555,7 +559,7 @@ function checkComplete() {
   if (isNewRecord) {
     saveBestRecord(state.size, elapsedMs);
   }
-  speak("都找到了");
+  playVoice("prompt.complete", "都找到了");
   window.setTimeout(() => {
     completePanel.hidden = false;
     const next = nextSize(state.size);
@@ -567,10 +571,43 @@ function getCurrentGame() {
   return GAMES[state.game] || GAMES.match;
 }
 
+function playVoice(key, fallbackText) {
+  state.lastVoiceKey = key || null;
+  state.lastSpoken = fallbackText;
+
+  const src = key ? AUDIO_MAP[key] : null;
+  if (!src) {
+    speak(fallbackText);
+    return;
+  }
+
+  stopCurrentAudio();
+  window.speechSynthesis?.cancel();
+
+  currentAudio = new Audio(src);
+  currentAudio.play().catch(() => {
+    speak(fallbackText);
+  });
+}
+
+function stopCurrentAudio() {
+  if (!currentAudio) return;
+  currentAudio.pause();
+  currentAudio.currentTime = 0;
+  currentAudio = null;
+}
+
+function getWordVoiceKey(word) {
+  const codePoints = Array.from(word)
+    .map((char) => `u${char.codePointAt(0).toString(16)}`)
+    .join("-");
+  return `word.${codePoints}`;
+}
+
 function speak(text) {
-  state.lastSpoken = text;
   if (!("speechSynthesis" in window)) return;
 
+  stopCurrentAudio();
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "zh-CN";

@@ -167,15 +167,54 @@ memory-matched：翻翻乐已配对但保留显示
 
 ## 6. 语音准则
 
-识字游戏都应尽量保留读音反馈。
+识字游戏都应尽量保留读音反馈。所有游戏应调用 `playVoice(key, fallbackText)`，不要在玩法代码里直接调用 `speak(text)`。
+
+播放优先级：
+
+```text
+1. assets/audio/manifest.js 中注册的静态音频
+2. 浏览器 SpeechSynthesis
+3. 静默失败，不阻塞游戏
+```
 
 当前方式：
 
 ```text
-浏览器 SpeechSynthesis
+静态音频优先，浏览器 SpeechSynthesis 兜底
 lang = zh-CN
 rate = 0.82
 pitch = 1.08
+```
+
+音频 manifest 示例：
+
+```js
+window.BETA_WORDS_AUDIO = {
+  "prompt.start": "assets/audio/prompts/start.mp3",
+  "prompt.correct": "assets/audio/prompts/correct.mp3",
+  "prompt.tryAgain": "assets/audio/prompts/try-again.mp3",
+  "prompt.complete": "assets/audio/prompts/complete.mp3",
+  "word.u4eba": "assets/audio/words/ren.mp3",
+  "pinyin.ma1": "assets/audio/pinyin/ma1.mp3"
+};
+```
+
+汉字音频 key 使用 Unicode 码点，避免拼音转换表不完整：
+
+```text
+人 -> word.u4eba
+口 -> word.u53e3
+手 -> word.u624b
+```
+
+拼音音频 key 使用数字表示声调：
+
+```text
+pinyin.ma1
+pinyin.ma2
+pinyin.ma3
+pinyin.ma4
+pinyin.ma0
 ```
 
 使用准则：

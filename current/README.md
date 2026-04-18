@@ -20,6 +20,7 @@ index.html
 styles.css
 app.js
 assets/
+assets/audio/
 favicon.png
 favicon.ico
 ```
@@ -27,6 +28,39 @@ favicon.ico
 可以直接放到 nginx、对象存储静态网站、CDN 源站或任意静态托管服务中。
 
 新增游戏的设计和开发准则记录在 `GAME_SOP.md`。
+
+## 音频替换
+
+游戏默认使用浏览器中文语音朗读。若需要替换为预生成音频，在 `assets/audio/manifest.js` 中注册音频 key：
+
+```js
+window.BETA_WORDS_AUDIO = {
+  "prompt.start": "assets/audio/prompts/start.mp3",
+  "prompt.bonus": "assets/audio/prompts/bonus.mp3",
+  "prompt.complete": "assets/audio/prompts/complete.mp3",
+  "word.u4eba": "assets/audio/words/ren.mp3"
+};
+```
+
+播放时会优先使用 manifest 中的音频文件，缺失或播放失败时自动回退到浏览器语音。
+
+当前提示音 key：
+
+```text
+prompt.start
+prompt.bonus
+prompt.remember
+prompt.flip
+prompt.complete
+```
+
+汉字音频 key 使用 Unicode 码点，例如：
+
+```text
+人 -> word.u4eba
+口 -> word.u53e3
+手 -> word.u624b
+```
 
 ## 运行
 
