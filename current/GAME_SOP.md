@@ -70,7 +70,7 @@ nginx / 对象存储 / CDN 发布静态文件
 
 ## 3. 难度准则
 
-当前两个游戏共用难度：
+当前游戏共用难度：
 
 ```text
 3 x 3：轻松开始
@@ -290,7 +290,7 @@ locked = false
 
 ## 9. 玩法准则
 
-当前两个游戏的玩法基线：
+当前游戏的玩法基线：
 
 识字消消乐：
 
@@ -310,6 +310,16 @@ locked = false
 翻出两个相同汉字
 匹配成功后保持显示，不消失
 翻错后重新盖回
+```
+
+拼音找朋友：
+
+```text
+显示一个汉字
+播放这个字的读音
+从 2-4 个拼音选项里选择正确拼音
+答对进入下一题
+答错停留当前题
 ```
 
 后续新增玩法应遵守：
@@ -418,25 +428,32 @@ aria-label 描述字牌
 
 3. 判断是否复用当前难度选择。
 
-4. 在 `startGame(size)` 中加入该游戏的初始化分支。
+4. 判断使用棋盘视图还是答题视图：
 
-5. 新增独立的点击处理函数：
+   ```text
+   棋盘类游戏使用 #board
+   答题类游戏使用 #quiz
+   ```
+
+5. 在 `startGame(size)` 中加入该游戏的初始化分支。
+
+6. 新增独立的点击处理函数：
 
    ```js
    handleNewGameTileClick(tileId)
    ```
 
-6. 在 `handleTileClick(tileId)` 中按 `state.game` 分发。
+7. 在 `handleTileClick(tileId)` 中按 `state.game` 分发。
 
-7. 如需特殊牌面状态，新增游戏专属 CSS class。
+8. 如需特殊牌面状态，新增游戏专属 CSS class。
 
-8. 确保完成判定只统计普通汉字牌。
+9. 确保完成判定只统计普通汉字牌或答对题数。
 
-9. 确保 `localStorage` 记录 key 按游戏隔离。
+10. 确保 `localStorage` 记录 key 按游戏隔离。
 
-10. 更新 README 当前范围。
+11. 更新 README 当前范围。
 
-11. 验证：
+12. 验证：
 
     ```bash
     node --check current/app.js
@@ -444,7 +461,7 @@ aria-label 描述字牌
     python3 -m http.server 4173
     ```
 
-12. 至少手测：
+13. 至少手测：
 
     ```text
     大厅入口

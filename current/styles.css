@@ -36,6 +36,10 @@ button {
   font: inherit;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .app {
   width: min(960px, 100%);
   min-height: 100vh;
@@ -313,6 +317,69 @@ h2 {
   font-size: var(--tile-font, 4.8rem);
 }
 
+.quiz {
+  width: min(100%, 620px);
+  margin: 0 auto;
+}
+
+.quiz-main {
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+}
+
+.quiz-word {
+  width: min(100%, 360px);
+  aspect-ratio: 1.45;
+  display: grid;
+  place-items: center;
+  background: var(--tile);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-size: clamp(5rem, 22vw, 9rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.option-button {
+  min-height: 78px;
+  padding: 14px 16px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 8px 18px rgba(46, 58, 49, 0.1);
+  cursor: pointer;
+  font-size: clamp(1.8rem, 7vw, 3rem);
+  font-weight: 900;
+  line-height: 1;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.option-button:hover {
+  transform: translateY(-2px);
+}
+
+.option-button.correct {
+  background: var(--good);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.option-button.wrong {
+  background: #ffe7dd;
+  border-color: #d86d4c;
+}
+
 .complete-panel {
   width: min(100%, 520px);
   margin: 24px auto 0;
@@ -400,5 +467,19 @@ h2 {
   .hud-hint {
     grid-row: 2;
     font-size: 0.95rem;
+  }
+
+  .quiz-main {
+    min-height: 180px;
+    margin-bottom: 14px;
+  }
+
+  .option-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .option-button {
+    min-height: 66px;
   }
 }

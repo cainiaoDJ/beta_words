@@ -37,6 +37,14 @@ const GAMES = {
     boardLabel: "识字翻翻乐棋盘",
     startHint: "先记住这些字",
     recordPrefix: "beta_words_memory_best"
+  },
+  pinyinFriend: {
+    id: "pinyinFriend",
+    name: "拼音找朋友",
+    title: "选出这个字的拼音",
+    boardLabel: "拼音找朋友题目",
+    startHint: "听一听，选拼音",
+    recordPrefix: "beta_words_pinyin_friend_best"
   }
 };
 
@@ -48,11 +56,56 @@ const MEMORY_SECONDS = {
   7: 20
 };
 
+const QUIZ_SETTINGS = {
+  3: { questionCount: 6, optionCount: 2 },
+  4: { questionCount: 8, optionCount: 3 },
+  5: { questionCount: 10, optionCount: 4 },
+  6: { questionCount: 12, optionCount: 4 },
+  7: { questionCount: 15, optionCount: 4 }
+};
+
+const PINYIN_WORDS = [
+  { word: "妈", pinyin: "ma" },
+  { word: "爸", pinyin: "ba" },
+  { word: "马", pinyin: "ma" },
+  { word: "大", pinyin: "da" },
+  { word: "米", pinyin: "mi" },
+  { word: "木", pinyin: "mu" },
+  { word: "土", pinyin: "tu" },
+  { word: "水", pinyin: "shui" },
+  { word: "火", pinyin: "huo" },
+  { word: "山", pinyin: "shan" },
+  { word: "人", pinyin: "ren" },
+  { word: "口", pinyin: "kou" },
+  { word: "手", pinyin: "shou" },
+  { word: "天", pinyin: "tian" },
+  { word: "月", pinyin: "yue" },
+  { word: "日", pinyin: "ri" },
+  { word: "云", pinyin: "yun" },
+  { word: "雨", pinyin: "yu" },
+  { word: "风", pinyin: "feng" },
+  { word: "花", pinyin: "hua" },
+  { word: "草", pinyin: "cao" },
+  { word: "鸟", pinyin: "niao" },
+  { word: "鱼", pinyin: "yu" },
+  { word: "牛", pinyin: "niu" },
+  { word: "羊", pinyin: "yang" },
+  { word: "猫", pinyin: "mao" },
+  { word: "犬", pinyin: "quan" },
+  { word: "车", pinyin: "che" },
+  { word: "书", pinyin: "shu" },
+  { word: "家", pinyin: "jia" }
+];
+
 const state = {
   game: GAMES.match.id,
   phase: "playing",
   size: 3,
   tiles: [],
+  questions: [],
+  questionIndex: 0,
+  currentQuestion: null,
+  options: [],
   selectedId: null,
   locked: false,
   matchedCount: 0,
@@ -62,6 +115,8 @@ const state = {
   timerInterval: null,
   memoryCountdownInterval: null,
   memoryRevealTimeout: null,
+  replayVoiceKey: null,
+  replayText: null,
   lastVoiceKey: null,
   lastSpoken: "识字消消乐"
 };
@@ -85,13 +140,17 @@ const bestRecord = document.querySelector("#best-record");
 const gameSubtitle = document.querySelector("#game-subtitle");
 const gameTitle = document.querySelector("#game-title");
 const setupTitle = document.querySelector("#setup-title");
+const quiz = document.querySelector("#quiz");
+const quizMain = document.querySelector("#quiz-main");
+const optionGrid = document.querySelector("#option-grid");
 
 const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
 
 document.querySelector("#open-match").addEventListener("click", () => chooseGame(GAMES.match.id));
 document.querySelector("#open-memory").addEventListener("click", () => chooseGame(GAMES.memory.id));
+document.querySelector("#open-pinyin-friend").addEventListener("click", () => chooseGame(GAMES.pinyinFriend.id));
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
-document.querySelector("#replay-sound").addEventListener("click", () => playVoice(state.lastVoiceKey, state.lastSpoken));
+document.querySelector("#replay-sound").addEventListener("click", () => playReplayVoice());
 document.querySelector("#next-board").addEventListener("click", () => {
   const next = nextSize(state.size);
   if (next) startGame(next);
@@ -129,6 +188,8 @@ function leaveGame() {
   stopTimer();
   state.locked = false;
   state.selectedId = null;
+  state.currentQuestion = null;
+  state.options = [];
 }
 
 function chooseGame(gameId) {
@@ -146,6 +207,12 @@ function startGame(size) {
   state.selectedId = null;
   state.locked = false;
   state.matchedCount = 0;
+  state.questions = [];
+  state.questionIndex = 0;
+  state.currentQuestion = null;
+  state.options = [];
+  state.replayVoiceKey = null;
+  state.replayText = null;
   completePanel.hidden = true;
   bestRecord.hidden = true;
   completeTime.textContent = "本次用时 00:00";
@@ -154,6 +221,17 @@ function startGame(size) {
   gameTitle.textContent = game.title;
   board.setAttribute("aria-label", game.boardLabel);
   board.classList.toggle("memory", state.game === GAMES.memory.id);
+  const isQuizGame = state.game === GAMES.pinyinFriend.id;
+  board.hidden = isQuizGame;
+  quiz.hidden = !isQuizGame;
+  optionGrid.innerHTML = "";
+  quizMain.innerHTML = "";
+
+  if (isQuizGame) {
+    startPinyinFriendGame(size);
+    showScreen("game");
+    return;
+  }
 
   state.tiles = createTiles(size);
   if (state.game === GAMES.memory.id) {
@@ -177,7 +255,7 @@ function startGame(size) {
   }
 
   setHint(game.startHint);
-  playVoice("prompt.start", "开始");
+  playVoice("prompt.start", "开始", { replayable: false });
 }
 
 function calcTileFont() {
@@ -250,7 +328,7 @@ function handleMatchTileClick(tileId) {
 
   if (tile.kind === "bonus") {
     tile.matched = true;
-    playVoice("prompt.bonus", "真棒");
+    playVoice("prompt.bonus", "真棒", { replayable: false });
     markTile(tileId, "matched");
     setHint("奖励星星");
     checkComplete();
@@ -365,6 +443,120 @@ function handleMemoryTileClick(tileId) {
   }
 }
 
+function startPinyinFriendGame(size) {
+  const settings = QUIZ_SETTINGS[size] || QUIZ_SETTINGS[3];
+  state.questions = createPinyinQuestions(settings.questionCount);
+  state.totalTargets = state.questions.length;
+  state.matchedCount = 0;
+  updateProgress();
+  setHint(getCurrentGame().startHint);
+  showPinyinQuestion();
+  startTimer();
+}
+
+function createPinyinQuestions(count) {
+  return shuffle(PINYIN_WORDS).slice(0, count).map((question, index) => ({
+    ...question,
+    id: `pinyin-question-${index}`,
+    audioKey: getWordVoiceKey(question.word),
+    fallbackText: question.word
+  }));
+}
+
+function showPinyinQuestion() {
+  const question = state.questions[state.questionIndex];
+  if (!question) {
+    completeQuizGame();
+    return;
+  }
+
+  const settings = QUIZ_SETTINGS[state.size] || QUIZ_SETTINGS[3];
+  state.currentQuestion = question;
+  state.options = createPinyinOptions(question, settings.optionCount);
+  state.locked = false;
+
+  quizMain.innerHTML = "";
+  const word = document.createElement("div");
+  word.className = "quiz-word";
+  word.textContent = question.word;
+  word.setAttribute("aria-label", `汉字 ${question.word}`);
+  quizMain.appendChild(word);
+
+  optionGrid.innerHTML = "";
+  state.options.forEach((option) => {
+    const button = document.createElement("button");
+    button.className = "option-button";
+    button.type = "button";
+    button.textContent = option;
+    button.setAttribute("role", "listitem");
+    button.setAttribute("aria-label", `拼音 ${option}`);
+    button.addEventListener("click", () => handlePinyinOptionClick(option, button));
+    optionGrid.appendChild(button);
+  });
+
+  setHint("听一听，选拼音");
+  playVoice(question.audioKey, question.fallbackText);
+}
+
+function createPinyinOptions(question, optionCount) {
+  const distractors = uniqueValues(PINYIN_WORDS.map((item) => item.pinyin))
+    .filter((pinyin) => pinyin !== question.pinyin);
+  return shuffle([question.pinyin, ...shuffle(distractors).slice(0, optionCount - 1)]);
+}
+
+function uniqueValues(items) {
+  return [...new Set(items)];
+}
+
+function handlePinyinOptionClick(option, button) {
+  if (state.locked || !state.currentQuestion) return;
+
+  if (option === state.currentQuestion.pinyin) {
+    state.locked = true;
+    button.classList.add("correct");
+    state.matchedCount += 1;
+    updateProgress();
+    setHint("找对了");
+    playVoice("prompt.correct", "找对了", { replayable: false });
+
+    window.setTimeout(() => {
+      state.questionIndex += 1;
+      showPinyinQuestion();
+    }, 520);
+    return;
+  }
+
+  button.classList.add("wrong");
+  setHint("再试一次");
+  playVoice("prompt.tryAgain", "再试一次", { replayable: false });
+  window.setTimeout(() => {
+    button.classList.remove("wrong");
+  }, 520);
+}
+
+function completeQuizGame() {
+  state.currentQuestion = null;
+  state.options = [];
+  state.locked = true;
+  setHint("完成");
+  stopTimer();
+  const elapsedMs = getElapsedTime();
+  const best = getBestRecord(state.size);
+  const isNewRecord = !best || elapsedMs < best.elapsedMs;
+  updateTimerDisplay(elapsedMs);
+  completeTime.textContent = `本次用时 ${formatTime(elapsedMs)}`;
+  bestRecord.hidden = !isNewRecord;
+  if (isNewRecord) {
+    saveBestRecord(state.size, elapsedMs);
+  }
+  playVoice("prompt.complete", "都找到了", { replayable: false });
+  window.setTimeout(() => {
+    completePanel.hidden = false;
+    const next = nextSize(state.size);
+    document.querySelector("#next-board").hidden = !next;
+  }, 260);
+}
+
 function markTile(tileId, className, enabled = true) {
   const button = getTileButton(tileId);
   if (!button) return;
@@ -451,7 +643,7 @@ function startMemoryPreview(size) {
   state.locked = true;
   setHint(`记住这些字：${String(remaining).padStart(2, "0")}`);
   timer.textContent = `00:${String(remaining).padStart(2, "0")}`;
-  playVoice("prompt.remember", "先记住这些字");
+  playVoice("prompt.remember", "先记住这些字", { replayable: false });
 
   state.memoryCountdownInterval = window.setInterval(() => {
     remaining -= 1;
@@ -468,7 +660,7 @@ function startMemoryPreview(size) {
     resetTimer();
     startTimer();
     setHint("翻出两个一样的字");
-    playVoice("prompt.flip", "开始翻牌");
+    playVoice("prompt.flip", "开始翻牌", { replayable: false });
   }, seconds * 1000);
 }
 
@@ -559,7 +751,7 @@ function checkComplete() {
   if (isNewRecord) {
     saveBestRecord(state.size, elapsedMs);
   }
-  playVoice("prompt.complete", "都找到了");
+  playVoice("prompt.complete", "都找到了", { replayable: false });
   window.setTimeout(() => {
     completePanel.hidden = false;
     const next = nextSize(state.size);
@@ -571,9 +763,19 @@ function getCurrentGame() {
   return GAMES[state.game] || GAMES.match;
 }
 
-function playVoice(key, fallbackText) {
+function playReplayVoice() {
+  const key = state.replayVoiceKey || state.lastVoiceKey;
+  const text = state.replayText || state.lastSpoken;
+  playVoice(key, text, { replayable: false });
+}
+
+function playVoice(key, fallbackText, options = {}) {
   state.lastVoiceKey = key || null;
   state.lastSpoken = fallbackText;
+  if (options.replayable !== false) {
+    state.replayVoiceKey = key || null;
+    state.replayText = fallbackText;
+  }
 
   const src = key ? AUDIO_MAP[key] : null;
   if (!src) {

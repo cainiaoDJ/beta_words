@@ -28,6 +28,10 @@
             <span class="entry-title">识字翻翻乐</span>
             <span class="entry-copy">记一记，再翻出来</span>
           </button>
+          <button id="open-pinyin-friend" class="game-entry" type="button">
+            <span class="entry-title">拼音找朋友</span>
+            <span class="entry-copy">听一听，选拼音</span>
+          </button>
         </div>
       </section>
 
@@ -78,6 +82,11 @@
         </div>
 
         <div id="board" class="board" role="grid" aria-label="识字消消乐棋盘"></div>
+
+        <div id="quiz" class="quiz" hidden>
+          <div id="quiz-main" class="quiz-main" aria-live="polite"></div>
+          <div id="option-grid" class="option-grid" role="list" aria-label="拼音选项"></div>
+        </div>
 
         <div id="complete-panel" class="complete-panel" hidden>
           <p>都找到了</p>
