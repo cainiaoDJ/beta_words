@@ -212,6 +212,15 @@ function syncReplayVisibility() {
   const needsReplay = state.game !== GAMES.stroopTrain.id;
   replayBtn.hidden = !needsReplay;
 }
+
+// 看字识颜色 游戏不需要计时器和匹配进度（计时无意义、进度靠视觉感知）
+function syncStroopHud() {
+  const isStroop = state.game === GAMES.stroopTrain.id;
+  const hudTimer = document.querySelector(".hud-timer");
+  const hudProgress = document.querySelector(".hud-progress");
+  if (hudTimer) hudTimer.hidden = isStroop;
+  if (hudProgress) hudProgress.hidden = isStroop;
+}
 document.querySelector("#next-board").addEventListener("click", () => {
   const next = nextSize(state.size);
   if (next) startGame(next);
@@ -235,9 +244,10 @@ document.querySelectorAll("[data-action='back-setup']").forEach((button) => {
   });
 });
 
-window.addEventListener("resize", calcTileFont);
-window.visualViewport?.addEventListener("resize", calcTileFont);
+window.addEventListener("resize", () => { calcTileFont(); calcStroopFont(); });
+window.visualViewport?.addEventListener("resize", () => { calcTileFont(); calcStroopFont(); });
 new ResizeObserver(() => calcTileFont).observe(document.querySelector("#board"));
+if (stroopBoard) new ResizeObserver(() => calcStroopFont()).observe(stroopBoard);
 
 function showScreen(name) {
   Object.values(screens).forEach((screen) => screen.classList.remove("active"));
@@ -263,6 +273,7 @@ function chooseGame(gameId) {
   const game = getCurrentGame();
   setupTitle.textContent = `${game.name} · 选择难度`;
   syncReplayVisibility();
+  syncStroopHud();
   showScreen("setup");
 }
 
@@ -299,6 +310,7 @@ function startGame(size) {
     quiz.hidden = !isQuizGame;
     if (stroopHost) stroopHost.hidden = true;
   }
+  syncStroopHud();
   optionGrid.innerHTML = "";
   quizMain.innerHTML = "";
 
@@ -349,6 +361,22 @@ function calcTileFont() {
   const tileSize = (boardW - gap * (state.size - 1)) / state.size;
   const fontSize = tileSize * (state.size >= 6 ? 0.54 : 0.62);
   board.style.setProperty("--tile-font", `${Math.max(12, Math.floor(fontSize))}px`);
+}
+
+// 看字识颜色棋盘：随格子实际大小自动调字号，避免 6×6/7×7 字溢出
+function calcStroopFont() {
+  if (!stroopBoard) return;
+  const boardW = stroopBoard.offsetWidth;
+  const style = getComputedStyle(stroopBoard);
+  const gap = parseFloat(style.gap) || 4;
+  // 用实际 boardSize（state.size=7 时仍渲染 6×6，见 STROOP_SETTINGS），不用 state.size
+  const sizeVar = parseInt(stroopBoard.style.getPropertyValue("--size"), 10) || 3;
+  const cellSize = (boardW - gap * (sizeVar - 1)) / sizeVar;
+  const ratio = sizeVar >= 6 ? 0.62 : 0.78;
+  const fontSize = Math.max(10, Math.floor(cellSize * ratio));
+  stroopBoard.style.setProperty("--stroop-cell-font", `${fontSize}px`);
+  // 同步到待选格
+  if (stroopSelect) stroopSelect.style.setProperty("--stroop-cell-font", `${fontSize}px`);
 }
 
 
@@ -928,6 +956,7 @@ function startStroopGame(size) {
   if (stroopBoard) stroopBoard.style.setProperty("--size", boardSize);
   if (stroopSelect) stroopSelect.style.setProperty("--size", boardSize);
   renderStroopBoard();
+  calcStroopFont();
   renderStroopSelectPanel();
   renderStroopColorBar();
 
@@ -1109,13 +1138,16 @@ function applyStroopColor(idx, colorName) {
   }, 320);
 }
 
-// 读音反馈：正确 → 汉字读音 + 英文读音；错误 → 仅错误提示
+// 读音反馈：正确 → 中文颜色名 + 英文颜色名；错误 → 仅错误提示
 function playStroopFeedback(isCorrect, colorName, question) {
   if (isCorrect) {
-    // 汉字读音（前景中文发音，与 question.word 同色字的汉字）
-    speak(question.word);
-    // 紧接着读英文（颜色名）
-    setTimeout(() => speakEnglish(colorName), 380);
+    // 找颜色对象 → 取英文名（不要把汉字塞给 speakEnglish，否则英语 voice 会念中文）
+    const colorMeta = STROOP_COLORS.find((c) => c.name === colorName);
+    const englishName = colorMeta ? colorMeta.english : colorName;
+    // 1. 中文颜色名（确认答对了 → "蓝色"），强化“颜色”不是“字”
+    speak(colorName);
+    // 2. 英文颜色名（双语强化 → "blue"）
+    setTimeout(() => speakEnglish(englishName), 380);
   } else {
     setHint(`是${question.colorName}，不是${colorName}`);
     playVoice("prompt.tryAgain", "再试一次", { replayable: false });

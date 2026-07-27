@@ -466,62 +466,6 @@ h2 {
   }
 }
 
-@media (max-width: 680px) {
-  .app {
-    padding-top: 20px;
-  }
-
-  .topbar,
-  .game-topbar {
-    align-items: flex-start;
-  }
-
-  .difficulty-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .difficulty {
-    min-height: 112px;
-  }
-
-  .game-hud {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px 12px;
-    margin-bottom: 14px;
-  }
-
-  .hud-timer {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    min-width: 126px;
-    min-height: 54px;
-    font-size: 1.8rem;
-  }
-
-  .hud-progress,
-  .hud-hint {
-    grid-row: 2;
-    font-size: 0.95rem;
-  }
-
-  .quiz-main {
-    min-height: 180px;
-    margin-bottom: 14px;
-  }
-
-  .listen-prompt {
-    min-height: 180px;
-  }
-
-  .option-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .option-button {
-    min-height: 66px;
-  }
-}
 
 /* ============================================================ */
 /* 看字识颜色 (stroopTrain) 样式                                */
@@ -685,6 +629,176 @@ h2 {
 }
 
 /* 移动端：颜色条改成更紧凑的 grid */
+
+@media (max-width: 680px) {
+  .app {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+
+  .topbar,
+  .game-topbar {
+    align-items: flex-start;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+
+  .eyebrow {
+    margin-bottom: 4px;
+    font-size: 0.85rem;
+  }
+
+  h1 {
+    font-size: clamp(1.6rem, 6vw, 2.4rem);
+  }
+
+  h2 {
+    font-size: clamp(1.25rem, 4.5vw, 1.8rem);
+  }
+
+  .mascot {
+    width: clamp(48px, 14vw, 76px);
+  }
+
+  /* 大厅：5 张游戏卡改成 2 列紧凑，手机一屏可见 */
+  .game-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .game-entry {
+    min-height: 96px;
+    padding: 14px 14px;
+  }
+
+  .entry-title {
+    font-size: 1.25rem;
+    margin-bottom: 4px;
+  }
+
+  .entry-copy {
+    font-size: 0.9rem;
+  }
+
+  /* 难度选择：2 列紧凑（5 选 → 3 行 2+2+1），留出顶部空间 */
+  .difficulty-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .difficulty {
+    min-height: 96px;
+    padding: 16px 14px;
+  }
+
+  .difficulty strong {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+
+  .difficulty span {
+    font-size: 0.85rem;
+  }
+
+  /* “听”小圆按钮小幅收紧 */
+  .round-button {
+    width: 48px;
+    height: 48px;
+  }
+
+  .text-button {
+    min-width: 72px;
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  .game-hud {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 10px;
+    margin-bottom: 12px;
+    min-height: 50px;
+  }
+
+  .hud-timer {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-width: 110px;
+    min-height: 48px;
+    font-size: 1.6rem;
+  }
+
+  .hud-progress,
+  .hud-hint {
+    grid-row: 2;
+    font-size: 0.9rem;
+  }
+
+  .quiz-main {
+    min-height: 160px;
+    margin-bottom: 12px;
+  }
+
+  .listen-prompt {
+    min-height: 160px;
+    padding: 16px;
+  }
+
+  .listen-mark {
+    width: 72px;
+    height: 72px;
+    font-size: 2rem;
+  }
+
+  .quiz-word {
+    width: min(100%, 280px);
+  }
+
+  .option-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .option-button {
+    min-height: 60px;
+    font-size: clamp(1.5rem, 6vw, 2.4rem);
+  }
+
+  .complete-panel {
+    padding: 14px;
+  }
+
+  .complete-panel p {
+    font-size: 1.15rem;
+    margin-bottom: 10px;
+  }
+
+  .actions {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* 看字识颜色：3 块压紧，一屏可见 */
+  .stroop-host {
+    gap: 6px;
+  }
+  .stroop-board,
+  .stroop-select {
+    max-width: 210px;
+    --board-gap: 4px;
+  }
+  .stroop-select {
+    padding: 8px;
+  }
+  .stroop-palette {
+    max-width: 260px;
+    gap: 5px;
+    padding: 5px;
+  }
+  .stroop-color-btn {
+    font-size: clamp(0.95rem, 4vw, 1.4rem);
+  }
+}
+
 @media (max-width: 480px) {
   .stroop-palette {
     grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
