@@ -522,3 +522,176 @@ h2 {
     min-height: 66px;
   }
 }
+
+/* ============================================================ */
+/* 看字识颜色 (stroopTrain) 样式                                */
+/* ============================================================ */
+
+.stroop-host {
+  width: min(100%, 620px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.stroop-board {
+  --size: 3;
+  --board-gap: clamp(6px, 1.6vw, 10px);
+  --stroop-cell-font: 3rem;
+  display: grid;
+  grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+  gap: var(--board-gap);
+  width: 100%;
+  max-width: 620px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.stroop-cell {
+  font-size: var(--stroop-cell-font, 3rem);
+  color: var(--cell-color, var(--ink));
+  -webkit-text-stroke: 1.5px rgba(0, 0, 0, 0.18);
+  paint-order: stroke fill;
+  cursor: pointer;
+  position: relative;
+  background: var(--tile);
+  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+}
+
+.stroop-cell.active {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(47, 140, 115, 0.22);
+  transform: scale(1.04);
+  animation: stroop-pulse 1.1s ease-in-out infinite;
+}
+
+.stroop-cell.disabled {
+  pointer-events: none;
+  filter: grayscale(0.55);
+  opacity: 0.55;
+}
+
+@keyframes stroop-pulse {
+  0%, 100% { transform: scale(1.04); outline-color: var(--accent); }
+  50%      { transform: scale(1.0);  outline-color: var(--sun); }
+}
+
+/* 待选 n×n：完全空，初始米字格背景作草稿纸 */
+.stroop-select {
+  --size: 3;
+  --board-gap: clamp(6px, 1.6vw, 10px);
+  display: grid;
+  grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+  gap: var(--board-gap);
+  width: 100%;
+  max-width: 620px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  padding: 10px;
+  background: #f8f7ea;
+  border: 2px dashed #c8caa0;
+  border-radius: 10px;
+}
+
+.stroop-select-cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: var(--stroop-cell-font, 3rem);
+  font-weight: 900;
+  color: var(--cell-color, #c8caa0);
+  background-color: #fafaf2;
+  background-image:
+    linear-gradient(to right, transparent calc(50% - 1px), rgba(120, 110, 70, 0.32) 50%, transparent calc(50% + 1px)),
+    linear-gradient(to bottom, transparent calc(50% - 1px), rgba(120, 110, 70, 0.32) 50%, transparent calc(50% + 1px)),
+    linear-gradient(45deg, transparent calc(50% - 1px), rgba(120, 110, 70, 0.18) 50%, transparent calc(50% + 1px)),
+    linear-gradient(-45deg, transparent calc(50% - 1px), rgba(120, 110, 70, 0.18) 50%, transparent calc(50% + 1px));
+  border: 1.5px solid rgba(120, 110, 70, 0.18);
+  border-radius: 6px;
+  user-select: none;
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.14);
+  paint-order: stroke fill;
+  transition: background-color 200ms ease, color 200ms ease, transform 220ms ease;
+}
+
+.stroop-select-cell.active {
+  background-color: #fff8d6;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(47, 140, 115, 0.22);
+}
+
+.stroop-select-cell.disabled {
+  pointer-events: none;
+  filter: grayscale(0.4);
+  opacity: 0.7;
+}
+
+.stroop-select-cell.correct {
+  background-color: var(--good);
+  color: var(--accent-strong);
+  border-color: var(--accent);
+  transform: scale(1.04);
+}
+
+.stroop-select-cell.wrong {
+  background-color: #ffe7dd;
+  color: #b34a2a;
+  border-color: #d86d4c;
+  transform: scale(0.96);
+}
+
+/* 颜色条：一行 N 个色字按钮 */
+.stroop-palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 10px;
+  padding: 8px;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+.stroop-color-btn {
+  aspect-ratio: 1;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+  background: var(--btn-color, #888);
+  color: #fff;
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  -webkit-text-stroke: 1.5px rgba(0, 0, 0, 0.32);
+  paint-order: stroke fill;
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.stroop-color-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+.stroop-color-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+/* 移动端：颜色条改成更紧凑的 grid */
+@media (max-width: 480px) {
+  .stroop-palette {
+    grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+    gap: 6px;
+    padding: 6px;
+  }
+  .stroop-color-btn {
+    font-size: clamp(1.2rem, 4.4vw, 1.6rem);
+  }
+}

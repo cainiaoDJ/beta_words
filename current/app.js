@@ -53,7 +53,41 @@ const GAMES = {
     boardLabel: "听音点卡题目",
     startHint: "听一听，点拼音",
     recordPrefix: "beta_words_listen_card_best"
+  },
+  stroopTrain: {
+    id: "stroopTrain",
+    name: "看字识颜色",
+    title: "字是什么颜色",
+    boardLabel: "看字识颜色棋盘",
+    startHint: "看字，选颜色",
+    recordPrefix: "beta_words_stroop_train_best"
   }
+};
+
+// 斯特鲁普训练用色卡
+// 选色原则：
+//   - 避开纯白/纯黑（避免字色和字本身识别不清）
+//   - 颜色覆盖幼小衔接常见认知（红黄蓝绿 + 紫橙扩展）
+//   - 黄字加细描边（见 styles.css .stroop-word）解决浅色字在浅底的对比度问题
+//   - 英文名用于 TTS 朗读（en-US）
+const STROOP_COLORS = [
+  { name: "红", english: "red",    css: "#e94f4f" },
+  { name: "黄", english: "yellow", css: "#f5cd2f" },
+  { name: "蓝", english: "blue",   css: "#2f80e9" },
+  { name: "绿", english: "green",  css: "#2fa84f" },
+  { name: "紫", english: "purple", css: "#8a4fd6" },
+  { name: "橙", english: "orange", css: "#f08c3a" }
+];
+
+// 看字识颜色难度：颜色种类 + 棋盘总格数
+// 颜色种类跟着级别走（3=3 色基础 → 6=6 色全开）；
+// 7 级保持 6 色（避免与 6 级颜色维度重复），靠总格数提升难度。
+const STROOP_SETTINGS = {
+  3: { boardSize: 3, colorCount: 3 },
+  4: { boardSize: 4, colorCount: 4 },
+  5: { boardSize: 5, colorCount: 5 },
+  6: { boardSize: 6, colorCount: 6 },
+  7: { boardSize: 6, colorCount: 6 }
 };
 
 const MEMORY_SECONDS = {
@@ -126,7 +160,13 @@ const state = {
   replayVoiceKey: null,
   replayText: null,
   lastVoiceKey: null,
-  lastSpoken: "识字消消乐"
+  lastSpoken: "识字消消乐",
+  // 看字识颜色专用
+  stroopQuestions: [],
+  stroopFilledColors: [],   // 玩家逐格填入的颜色（null = 还未填）
+  stroopCursor: 0,          // 当前待填 idx
+  stroopCorrectCount: 0,    // 已判定且正确
+  stroopLocked: false       // 提交后短期锁定防双击
 };
 
 const AUDIO_MAP = window.BETA_WORDS_AUDIO || {};
@@ -151,6 +191,10 @@ const setupTitle = document.querySelector("#setup-title");
 const quiz = document.querySelector("#quiz");
 const quizMain = document.querySelector("#quiz-main");
 const optionGrid = document.querySelector("#option-grid");
+const stroopHost = document.querySelector("#stroop-host");
+const stroopBoard = document.querySelector("#stroop-board");
+const stroopSelect = document.querySelector("#stroop-select");
+const stroopPalette = document.querySelector("#stroop-palette");
 
 const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
 
@@ -158,8 +202,16 @@ document.querySelector("#open-match").addEventListener("click", () => chooseGame
 document.querySelector("#open-memory").addEventListener("click", () => chooseGame(GAMES.memory.id));
 document.querySelector("#open-pinyin-friend").addEventListener("click", () => chooseGame(GAMES.pinyinFriend.id));
 document.querySelector("#open-listen-card").addEventListener("click", () => chooseGame(GAMES.listenCard.id));
+document.querySelector("#open-stroop-train").addEventListener("click", () => chooseGame(GAMES.stroopTrain.id));
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
 document.querySelector("#replay-sound").addEventListener("click", () => playReplayVoice());
+// “再听一遍” 按钮在听音点卡 + 看字识颜色 中隐藏（不依赖读音重播）
+function syncReplayVisibility() {
+  const replayBtn = document.querySelector("#replay-sound");
+  if (!replayBtn) return;
+  const needsReplay = state.game !== GAMES.stroopTrain.id;
+  replayBtn.hidden = !needsReplay;
+}
 document.querySelector("#next-board").addEventListener("click", () => {
   const next = nextSize(state.size);
   if (next) startGame(next);
@@ -199,12 +251,18 @@ function leaveGame() {
   state.selectedId = null;
   state.currentQuestion = null;
   state.options = [];
+  state.stroopQuestions = [];
+  state.stroopFilledColors = [];
+  state.stroopCursor = 0;
+  state.stroopCorrectCount = 0;
+  state.stroopLocked = false;
 }
 
 function chooseGame(gameId) {
   state.game = gameId;
   const game = getCurrentGame();
   setupTitle.textContent = `${game.name} · 选择难度`;
+  syncReplayVisibility();
   showScreen("setup");
 }
 
@@ -231,13 +289,27 @@ function startGame(size) {
   board.setAttribute("aria-label", game.boardLabel);
   board.classList.toggle("memory", state.game === GAMES.memory.id);
   const isQuizGame = isCurrentQuizGame();
-  board.hidden = isQuizGame;
-  quiz.hidden = !isQuizGame;
+  const isStroopGame = state.game === GAMES.stroopTrain.id;
+  if (isStroopGame) {
+    board.hidden = true;
+    quiz.hidden = true;
+    if (stroopHost) stroopHost.hidden = false;
+  } else {
+    board.hidden = isQuizGame;
+    quiz.hidden = !isQuizGame;
+    if (stroopHost) stroopHost.hidden = true;
+  }
   optionGrid.innerHTML = "";
   quizMain.innerHTML = "";
 
   if (isQuizGame) {
     startQuizGame(size);
+    showScreen("game");
+    return;
+  }
+
+  if (state.game === GAMES.stroopTrain.id) {
+    startStroopGame(size);
     showScreen("game");
     return;
   }
@@ -769,6 +841,33 @@ function setHint(text) {
 }
 
 function checkComplete() {
+  // 看字识颜色：按 stroopCursor / stroopFilledColors 判定
+  if (state.game === GAMES.stroopTrain.id) {
+    const total = state.stroopQuestions.length;
+    const filledCount = state.stroopFilledColors.filter((c) => c !== null).length;
+    if (filledCount < total) return;
+    setHint("完成");
+    stopTimer();
+    const correct = state.stroopCorrectCount;
+    const rate = total > 0 ? Math.round((correct / total) * 100) : 0;
+    const elapsedMs = getElapsedTime();
+    const best = getBestRecord(state.size);
+    const isNewRecord = !best || elapsedMs < best.elapsedMs;
+    updateTimerDisplay(elapsedMs);
+    completeTime.textContent = `成功率 ${correct} / ${total}（${rate}%）`;
+    bestRecord.hidden = !isNewRecord;
+    if (isNewRecord) {
+      saveBestRecord(state.size, elapsedMs);
+    }
+    playVoice("prompt.complete", "都判完了", { replayable: false });
+    window.setTimeout(() => {
+      completePanel.hidden = false;
+      // 跨尺寸不同，颜色 + 字顺序不同，不跨尺寸连关
+      document.querySelector("#next-board").hidden = true;
+    }, 260);
+    return;
+  }
+
   const allDone = state.tiles.every((tile) => tile.kind !== "word" || tile.matched);
   if (!allDone) return;
 
@@ -789,6 +888,253 @@ function checkComplete() {
     const next = nextSize(state.size);
     document.querySelector("#next-board").hidden = !next;
   }, 260);
+}
+
+// ============================================================
+// 看字识颜色 (stroopTrain) 游戏逻辑
+// ============================================================
+//
+// 棋盘 n×n：棋子是带颜色的颜色字（红黄蓝绿紫橙），颜色与字义错位形成 Stroop 干扰。
+// 待选 n×n：初始完全空，底层田字格背景作为草稿纸；玩家依次填入棋盘每一格的
+//           “字颜色”。
+// 颜色条：一行 6 个色字 + 颜色背景的可点击按钮。
+//
+// 流程：
+//   1. 按棋盘 (0,0) → (n-1,n-1) row-major 顺序逐格处理。
+//   2. 当前 cursor 格可点；其他棋盘格 + 未 cursor 的待选格不可点。
+//   3. 点棋盘 cursor 格 → 该格点亮为“待选色”状态。
+//   4. 点颜色条某色 → 填入待选 cursor 格 → 系统判定：
+//      - 一致（待选色 == 字实际颜色）→ 待选格变绿 + 读汉字读音 + 读英文读音
+//      - 不一致 → 待选格变红
+//   5. 判定后 cursor 推进一格，不可反悔。
+//   6. 全部判定完成后显示成功率（X / N + %），隐藏“下一关”按钮。
+
+function startStroopGame(size) {
+  const settings = STROOP_SETTINGS[size] || STROOP_SETTINGS[3];
+  const boardSize = settings.boardSize;
+  const colorCount = settings.colorCount;
+  const total = boardSize * boardSize;
+
+  state.size = size;
+  state.stroopQuestions = createStroopQuestions(total, colorCount);
+  state.stroopFilledColors = new Array(total).fill(null);
+  state.stroopCursor = 0;
+  state.stroopCorrectCount = 0;
+  state.stroopLocked = false;
+  state.totalTargets = total;
+  state.matchedCount = 0;
+
+  // 渲染三个区：棋盘 + 待选 + 颜色条
+  if (stroopBoard) stroopBoard.style.setProperty("--size", boardSize);
+  if (stroopSelect) stroopSelect.style.setProperty("--size", boardSize);
+  renderStroopBoard();
+  renderStroopSelectPanel();
+  renderStroopColorBar();
+
+  setStroopActive();
+  updateProgress();
+  setHint(getCurrentGame().startHint);
+  playVoice("prompt.start", "开始", { replayable: false });
+  startTimer();
+}
+
+// 生成 Stroop 题目。
+// 棋盘 total 格，每格一个颜色字 + 1 个错位颜色。
+// 关键约束：colorIdx !== wordIdx（字色 ≠ 字义），否则不构成 Stroop 冲突。
+function createStroopQuestions(total, colorCount) {
+  const colors = STROOP_COLORS.slice(0, colorCount);
+  const questions = [];
+  for (let i = 0; i < total; i++) {
+    const row = Math.floor(i / Math.sqrt(total));
+    const col = i % Math.sqrt(total);
+    const wordIdx = Math.floor(Math.random() * colors.length);
+    let colorIdx = Math.floor(Math.random() * colors.length);
+    let attempts = 0;
+    while (colorIdx === wordIdx && attempts < 8) {
+      colorIdx = Math.floor(Math.random() * colors.length);
+      attempts += 1;
+    }
+    if (colorIdx === wordIdx) {
+      colorIdx = (wordIdx + 1) % colors.length;
+    }
+    const wordColor = colors[wordIdx];
+    const displayColor = colors[colorIdx];
+    questions.push({
+      id: `stroop-cell-${i}`,
+      row,
+      col,
+      word: wordColor.name,        // 字本身（颜色字，如「红」）
+      wordEnglish: wordColor.english, // 字英文名（"red"）
+      colorName: displayColor.name,  // 字实际显示的颜色（可能与字义不同）
+      colorCss: displayColor.css
+    });
+  }
+  return questions;
+}
+
+// 渲染棋盘：n×n Stroop 错位字
+function renderStroopBoard() {
+  if (!stroopBoard) return;
+  stroopBoard.innerHTML = "";
+  state.stroopQuestions.forEach((q, idx) => {
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "tile stroop-cell";
+    tile.dataset.idx = String(idx);
+    tile.style.setProperty("--cell-color", q.colorCss);
+    tile.setAttribute("role", "gridcell");
+
+    const wordEl = document.createElement("span");
+    wordEl.className = "stroop-cell-word";
+    wordEl.textContent = q.word;
+    tile.appendChild(wordEl);
+
+    tile.addEventListener("click", () => handleStroopCellClick(idx));
+    stroopBoard.appendChild(tile);
+  });
+}
+
+// 渲染待选 n×n：初始完全空，底层米字格背景
+function renderStroopSelectPanel() {
+  if (!stroopSelect) return;
+  stroopSelect.innerHTML = "";
+  state.stroopQuestions.forEach((q, idx) => {
+    const cell = document.createElement("div");
+    cell.className = "stroop-select-cell";
+    cell.dataset.idx = String(idx);
+    cell.setAttribute("role", "gridcell");
+    stroopSelect.appendChild(cell);
+  });
+}
+
+// 渲染颜色条：一行 N 个颜色按钮（colorCount 个）
+function renderStroopColorBar() {
+  if (!stroopPalette) return;
+  stroopPalette.innerHTML = "";
+  const settings = STROOP_SETTINGS[state.size] || STROOP_SETTINGS[3];
+  const colors = STROOP_COLORS.slice(0, settings.colorCount);
+  colors.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "stroop-color-btn";
+    btn.style.setProperty("--btn-color", c.css);
+    btn.textContent = c.name;
+    btn.dataset.colorName = c.name;
+    btn.setAttribute("aria-label", `选颜色 ${c.name}（${c.english}）`);
+    btn.addEventListener("click", () => applyStroopColor(state.stroopCursor, c.name));
+    stroopPalette.appendChild(btn);
+  });
+}
+
+// 点亮 cursor 所在棋盘 + 待选格，其他格变淡不可点
+function setStroopActive() {
+  if (!stroopBoard || !stroopSelect) return;
+  const cursor = state.stroopCursor;
+  const total = state.stroopQuestions.length;
+
+  // 重置
+  stroopBoard.querySelectorAll(".stroop-cell").forEach((el) => {
+    el.classList.remove("active", "disabled");
+  });
+  stroopSelect.querySelectorAll(".stroop-select-cell").forEach((el) => {
+    el.classList.remove("active", "disabled");
+  });
+
+  if (cursor >= total) return;
+
+  // cursor 格子点亮
+  const boardCell = stroopBoard.querySelector(`[data-idx="${cursor}"]`);
+  if (boardCell) boardCell.classList.add("active");
+  const selectCell = stroopSelect.querySelector(`[data-idx="${cursor}"]`);
+  if (selectCell) selectCell.classList.add("active");
+
+  // 其他格子变淡 + 不可点（不可点通过 CSS pointer-events: none）
+  stroopBoard.querySelectorAll(".stroop-cell").forEach((el) => {
+    if (el.dataset.idx !== String(cursor)) el.classList.add("disabled");
+  });
+  stroopSelect.querySelectorAll(".stroop-select-cell").forEach((el) => {
+    if (el.dataset.idx !== String(cursor)) el.classList.add("disabled");
+  });
+}
+
+// 棋盘点击：仅 cursor 格接受点击 → 高亮 cursor（视觉反馈）
+function handleStroopCellClick(idx) {
+  if (state.stroopLocked) return;
+  if (idx !== state.stroopCursor) return; // 顺序保护
+  // 点击棋盘格本身不填色，只是提示玩家“该填这格了”。
+  // 填色动作在玩家点颜色条后才发生。
+  // 点 cursor 格不需额外状态切换，但可以闪一下反馈。
+}
+
+// 颜色条点击：在 cursor 处填色 + 判定 + 推进
+function applyStroopColor(idx, colorName) {
+  if (state.stroopLocked) return;
+  if (idx !== state.stroopCursor) return;
+  if (idx >= state.stroopQuestions.length) return;
+
+  const question = state.stroopQuestions[idx];
+  const isCorrect = colorName === question.colorName;
+  state.stroopFilledColors[idx] = colorName;
+
+  // 在待选格填色 + 标对错
+  const selectCell = stroopSelect.querySelector(`[data-idx="${idx}"]`);
+  if (selectCell) {
+    const colorMeta = STROOP_COLORS.find((c) => c.name === colorName);
+    if (colorMeta) selectCell.style.setProperty("--cell-color", colorMeta.css);
+    selectCell.textContent = colorName;
+    selectCell.classList.remove("active");
+    selectCell.classList.add(isCorrect ? "correct" : "wrong");
+  }
+
+  if (isCorrect) {
+    state.stroopCorrectCount += 1;
+    state.matchedCount += 1;
+  }
+
+  // 读音反馈
+  playStroopFeedback(isCorrect, colorName, question);
+
+  // 短期锁定避免双击
+  state.stroopLocked = true;
+  window.setTimeout(() => {
+    state.stroopLocked = false;
+    state.stroopCursor += 1;
+    if (state.stroopCursor >= state.stroopQuestions.length) {
+      updateProgress();
+      checkComplete();
+      return;
+    }
+    setStroopActive();
+    updateProgress();
+  }, 320);
+}
+
+// 读音反馈：正确 → 汉字读音 + 英文读音；错误 → 仅错误提示
+function playStroopFeedback(isCorrect, colorName, question) {
+  if (isCorrect) {
+    // 汉字读音（前景中文发音，与 question.word 同色字的汉字）
+    speak(question.word);
+    // 紧接着读英文（颜色名）
+    setTimeout(() => speakEnglish(colorName), 380);
+  } else {
+    setHint(`是${question.colorName}，不是${colorName}`);
+    playVoice("prompt.tryAgain", "再试一次", { replayable: false });
+  }
+}
+
+// 英文 TTS：用浏览器 SpeechSynthesis（lang=en-US），失败静默
+function speakEnglish(text) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-US";
+  utterance.rate = 0.85;
+  utterance.pitch = 1.05;
+  const voice = window.speechSynthesis
+    .getVoices()
+    .find((item) => item.lang.toLowerCase().startsWith("en"));
+  if (voice) utterance.voice = voice;
+  window.speechSynthesis.speak(utterance);
 }
 
 function getCurrentGame() {

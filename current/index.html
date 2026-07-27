@@ -36,6 +36,10 @@
             <span class="entry-title">听音点卡</span>
             <span class="entry-copy">听一听，点拼音</span>
           </button>
+          <button id="open-stroop-train" class="game-entry" type="button">
+            <span class="entry-title">看字识颜色</span>
+            <span class="entry-copy">字是什么颜色</span>
+          </button>
         </div>
       </section>
 
@@ -86,6 +90,13 @@
         </div>
 
         <div id="board" class="board" role="grid" aria-label="识字消消乐棋盘"></div>
+
+        <!-- 看字识颜色：棋盘 + 待选 + 颜色条 -->
+        <div id="stroop-host" class="stroop-host" hidden>
+          <div id="stroop-board" class="stroop-board" role="grid" aria-label="看字识颜色棋盘"></div>
+          <div id="stroop-select" class="stroop-select" role="grid" aria-label="待选区（依次填入棋盘每格的颜色）"></div>
+          <div id="stroop-palette" class="stroop-palette" role="group" aria-label="颜色条（选颜色填入待选）"></div>
+        </div>
 
         <div id="quiz" class="quiz" hidden>
           <div id="quiz-main" class="quiz-main" aria-live="polite"></div>
