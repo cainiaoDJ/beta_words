@@ -372,8 +372,8 @@ function calcStroopFont() {
   // 用实际 boardSize（state.size=7 时仍渲染 6×6，见 STROOP_SETTINGS），不用 state.size
   const sizeVar = parseInt(stroopBoard.style.getPropertyValue("--size"), 10) || 3;
   const cellSize = (boardW - gap * (sizeVar - 1)) / sizeVar;
-  const ratio = sizeVar >= 6 ? 0.62 : 0.78;
-  const fontSize = Math.max(10, Math.floor(cellSize * ratio));
+  const ratio = sizeVar >= 6 ? 0.78 : 0.86;
+  const fontSize = Math.max(12, Math.floor(cellSize * ratio));
   stroopBoard.style.setProperty("--stroop-cell-font", `${fontSize}px`);
   // 同步到待选格
   if (stroopSelect) stroopSelect.style.setProperty("--stroop-cell-font", `${fontSize}px`);

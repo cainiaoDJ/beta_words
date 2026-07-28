@@ -632,14 +632,14 @@ h2 {
 
 @media (max-width: 680px) {
   .app {
-    padding-top: 14px;
-    padding-bottom: 14px;
+    padding-top: 8px;
+    padding-bottom: 8px;
   }
 
   .topbar,
   .game-topbar {
     align-items: flex-start;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
     gap: 12px;
   }
 
@@ -715,7 +715,7 @@ h2 {
   .game-hud {
     grid-template-columns: 1fr 1fr;
     gap: 8px 10px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     min-height: 50px;
   }
 
@@ -777,22 +777,22 @@ h2 {
     flex-wrap: wrap;
   }
 
-  /* 看字识颜色：3 块压紧，一屏可见 */
+  /* 看字识颜色：3 块压紧，一屏可见（target viewport 390x664：topbar+hud+3 blocks+padding 全部装下） */
   .stroop-host {
-    gap: 6px;
+    gap: 4px;
   }
   .stroop-board,
   .stroop-select {
-    max-width: 210px;
+    max-width: 180px;
     --board-gap: 4px;
   }
   .stroop-select {
-    padding: 8px;
+    padding: 6px;
   }
   .stroop-palette {
-    max-width: 260px;
-    gap: 5px;
-    padding: 5px;
+    max-width: 220px;
+    gap: 4px;
+    padding: 4px;
   }
   .stroop-color-btn {
     font-size: clamp(0.95rem, 4vw, 1.4rem);
