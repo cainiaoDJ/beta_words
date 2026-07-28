@@ -415,20 +415,42 @@ h2 {
   border-color: #d86d4c;
 }
 
+/* 完成面板：floating overlay，不占文档流（不增加 docH，保证小屏一屏可见） */
 .complete-panel {
-  width: min(100%, 520px);
-  margin: 24px auto 0;
-  padding: 18px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92%, 360px);
+  margin: 0;
+  padding: 16px 18px;
   text-align: center;
   background: var(--panel);
   border: 2px solid var(--line);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
+  border-radius: 10px;
+  /* 巨大 spread shadow 作 backdrop（避免额外 DOM） */
+  box-shadow: 0 0 0 9999px rgba(31, 44, 36, 0.32), 0 16px 32px rgba(31, 44, 36, 0.18);
+  z-index: 100;
 }
 
 .complete-panel p {
-  margin: 0 0 14px;
-  font-size: 1.4rem;
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.complete-panel .actions {
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.complete-panel .primary-button,
+.complete-panel .secondary-button {
+  min-height: 42px;
+  padding: 8px 14px;
+  font-size: 0.95rem;
   font-weight: 900;
 }
 
@@ -764,16 +786,17 @@ h2 {
   }
 
   .complete-panel {
-    padding: 14px;
+    width: min(94%, 320px);
+    padding: 14px 16px;
   }
 
   .complete-panel p {
-    font-size: 1.15rem;
-    margin-bottom: 10px;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
   }
 
   .actions {
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
   }
 
@@ -783,16 +806,16 @@ h2 {
   }
   .stroop-board,
   .stroop-select {
-    max-width: 180px;
+    max-width: 170px;
     --board-gap: 4px;
   }
   .stroop-select {
-    padding: 6px;
+    padding: 5px;
   }
   .stroop-palette {
-    max-width: 220px;
-    gap: 4px;
-    padding: 4px;
+    max-width: 200px;
+    gap: 3px;
+    padding: 3px;
   }
   .stroop-color-btn {
     font-size: clamp(0.95rem, 4vw, 1.4rem);
@@ -807,5 +830,71 @@ h2 {
   }
   .stroop-color-btn {
     font-size: clamp(1.2rem, 4.4vw, 1.6rem);
+  }
+}
+
+/* 矮屏手机（vpH ≤ 600，如 iPhone SE 2nd 667 / Galaxy S 等）：进一步压缩 */
+@media (max-height: 600px) {
+  .app {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .topbar,
+  .game-topbar {
+    margin-bottom: 6px;
+  }
+  .game-hud {
+    margin-bottom: 4px;
+    min-height: 40px;
+  }
+  .hud-timer {
+    min-height: 36px;
+    font-size: 1.3rem;
+  }
+
+  /* quiz 游戏：题目区 + 4 选项紧凑 */
+  .quiz-main {
+    min-height: 110px;
+    margin-bottom: 6px;
+  }
+  .quiz-word {
+    width: min(100%, 220px);
+    aspect-ratio: 1.3;
+    font-size: clamp(3rem, 14vw, 5rem);
+  }
+  .listen-prompt {
+    min-height: 110px;
+    padding: 10px;
+  }
+  .listen-mark {
+    width: 56px;
+    height: 56px;
+    font-size: 1.5rem;
+  }
+  .option-grid {
+    gap: 6px;
+  }
+  .option-button {
+    min-height: 48px;
+    padding: 8px 12px;
+    font-size: clamp(1.2rem, 4.5vw, 1.9rem);
+  }
+
+  /* stroop：小屏棋盘再缩 */
+  .stroop-host {
+    gap: 4px;
+  }
+  .stroop-board,
+  .stroop-select {
+    max-width: 150px;
+    --board-gap: 3px;
+  }
+  .stroop-select {
+    padding: 4px;
+  }
+  .stroop-palette {
+    max-width: 200px;
+    gap: 3px;
+    padding: 3px;
   }
 }
