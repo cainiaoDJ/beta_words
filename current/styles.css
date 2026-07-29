@@ -340,21 +340,16 @@ h2 {
 }
 
 /* ============================================================================
- * 棋盘（match / memory，design 280×280 居中）
+ * 棋盘（match / memory 共享 #board）
+ * 尺寸/对齐由 .zone-primary 接管（统一 300×300 居中），本类只保留棋盘内部 grid 逻辑。
+ * 详见 AGENTS.md《迭代开发方法论》feat/unified-game-zones。
  * ============================================================================ */
 
 .board {
   --size: 3;
   --board-gap: 6px;
-  display: grid;
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
   gap: var(--board-gap);
-  width: min(100%, 300px);
-  aspect-ratio: 1;
-  margin: 0 auto;
-  flex: 1;
-  min-height: 0;
-  align-self: center;
 }
 
 .tile {
@@ -749,6 +744,8 @@ h2 {
   width: min(100%, var(--primary-size));
   aspect-ratio: 1;
   display: grid;
+  align-self: center;  /* 在父 column flex 里垂直+水平居中 */
+  margin: 0 auto;      /* fallback 水平居中 */
   /* 内部 grid 由具体游戏决定（棋盘 grid-template-columns） */
 }
 
