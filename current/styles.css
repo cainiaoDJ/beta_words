@@ -553,24 +553,16 @@ h2 {
  * ============================================================================ */
 
 .stroop-host {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-  flex: 1;
-  min-height: 0;
+  /* 布局由 .zone-stack 接管（flex column + gap + align center + flex:1） */
 }
 
 .stroop-board {
   --size: 3;
-  --board-gap: 4px;
-  --stroop-cell-font: 28px;
-  display: grid;
+  --board-gap: var(--zone-gap);
+  --stroop-cell-font: 32px;
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
   gap: var(--board-gap);
-  width: min(100%, 200px);
-  aspect-ratio: 1;
-  flex-shrink: 0;
+  /* width / aspect-ratio / flex-shrink 由 .zone-primary 接管（300×300 统一） */
 }
 
 .stroop-cell {
@@ -610,18 +602,15 @@ h2 {
 /* 待选 n×n：完全空，初始米字格背景作草稿纸 */
 .stroop-select {
   --size: 3;
-  --board-gap: 4px;
-  display: grid;
+  --board-gap: var(--zone-gap);
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
   gap: var(--board-gap);
-  width: min(100%, 200px);
-  aspect-ratio: 1;
   margin: 0;
-  padding: 4px;
+  padding: 6px;
   background: #f8f7ea;
   border: 2px dashed #c8caa0;
   border-radius: 8px;
-  flex-shrink: 0;
+  /* width / aspect-ratio / flex-shrink / display:grid 由 .zone-secondary 接管 */
 }
 
 .stroop-select-cell {
@@ -672,15 +661,13 @@ h2 {
 
 /* 颜色条 */
 .stroop-palette {
-  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
-  gap: 4px;
-  padding: 4px;
-  width: min(100%, 220px);
+  gap: 6px;
+  padding: 6px;
   background: #fff;
   border: 2px solid var(--line);
   border-radius: 8px;
-  flex-shrink: 0;
+  /* width / flex-shrink 由 .zone-toolbar 接管（240 宽） */
 }
 
 .stroop-color-btn {
