@@ -412,27 +412,16 @@ h2 {
 }
 
 /* ============================================================================
- * Quiz（pinyin-friend / listen-card，design y=108 起）
+ * Quiz（pinyin-friend / listen-card）
+ * 布局由 .zone-stack（容器）+ .zone-primary（题目卡）+ .zone-secondary（选项网格）接管。
+ * 本节只保留题目卡/选项按钮的具体样式。
+ * 详见 AGENTS.md《迭代开发方法论》feat/unified-game-zones。
  * ============================================================================ */
 
-.quiz {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-  min-height: 0;
-}
-
-.quiz-main {
-  min-height: 120px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
+/* 题目卡 280×280 正方形（在 300×300 zone-primary 内居中）*/
 .quiz-word {
-  width: min(100%, 220px);
-  aspect-ratio: 1.45;
+  width: min(100%, 280px);
+  aspect-ratio: 1;
   display: grid;
   place-items: center;
   background: var(--tile);
@@ -440,19 +429,19 @@ h2 {
   border-radius: 8px;
   box-shadow: var(--shadow);
   color: var(--ink);
-  font-size: 64px;
+  font-size: 96px;
   font-weight: 900;
   line-height: 1;
 }
 
 .listen-prompt {
-  width: min(100%, 220px);
-  min-height: 120px;
+  width: min(100%, 280px);
+  aspect-ratio: 1;
   padding: 14px;
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 8px;
+  gap: 12px;
   background: var(--tile);
   border: 2px solid var(--line);
   border-radius: 8px;
@@ -461,32 +450,29 @@ h2 {
 }
 
 .listen-mark {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   display: grid;
   place-items: center;
   background: var(--sun);
   border: 2px solid #d6ae1d;
   border-radius: 8px;
   color: var(--ink);
-  font-size: 18px;
+  font-size: 28px;
   font-weight: 900;
   line-height: 1;
 }
 
 .listen-copy {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 900;
 }
 
 .option-grid {
-  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  flex: 1;
-  align-content: start;
-  min-height: 0;
+  gap: var(--zone-gap);
+  /* flex:1 / min-height:0 / display:grid 由 .zone-secondary 接管 */
 }
 
 .option-button {
@@ -749,10 +735,13 @@ h2 {
   /* 内部 grid 由具体游戏决定（棋盘 grid-template-columns） */
 }
 
-/* Secondary zone（Z4）：辅助交互区，宽度统一 300，高度由内容 */
+/* Secondary zone（Z4）：辅助交互区，宽度统一 300，占父 stack 剩余高度 */
 .zone-secondary {
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   width: min(100%, var(--secondary-w));
+  display: grid;
+  /* 子属性（grid-template-columns、gap）由具体游戏决定 */
 }
 
 /* Toolbar zone（Z5）：工具栏（一行），宽度 240 */
