@@ -562,7 +562,10 @@ h2 {
   --stroop-cell-font: 32px;
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
   gap: var(--board-gap);
-  /* width / aspect-ratio / flex-shrink 由 .zone-primary 接管（300×300 统一） */
+  /* 局部 override：stroop 有 3 个 n×n 元素挤 640 设计画布，board 不能 300×300
+   * 详 AGENTS.md《迭代开发方法论》 stroop 已知设计冲突记录 */
+  width: min(100%, 200px);
+  aspect-ratio: 1;
 }
 
 .stroop-cell {
@@ -610,7 +613,9 @@ h2 {
   background: #f8f7ea;
   border: 2px dashed #c8caa0;
   border-radius: 8px;
-  /* width / aspect-ratio / flex-shrink / display:grid 由 .zone-secondary 接管 */
+  /* 局部 override：stroop select 不 flex:1，由内容决定高度（与 board 紧凑匹配）*/
+  flex: 0 0 auto;
+  /* width / display:grid 由 .zone-secondary 接管 */
 }
 
 .stroop-select-cell {
@@ -661,7 +666,8 @@ h2 {
 
 /* 颜色条 */
 .stroop-palette {
-  grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+  /* 强制单行 + 等分：保证 n=7 时 palette 不会折 2 行导致高度 158px 溢出 */
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 6px;
   padding: 6px;
   background: #fff;
@@ -731,8 +737,29 @@ h2 {
   /* 子属性（grid-template-columns、gap）由具体游戏决定 */
 }
 
-/* Toolbar zone（Z5）：工具栏（一行），宽度 240 */
+/* Toolbar zone（Z5）：工具栏（一行），宽度 240，默认 grid（grid-template-columns 由调用方决定）*/
 .zone-toolbar {
   flex-shrink: 0;
   width: min(100%, var(--toolbar-w));
+  display: grid;
+}
+
+/* ============================================================================
+ * Stroop-train 局部 override（2026-07-29）
+ * 详见 AGENTS.md《迭代开发方法论》stroop 已知设计冲突记录：
+ *   stroop 有 3 个 n×n zone（board + select + palette），3 个 300×300 在 640 设计画布里不可能 fit。
+ *   本节用 token 级联 + specificity boost 局部压缩到 200×200 + 紧凑 select/palette，
+ *   不破坏其他游戏的 zone framework 约束。
+ * ============================================================================ */
+
+.stroop-host {
+  /* token 级联覆盖：stroop 紧凑布局 */
+  --primary-size: 200px;
+  --secondary-w: 200px;
+  --toolbar-w: 220px;
+}
+
+.stroop-host .stroop-select {
+  /* specificity boost：stroop select 不要 flex:1，由内容决定高度 */
+  flex: 0 0 auto;
 }
