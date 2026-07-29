@@ -244,8 +244,11 @@ document.querySelectorAll("[data-action='back-setup']").forEach((button) => {
   });
 });
 
-window.addEventListener("resize", () => { calcTileFont(); calcStroopFont(); });
-window.visualViewport?.addEventListener("resize", () => { calcTileFont(); calcStroopFont(); });
+// Game Stage Engine：初始化设计画布 + 等比缩放
+const stage = new GameStage(document.querySelector(".stage"));
+
+window.addEventListener("resize", () => { stage.update(); calcTileFont(); calcStroopFont(); });
+window.visualViewport?.addEventListener("resize", () => { stage.update(); calcTileFont(); calcStroopFont(); });
 new ResizeObserver(() => calcTileFont).observe(document.querySelector("#board"));
 if (stroopBoard) new ResizeObserver(() => calcStroopFont()).observe(stroopBoard);
 

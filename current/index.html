@@ -9,7 +9,9 @@
     <link rel="icon" type="image/png" sizes="128x128" href="favicon.png" />
   </head>
   <body>
-    <main class="app" aria-live="polite">
+    <div class="stage">
+      <div class="stage-canvas">
+        <main class="app" aria-live="polite">
       <section id="lobby" class="screen active" aria-labelledby="lobby-title">
         <div class="topbar">
           <div>
@@ -115,8 +117,11 @@
         </div>
       </section>
     </main>
+      </div>
+    </div>
 
     <script src="assets/audio/manifest.js"></script>
+    <script src="scripts/stage.js"></script>
     <script src="app.js" defer></script>
   </body>
 </html>
