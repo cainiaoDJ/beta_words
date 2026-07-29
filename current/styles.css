@@ -20,6 +20,16 @@
   --tile-selected: #fff0a6;
   --tile-matched: #e8f2ec;
   --shadow: 0 6px 14px rgba(31, 44, 36, 0.14);
+
+  /* ===== Zone Framework（2026-07-29 立，架构级改动 feat/unified-game-zones） =====
+   * Zone 定义：Z1 title / Z2 status-hud / Z3 primary（统一 300×300）/ Z4 secondary / Z5 toolbar
+   * 试点游戏：match。推广顺序：match → memory → pinyin-friend → listen-card → stroop-train
+   * 本次仅定义 token + .zone-* 共享类，不动任何具体业务。 */
+  --zone-gap: 8px;            /* zone 之间的间距（统一） */
+  --primary-size: 300px;      /* Z3 主元素最大尺寸（match/memory 棋盘、quiz 题目卡统一） */
+  --primary-font: 36px;       /* Z3 主元素字号 */
+  --secondary-w: 300px;       /* Z4 辅助区宽度（选项网格、待选区） */
+  --toolbar-w: 240px;         /* Z5 工具栏宽度（颜色条） */
 }
 
 * {
@@ -717,4 +727,39 @@ h2 {
 .stroop-color-btn:active {
   transform: translateY(0);
   filter: brightness(0.95);
+}
+/* ============================================================================
+ * Zone Framework — 共享类（Phase A，2026-07-29）
+ * 仅定义 token + .zone-* 共享类，不动任何具体业务。试点 match 见下个 commit。
+ * ============================================================================ */
+
+/* Zone stack：垂直堆放多个 zone，gap 统一 */
+.zone-stack {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--zone-gap);
+}
+
+/* Primary zone（Z3）：主交互区，统一 300×300 居中 */
+.zone-primary {
+  flex-shrink: 0;
+  width: min(100%, var(--primary-size));
+  aspect-ratio: 1;
+  display: grid;
+  /* 内部 grid 由具体游戏决定（棋盘 grid-template-columns） */
+}
+
+/* Secondary zone（Z4）：辅助交互区，宽度统一 300，高度由内容 */
+.zone-secondary {
+  flex-shrink: 0;
+  width: min(100%, var(--secondary-w));
+}
+
+/* Toolbar zone（Z5）：工具栏（一行），宽度 240 */
+.zone-toolbar {
+  flex-shrink: 0;
+  width: min(100%, var(--toolbar-w));
 }
