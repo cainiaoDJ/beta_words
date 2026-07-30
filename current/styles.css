@@ -20,6 +20,16 @@
   --tile-selected: #fff0a6;
   --tile-matched: #e8f2ec;
   --shadow: 0 6px 14px rgba(31, 44, 36, 0.14);
+
+  /* ===== Zone Framework（2026-07-29 立，架构级改动 feat/unified-game-zones） =====
+   * Zone 定义：Z1 title / Z2 status-hud / Z3 primary（统一 300×300）/ Z4 secondary / Z5 toolbar
+   * 试点游戏：match。推广顺序：match → memory → pinyin-friend → listen-card → stroop-train
+   * 本次仅定义 token + .zone-* 共享类，不动任何具体业务。 */
+  --zone-gap: 8px;            /* zone 之间的间距（统一） */
+  --primary-size: 300px;      /* Z3 主元素最大尺寸（match/memory 棋盘、quiz 题目卡统一） */
+  --primary-font: 36px;       /* Z3 主元素字号 */
+  --secondary-w: 300px;       /* Z4 辅助区宽度（选项网格、待选区） */
+  --toolbar-w: 240px;         /* Z5 工具栏宽度（颜色条） */
 }
 
 * {
@@ -330,21 +340,16 @@ h2 {
 }
 
 /* ============================================================================
- * 棋盘（match / memory，design 280×280 居中）
+ * 棋盘（match / memory 共享 #board）
+ * 尺寸/对齐由 .zone-primary 接管（统一 300×300 居中），本类只保留棋盘内部 grid 逻辑。
+ * 详见 AGENTS.md《迭代开发方法论》feat/unified-game-zones。
  * ============================================================================ */
 
 .board {
   --size: 3;
   --board-gap: 6px;
-  display: grid;
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
   gap: var(--board-gap);
-  width: min(100%, 300px);
-  aspect-ratio: 1;
-  margin: 0 auto;
-  flex: 1;
-  min-height: 0;
-  align-self: center;
 }
 
 .tile {
@@ -407,27 +412,16 @@ h2 {
 }
 
 /* ============================================================================
- * Quiz（pinyin-friend / listen-card，design y=108 起）
+ * Quiz（pinyin-friend / listen-card）
+ * 布局由 .zone-stack（容器）+ .zone-primary（题目卡）+ .zone-secondary（选项网格）接管。
+ * 本节只保留题目卡/选项按钮的具体样式。
+ * 详见 AGENTS.md《迭代开发方法论》feat/unified-game-zones。
  * ============================================================================ */
 
-.quiz {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-  min-height: 0;
-}
-
-.quiz-main {
-  min-height: 120px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
+/* 题目卡 280×280 正方形（在 300×300 zone-primary 内居中）*/
 .quiz-word {
-  width: min(100%, 220px);
-  aspect-ratio: 1.45;
+  width: min(100%, 280px);
+  aspect-ratio: 1;
   display: grid;
   place-items: center;
   background: var(--tile);
@@ -435,19 +429,19 @@ h2 {
   border-radius: 8px;
   box-shadow: var(--shadow);
   color: var(--ink);
-  font-size: 64px;
+  font-size: 96px;
   font-weight: 900;
   line-height: 1;
 }
 
 .listen-prompt {
-  width: min(100%, 220px);
-  min-height: 120px;
+  width: min(100%, 280px);
+  aspect-ratio: 1;
   padding: 14px;
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 8px;
+  gap: 12px;
   background: var(--tile);
   border: 2px solid var(--line);
   border-radius: 8px;
@@ -456,32 +450,29 @@ h2 {
 }
 
 .listen-mark {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   display: grid;
   place-items: center;
   background: var(--sun);
   border: 2px solid #d6ae1d;
   border-radius: 8px;
   color: var(--ink);
-  font-size: 18px;
+  font-size: 28px;
   font-weight: 900;
   line-height: 1;
 }
 
 .listen-copy {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 900;
 }
 
 .option-grid {
-  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  flex: 1;
-  align-content: start;
-  min-height: 0;
+  gap: var(--zone-gap);
+  /* flex:1 / min-height:0 / display:grid 由 .zone-secondary 接管 */
 }
 
 .option-button {
@@ -562,24 +553,19 @@ h2 {
  * ============================================================================ */
 
 .stroop-host {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-  flex: 1;
-  min-height: 0;
+  /* 布局由 .zone-stack 接管（flex column + gap + align center + flex:1） */
 }
 
 .stroop-board {
   --size: 3;
-  --board-gap: 4px;
-  --stroop-cell-font: 28px;
-  display: grid;
+  --board-gap: var(--zone-gap);
+  --stroop-cell-font: 32px;
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
   gap: var(--board-gap);
+  /* 局部 override：stroop 有 3 个 n×n 元素挤 640 设计画布，board 不能 300×300
+   * 详 AGENTS.md《迭代开发方法论》 stroop 已知设计冲突记录 */
   width: min(100%, 200px);
   aspect-ratio: 1;
-  flex-shrink: 0;
 }
 
 .stroop-cell {
@@ -619,18 +605,17 @@ h2 {
 /* 待选 n×n：完全空，初始米字格背景作草稿纸 */
 .stroop-select {
   --size: 3;
-  --board-gap: 4px;
-  display: grid;
+  --board-gap: var(--zone-gap);
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
   gap: var(--board-gap);
-  width: min(100%, 200px);
-  aspect-ratio: 1;
   margin: 0;
-  padding: 4px;
+  padding: 6px;
   background: #f8f7ea;
   border: 2px dashed #c8caa0;
   border-radius: 8px;
-  flex-shrink: 0;
+  /* 局部 override：stroop select 不 flex:1，由内容决定高度（与 board 紧凑匹配）*/
+  flex: 0 0 auto;
+  /* width / display:grid 由 .zone-secondary 接管 */
 }
 
 .stroop-select-cell {
@@ -681,15 +666,14 @@ h2 {
 
 /* 颜色条 */
 .stroop-palette {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
-  gap: 4px;
-  padding: 4px;
-  width: min(100%, 220px);
+  /* 强制单行 + 等分：保证 n=7 时 palette 不会折 2 行导致高度 158px 溢出 */
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
   background: #fff;
   border: 2px solid var(--line);
   border-radius: 8px;
-  flex-shrink: 0;
+  /* width / flex-shrink 由 .zone-toolbar 接管（240 宽） */
 }
 
 .stroop-color-btn {
@@ -717,4 +701,65 @@ h2 {
 .stroop-color-btn:active {
   transform: translateY(0);
   filter: brightness(0.95);
+}
+/* ============================================================================
+ * Zone Framework — 共享类（Phase A，2026-07-29）
+ * 仅定义 token + .zone-* 共享类，不动任何具体业务。试点 match 见下个 commit。
+ * ============================================================================ */
+
+/* Zone stack：垂直堆放多个 zone，gap 统一 */
+.zone-stack {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--zone-gap);
+}
+
+/* Primary zone（Z3）：主交互区，统一 300×300 居中 */
+.zone-primary {
+  flex-shrink: 0;
+  width: min(100%, var(--primary-size));
+  aspect-ratio: 1;
+  display: grid;
+  align-self: center;  /* 在父 column flex 里垂直+水平居中 */
+  margin: 0 auto;      /* fallback 水平居中 */
+  /* 内部 grid 由具体游戏决定（棋盘 grid-template-columns） */
+}
+
+/* Secondary zone（Z4）：辅助交互区，宽度统一 300，占父 stack 剩余高度 */
+.zone-secondary {
+  flex: 1;
+  min-height: 0;
+  width: min(100%, var(--secondary-w));
+  display: grid;
+  /* 子属性（grid-template-columns、gap）由具体游戏决定 */
+}
+
+/* Toolbar zone（Z5）：工具栏（一行），宽度 240，默认 grid（grid-template-columns 由调用方决定）*/
+.zone-toolbar {
+  flex-shrink: 0;
+  width: min(100%, var(--toolbar-w));
+  display: grid;
+}
+
+/* ============================================================================
+ * Stroop-train 局部 override（2026-07-29）
+ * 详见 AGENTS.md《迭代开发方法论》stroop 已知设计冲突记录：
+ *   stroop 有 3 个 n×n zone（board + select + palette），3 个 300×300 在 640 设计画布里不可能 fit。
+ *   本节用 token 级联 + specificity boost 局部压缩到 200×200 + 紧凑 select/palette，
+ *   不破坏其他游戏的 zone framework 约束。
+ * ============================================================================ */
+
+.stroop-host {
+  /* token 级联覆盖：stroop 紧凑布局 */
+  --primary-size: 200px;
+  --secondary-w: 200px;
+  --toolbar-w: 220px;
+}
+
+.stroop-host .stroop-select {
+  /* specificity boost：stroop select 不要 flex:1，由内容决定高度 */
+  flex: 0 0 auto;
 }
