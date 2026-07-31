@@ -172,6 +172,102 @@ const state = {
 const AUDIO_MAP = window.BETA_WORDS_AUDIO || {};
 let currentAudio = null;
 
+// === Design System v2 Phase C — 多邻国化助手（feat/design-system-v2，2026-07-31） ===
+// 7 个 base prompt key × 3-6 个变体，每次调用随机选一个变体朗读 (Duolingo 式随机赞美/鼓励)
+// SOP 第 6 条播放优先级保持: manifest[KEY] → SpeechSynthesis fallback.
+const VOICE_VARIANTS = {
+  "prompt.start": [
+    { key: "prompt.start.1", text: "开始" },
+    { key: "prompt.start.2", text: "准备好啦" },
+    { key: "prompt.start.3", text: "出发" },
+    { key: "prompt.start.4", text: "加油" },
+  ],
+  "prompt.bonus": [
+    { key: "prompt.bonus.1", text: "真棒" },
+    { key: "prompt.bonus.2", text: "哇，太好了" },
+    { key: "prompt.bonus.3", text: "厉害呀" },
+  ],
+  "prompt.correct": [
+    { key: "prompt.correct.1", text: "找对了" },
+    { key: "prompt.correct.2", text: "太棒了" },
+    { key: "prompt.correct.3", text: "答得真好" },
+    { key: "prompt.correct.4", text: "完美" },
+    { key: "prompt.correct.5", text: "厉害" },
+    { key: "prompt.correct.6", text: "哇，找到了" },
+  ],
+  "prompt.tryAgain": [
+    { key: "prompt.tryAgain.1", text: "再试一次" },
+    { key: "prompt.tryAgain.2", text: "没关系" },
+    { key: "prompt.tryAgain.3", text: "再想想" },
+    { key: "prompt.tryAgain.4", text: "差一点了" },
+  ],
+  "prompt.complete": [
+    { key: "prompt.complete.1", text: "都找到了" },
+    { key: "prompt.complete.2", text: "完成啦" },
+    { key: "prompt.complete.3", text: "太厉害啦" },
+    { key: "prompt.complete.4", text: "好极了" },
+    { key: "prompt.complete.5", text: "完美通关" },
+    { key: "prompt.complete.6", text: "哇，你赢了" },
+  ],
+  "prompt.remember": [
+    { key: "prompt.remember.1", text: "先记住这些字" },
+    { key: "prompt.remember.2", text: "看清楚啦" },
+    { key: "prompt.remember.3", text: "记住这些字" },
+    { key: "prompt.remember.4", text: "看好咯" },
+  ],
+  "prompt.flip": [
+    { key: "prompt.flip.1", text: "开始翻牌" },
+    { key: "prompt.flip.2", text: "来翻牌吧" },
+    { key: "prompt.flip.3", text: "准备好了吗" },
+  ],
+};
+
+function playVoiceVariant(baseKey, options = {}) {
+  const variants = VOICE_VARIANTS[baseKey];
+  if (!variants || variants.length === 0) {
+    playVoice(baseKey, baseKey, options);
+    return;
+  }
+  const pick = variants[Math.floor(Math.random() * variants.length)];
+  playVoice(pick.key, pick.text, options);
+}
+
+// Mascot 4 状态切换（用 <img class="mascot-host"> src 切换 + .bounce 动画触发）
+function setMascotState(state, bounce = true) {
+  const mascotImg = document.querySelector(".mascot-host");
+  if (!mascotImg) return;
+  const states = {
+    wave: "assets/mascot-wave.svg",
+    happy: "assets/mascot-happy.svg",
+    sad: "assets/mascot-sad.svg",
+    celebrate: "assets/mascot-celebrate.svg",
+  };
+  if (!states[state]) return;
+  mascotImg.src = states[state];
+  if (bounce) {
+    mascotImg.classList.remove("bounce");
+    void mascotImg.offsetWidth; // force reflow to restart animation
+    mascotImg.classList.add("bounce");
+  }
+}
+
+// Confetti 粒子（多邻国式完成撒花）
+function spawnConfetti(count = 24) {
+  const host = document.createElement("div");
+  host.className = "confetti-host";
+  document.body.appendChild(host);
+  const colors = ["#2F8C73", "#F7D75C", "#E94F4F", "#5DADE2"];
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = `${Math.random() * 100}vw`;
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = `${Math.random() * 300}ms`;
+    host.appendChild(piece);
+  }
+  setTimeout(() => host.remove(), 1500);
+}
+
 const screens = {
   lobby: document.querySelector("#lobby"),
   setup: document.querySelector("#setup"),
@@ -440,9 +536,10 @@ function handleMatchTileClick(tileId) {
 
   if (tile.kind === "bonus") {
     tile.matched = true;
-    playVoice("prompt.bonus", "真棒", { replayable: false });
-    markTile(tileId, "matched");
+    playVoiceVariant("prompt.bonus", { replayable: false });
+    markTile(tileId, "is-bonus");
     setHint("奖励星星");
+    setMascotState("happy");
     checkComplete();
     return;
   }
@@ -452,14 +549,14 @@ function handleMatchTileClick(tileId) {
   if (!state.selectedId) {
     state.selectedId = tileId;
     startTimer();
-    markTile(tileId, "selected");
+    markTile(tileId, "is-selected");
     setHint(`再找一个“${tile.value}”`);
     return;
   }
 
   if (state.selectedId === tileId) {
     state.selectedId = null;
-    markTile(tileId, "selected", false);
+    markTile(tileId, "is-selected", false);
     setHint("点一个字，听一听");
     return;
   }
@@ -468,16 +565,25 @@ function handleMatchTileClick(tileId) {
   const selectedButton = getTileButton(state.selectedId);
 
   if (selectedTile && selectedTile.value === tile.value) {
+    const firstId = state.selectedId;
+    const secondId = tileId;
     state.locked = true;
     tile.matched = true;
     selectedTile.matched = true;
     state.matchedCount += 2;
-    markTile(tileId, "selected");
+    // 统一状态类: .is-correct 触发 tile-correct-spring 弹簧 + 绿色背景
+    markTile(firstId, "is-correct");
+    markTile(secondId, "is-correct");
     setHint("找对了");
+    playVoiceVariant("prompt.correct", { replayable: false });
+    setMascotState("happy");
+    playVoice("sfx.correct-ding", "", { replayable: false });
 
     window.setTimeout(() => {
-      markTile(tileId, "matched");
-      markTile(selectedTile.id, "matched");
+      markTile(firstId, "is-correct", false);
+      markTile(secondId, "is-correct", false);
+      markTile(firstId, "matched");  // 旧 class alias: 触发 fade-out
+      markTile(secondId, "matched");
       state.selectedId = null;
       state.locked = false;
       updateProgress();
@@ -485,11 +591,16 @@ function handleMatchTileClick(tileId) {
     }, 220);
   } else {
     state.locked = true;
-    markTile(tileId, "selected");
+    // 统一状态类: .is-wrong 触发 tile-wrong-shake + 红色背景
+    markTile(tileId, "is-wrong");
     setHint("再试一次");
+    playVoiceVariant("prompt.tryAgain", { replayable: false });
+    setMascotState("sad");
+    playVoice("sfx.wrong-buzz", "", { replayable: false });
+
     window.setTimeout(() => {
-      markTile(tileId, "selected", false);
-      selectedButton?.classList.remove("selected");
+      markTile(tileId, "is-wrong", false);
+      selectedButton?.classList.remove("is-selected");
       state.selectedId = null;
       state.locked = false;
       setHint("点一个字，听一听");
@@ -890,11 +1001,13 @@ function checkComplete() {
     if (isNewRecord) {
       saveBestRecord(state.size, elapsedMs);
     }
-    playVoice("prompt.complete", "都判完了", { replayable: false });
+    setMascotState("celebrate");  // 多邻国式 mascot 庆祝
+    playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
     window.setTimeout(() => {
       completePanel.hidden = false;
       // 跨尺寸不同，颜色 + 字顺序不同，不跨尺寸连关
       document.querySelector("#next-board").hidden = true;
+      spawnConfetti(28);  // 多邻国式撒花
     }, 260);
     return;
   }
@@ -913,11 +1026,13 @@ function checkComplete() {
   if (isNewRecord) {
     saveBestRecord(state.size, elapsedMs);
   }
-  playVoice("prompt.complete", "都找到了", { replayable: false });
+  setMascotState("celebrate");  // 多邻国式 mascot 庆祝
+  playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
   window.setTimeout(() => {
     completePanel.hidden = false;
     const next = nextSize(state.size);
     document.querySelector("#next-board").hidden = !next;
+    spawnConfetti(28);  // 多邻国式撒花
   }, 260);
 }
 
