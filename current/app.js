@@ -1203,28 +1203,28 @@ function setStroopActive() {
   const cursor = state.stroopCursor;
   const total = state.stroopQuestions.length;
 
-  // 重置
+  // 重置 (统一状态类 .is-active / .is-disabled)
   stroopBoard.querySelectorAll(".stroop-cell").forEach((el) => {
-    el.classList.remove("active", "disabled");
+    el.classList.remove("is-active", "is-disabled");
   });
   stroopSelect.querySelectorAll(".stroop-select-cell").forEach((el) => {
-    el.classList.remove("active", "disabled");
+    el.classList.remove("is-active", "is-disabled");
   });
 
   if (cursor >= total) return;
 
-  // cursor 格子点亮
+  // cursor 格子点亮 (统一状态类)
   const boardCell = stroopBoard.querySelector(`[data-idx="${cursor}"]`);
-  if (boardCell) boardCell.classList.add("active");
+  if (boardCell) boardCell.classList.add("is-active");
   const selectCell = stroopSelect.querySelector(`[data-idx="${cursor}"]`);
-  if (selectCell) selectCell.classList.add("active");
+  if (selectCell) selectCell.classList.add("is-active");
 
-  // 其他格子变淡 + 不可点（不可点通过 CSS pointer-events: none）
+  // 其他格子变淡 + 不可点 (统一状态类 .is-disabled)
   stroopBoard.querySelectorAll(".stroop-cell").forEach((el) => {
-    if (el.dataset.idx !== String(cursor)) el.classList.add("disabled");
+    if (el.dataset.idx !== String(cursor)) el.classList.add("is-disabled");
   });
   stroopSelect.querySelectorAll(".stroop-select-cell").forEach((el) => {
-    if (el.dataset.idx !== String(cursor)) el.classList.add("disabled");
+    if (el.dataset.idx !== String(cursor)) el.classList.add("is-disabled");
   });
 }
 
@@ -1247,14 +1247,23 @@ function applyStroopColor(idx, colorName) {
   const isCorrect = colorName === question.colorName;
   state.stroopFilledColors[idx] = colorName;
 
-  // 在待选格填色 + 标对错
+  // 在待选格填色 + 标对错 (统一状态类 .is-correct / .is-wrong)
   const selectCell = stroopSelect.querySelector(`[data-idx="${idx}"]`);
   if (selectCell) {
     const colorMeta = STROOP_COLORS.find((c) => c.name === colorName);
     if (colorMeta) selectCell.style.setProperty("--cell-color", colorMeta.css);
     selectCell.textContent = colorName;
-    selectCell.classList.remove("active");
-    selectCell.classList.add(isCorrect ? "correct" : "wrong");
+    selectCell.classList.remove("is-active");
+    selectCell.classList.add(isCorrect ? "is-correct" : "is-wrong");
+
+    // 多邻国式反馈: 视觉 + mascot + 音效
+    if (isCorrect) {
+      setMascotState("happy");
+      playVoice("sfx.correct-ding", "", { replayable: false });
+    } else {
+      setMascotState("sad");
+      playVoice("sfx.wrong-buzz", "", { replayable: false });
+    }
   }
 
   if (isCorrect) {
@@ -1262,7 +1271,7 @@ function applyStroopColor(idx, colorName) {
     state.matchedCount += 1;
   }
 
-  // 读音反馈
+  // 读音反馈 (颜色名 TTS, 双语强化)
   playStroopFeedback(isCorrect, colorName, question);
 
   // 短期锁定避免双击
@@ -1292,7 +1301,7 @@ function playStroopFeedback(isCorrect, colorName, question) {
     setTimeout(() => speakEnglish(englishName), 380);
   } else {
     setHint(`是${question.colorName}，不是${colorName}`);
-    playVoice("prompt.tryAgain", "再试一次", { replayable: false });
+    playVoiceVariant("prompt.tryAgain", { replayable: false });  // 多邻国式随机鼓励
   }
 }
 
