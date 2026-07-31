@@ -257,6 +257,8 @@ h2 {
 
 /* ============================================================================
  * Lobby（5 张游戏卡 2 列，design y=86, 3 行）
+ * Phase B：game-entry 重设计 + icon 容器 + hover 微浮起 + mascot wave
+ * 详见 AGENTS.md《迭代开发方法论》feat/design-system-v2。
  * ============================================================================ */
 
 .game-list {
@@ -268,31 +270,85 @@ h2 {
 }
 
 .game-entry {
-  min-height: 90px;
-  padding: 12px;
+  min-height: 100px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  align-items: center;
   text-align: left;
   background: var(--panel);
   border: 2px solid var(--line);
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  border-radius: var(--radius-md);  /* 8px, SOP ≤8px */
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
 }
 
-.entry-title,
-.entry-copy {
+.game-entry .entry-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary-soft);  /* 浅绿圆形背景 */
+  border-radius: var(--radius-sm);  /* 6px */
+  flex-shrink: 0;
+}
+
+.game-entry .entry-icon img {
+  width: 32px;
+  height: 32px;
   display: block;
 }
 
-.entry-title {
-  font-size: 16px;
-  font-weight: 900;
-  margin-bottom: 4px;
+.game-entry .entry-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.entry-copy {
+.game-entry .entry-title {
+  font-size: var(--fs-h3);  /* 16px */
+  font-weight: var(--fw-black);
+  color: var(--ink);
+  line-height: 1.2;
+  display: block;
+}
+
+.game-entry .entry-copy {
+  font-size: var(--fs-tiny);  /* 11px */
   color: var(--muted);
-  font-size: 11px;
+  line-height: 1.3;
+  display: block;
+}
+
+.game-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-overlay);
+  border-color: var(--accent);
+}
+
+.game-entry:active {
+  transform: scale(0.96);
+}
+
+/* Lobby Mascot 接入（扩展 Phase A .mascot-host）：welcome bounce + hover bounce */
+.mascot-host {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  animation: mascot-welcome var(--motion-celebrate) var(--ease-emphasized) 0.5s 1;
+}
+
+.mascot-host:hover {
+  animation: mascot-bounce var(--motion-celebrate) var(--ease-emphasized) 1;
+}
+
+@keyframes mascot-welcome {
+  0%   { transform: translateY(20px) scale(0.8); opacity: 0; }
+  60%  { transform: translateY(-6px) scale(1.08); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 /* ============================================================================
