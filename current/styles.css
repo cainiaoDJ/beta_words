@@ -30,6 +30,75 @@
   --primary-font: 36px;       /* Z3 主元素字号 */
   --secondary-w: 300px;       /* Z4 辅助区宽度（选项网格、待选区） */
   --toolbar-w: 240px;         /* Z5 工具栏宽度（颜色条） */
+
+  /* ===== Design System v2（feat/design-system-v2 Phase A，2026-07-31） =====
+   * 跨游戏视觉/动效基础设施。不动具体业务页面（lobby / match / memory / pinyin / listen / stroop）。
+   * 设计目标：现代化 + 适合小朋友（参考多邻国交互语言，简化适配幼小衔接）。
+   * 试点从 Phase B 开始，本阶段新类/keyframes 不被任何现有 HTML 引用，纯基础设施。
+   * 详见 AGENTS.md《迭代开发方法论》feat/design-system-v2。 */
+
+  /* === 字体系统（4 级 + 数字专用）=== */
+  --font-display: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-heading: var(--font-display);
+  --font-body: var(--font-display);
+  --font-numeric: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* === 字号阶梯（design px，5 级）=== */
+  --fs-display: 32px;
+  --fs-h1: 26px;
+  --fs-h2: 18px;
+  --fs-h3: 16px;
+  --fs-body: 14px;
+  --fs-caption: 12px;
+  --fs-tiny: 11px;
+
+  /* === 字重（仅 700 / 900，简洁）=== */
+  --fw-bold: 700;
+  --fw-black: 900;
+
+  /* === 圆角 3 档（SOP 第 11 条 ≤8px；故意不引入 lg）=== */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+
+  /* === 阴影 3 层 === */
+  --shadow-subtle: 0 2px 4px rgba(31, 44, 36, 0.08);
+  --shadow-card: 0 6px 14px rgba(31, 44, 36, 0.14);  /* 等价旧 --shadow */
+  --shadow-overlay: 0 16px 32px rgba(31, 44, 36, 0.18);
+
+  /* === 动效 4 档时长 === */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-celebrate: 480ms;
+
+  /* === 缓动 4 档（Material 3 inspired）=== */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
+  --ease-decel: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accel: cubic-bezier(0.4, 0, 1, 1);
+
+  /* === 色彩 tonal palette（RGB 三元组，便于 hsl()/rgba() 拼接）=== */
+  --color-primary: 47 140 115;
+  --color-primary-strong: 31 111 89;
+  --color-primary-soft: 223 243 234;
+  --color-primary-hover: 38 158 130;
+  --color-primary-active: 25 90 73;
+
+  --color-warning: 247 215 92;
+  --color-warning-strong: 214 174 29;
+  --color-warning-soft: 255 248 214;
+
+  --color-danger: 216 109 76;
+  --color-danger-strong: 179 74 42;
+  --color-danger-soft: 255 231 221;
+
+  /* === 间距 5 档 === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
 }
 
 * {
@@ -762,4 +831,118 @@ h2 {
 .stroop-host .stroop-select {
   /* specificity boost：stroop select 不要 flex:1，由内容决定高度 */
   flex: 0 0 auto;
+}
+
+/* ============================================================================
+ * Design System v2 — 共享类（feat/design-system-v2 Phase A，2026-07-31）
+ * 不依赖任何具体业务游戏，可被 lobby / match / memory / pinyin / listen / stroop 复用。
+ * 试点从 Phase B 开始。本阶段 HTML 未引用，渲染 0 影响（252/252 必过）。
+ * 详见 AGENTS.md《迭代开发方法论》feat/design-system-v2。
+ * ============================================================================ */
+
+/* === 通用触控反馈（所有可点击元素统一加 .clickable 即可）=== */
+.clickable {
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.clickable:active {
+  transform: scale(0.96);
+}
+
+/* === 焦点环（键盘 / 老人 / 残障 / Switch 玩家）=== */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(47, 140, 115, 0.22);
+}
+
+/* === 答对弹簧放大（Phase B/C 用于字牌/选项加 .tile-correct）=== */
+.tile-correct {
+  animation: tile-correct-spring var(--motion-celebrate) var(--ease-emphasized);
+}
+
+@keyframes tile-correct-spring {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.12); }
+  70%  { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+/* === 答错 shake（小朋友不害怕，3-4px 限制）=== */
+.tile-wrong {
+  animation: tile-wrong-shake 320ms var(--ease-standard);
+}
+
+@keyframes tile-wrong-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(2px); }
+}
+
+/* === 水波纹（从触点扩散，Phase B 用于大厅/按钮）=== */
+.ripple-host {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  animation: ripple-expand 480ms var(--ease-standard);
+  pointer-events: none;
+}
+
+@keyframes ripple-expand {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* === Confetti 粒子（完成时使用，Phase B/C 接入）=== */
+.confetti-host {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  border-radius: var(--radius-xs);
+  opacity: 0.92;
+  animation: confetti-fall 1200ms var(--ease-accel) forwards;
+}
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(-20px) rotate(0); opacity: 0.92; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* === Mascot 4 状态装饰（Phase B/C 通过 src 切换 SVG）=== */
+.mascot-host {
+  display: inline-block;
+  transition: transform var(--motion-base) var(--ease-emphasized);
+}
+
+.mascot-host.bounce {
+  animation: mascot-bounce var(--motion-celebrate) var(--ease-emphasized);
+}
+
+@keyframes mascot-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35%      { transform: translateY(-12px) scale(1.08); }
+  60%      { transform: translateY(0) scale(0.96); }
+  80%      { transform: translateY(-4px) scale(1.02); }
 }
