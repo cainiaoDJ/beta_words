@@ -616,7 +616,7 @@ function handleMemoryTileClick(tileId) {
 
   tile.revealed = true;
   playVoice(getWordVoiceKey(tile.value), tile.value);
-  markTile(tileId, "selected");
+  markTile(tileId, "is-selected");
   updateTile(tileId);
 
   if (!state.selectedId) {
@@ -633,11 +633,18 @@ function handleMemoryTileClick(tileId) {
     tile.matched = true;
     selectedTile.matched = true;
     state.matchedCount += 2;
+    // 统一状态类: .is-correct 触发 tile-correct-spring 弹簧 + 绿色背景
+    markTile(tile.id, "is-correct");
+    markTile(selectedId, "is-correct");
     setHint("找对了");
+    playVoiceVariant("prompt.correct", { replayable: false });
+    setMascotState("happy");
+    playVoice("sfx.correct-ding", "", { replayable: false });
 
     window.setTimeout(() => {
-      markTile(tile.id, "selected", false);
-      markTile(selectedId, "selected", false);
+      markTile(tile.id, "is-correct", false);
+      markTile(selectedId, "is-correct", false);
+      // memory 风格: 保留显示 (旧 class alias .memory-matched 保留绿底显示)
       markTile(tile.id, "memory-matched");
       markTile(selectedId, "memory-matched");
       updateTile(tile.id);
@@ -649,14 +656,21 @@ function handleMemoryTileClick(tileId) {
     }, 220);
   } else {
     state.locked = true;
+    // 统一状态类: .is-wrong 触发 tile-wrong-shake + 红色背景 (两张都错)
+    markTile(tile.id, "is-wrong");
+    markTile(selectedId, "is-wrong");
     setHint("再试一次");
+    playVoiceVariant("prompt.tryAgain", { replayable: false });
+    setMascotState("sad");
+    playVoice("sfx.wrong-buzz", "", { replayable: false });
+
     window.setTimeout(() => {
       tile.revealed = false;
       if (selectedTile) {
         selectedTile.revealed = false;
       }
-      markTile(tile.id, "selected", false);
-      markTile(selectedId, "selected", false);
+      markTile(tile.id, "is-wrong", false);
+      markTile(selectedId, "is-wrong", false);
       updateTile(tile.id);
       updateTile(selectedId);
       state.selectedId = null;
@@ -889,7 +903,7 @@ function startMemoryPreview(size) {
   state.locked = true;
   setHint(`记住这些字：${String(remaining).padStart(2, "0")}`);
   timer.textContent = `00:${String(remaining).padStart(2, "0")}`;
-  playVoice("prompt.remember", "先记住这些字", { replayable: false });
+  playVoiceVariant("prompt.remember", { replayable: false });  // 随机变体
 
   state.memoryCountdownInterval = window.setInterval(() => {
     remaining -= 1;
@@ -906,7 +920,7 @@ function startMemoryPreview(size) {
     resetTimer();
     startTimer();
     setHint("翻出两个一样的字");
-    playVoice("prompt.flip", "开始翻牌", { replayable: false });
+    playVoiceVariant("prompt.flip", { replayable: false });  // 随机变体
   }, seconds * 1000);
 }
 
