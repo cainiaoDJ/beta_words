@@ -773,24 +773,32 @@ function handleQuizOptionClick(option, button) {
 
   if (option === state.currentQuestion.pinyin) {
     state.locked = true;
-    button.classList.add("correct");
+    // 统一状态类: .is-correct 触发 tile-correct-spring 弹簧 + 绿色背景
+    button.classList.add("is-correct");
     state.matchedCount += 1;
     updateProgress();
     setHint("找对了");
-    playVoice("prompt.correct", "找对了", { replayable: false });
+    playVoiceVariant("prompt.correct", { replayable: false });  // 多邻国式随机赞美
+    setMascotState("happy");
+    playVoice("sfx.correct-ding", "", { replayable: false });
 
     window.setTimeout(() => {
+      button.classList.remove("is-correct");
       state.questionIndex += 1;
       showQuizQuestion();
     }, 520);
     return;
   }
 
-  button.classList.add("wrong");
+  // 统一状态类: .is-wrong 触发 tile-wrong-shake + 红色背景
+  button.classList.add("is-wrong");
   setHint("再试一次");
-  playVoice("prompt.tryAgain", "再试一次", { replayable: false });
+  playVoiceVariant("prompt.tryAgain", { replayable: false });  // 多邻国式随机鼓励
+  setMascotState("sad");
+  playVoice("sfx.wrong-buzz", "", { replayable: false });
+
   window.setTimeout(() => {
-    button.classList.remove("wrong");
+    button.classList.remove("is-wrong");
   }, 520);
 }
 
@@ -809,11 +817,13 @@ function completeQuizGame() {
   if (isNewRecord) {
     saveBestRecord(state.size, elapsedMs);
   }
-  playVoice("prompt.complete", "都找到了", { replayable: false });
+  setMascotState("celebrate");  // 多邻国式 mascot 庆祝
+  playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
   window.setTimeout(() => {
     completePanel.hidden = false;
     const next = nextSize(state.size);
     document.querySelector("#next-board").hidden = !next;
+    spawnConfetti(28);  // 多邻国式撒花
   }, 260);
 }
 
