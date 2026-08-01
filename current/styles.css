@@ -7,7 +7,7 @@
   color-scheme: light;
 
   --bg: #f5f7f3;
-  --stage-bg: #1d221d;          /* letterbox 色（viewport 外的黑边） */
+  --stage-bg: #1d221d;          /* letterbox 色（保留黑色） */
   --panel: #ffffff;
   --ink: #222222;
   --muted: #62695f;
@@ -99,6 +99,46 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
+
+  /* ===== Per-game 主题色 token（Phase 1A 基础设施，2026-08-01 立）=====
+   * 5 游戏 + lobby 各自一套主题色。业务代码使用中间变量 --theme-bg /
+   * --theme-accent 等（见下方 [data-game] 块），不直接引用本组具体游戏变量。
+   * 详见 docs/phase-plans/phase-1-theme-tokens.md */
+  --theme-match-bg: rgba(240, 140, 58, 0.06);
+  --theme-match-accent: #f08c3a;
+  --theme-match-accent-soft: rgba(240, 140, 58, 0.15);
+  --theme-match-ink: #b3591f;
+  --theme-match-glow: rgba(240, 140, 58, 0.4);
+
+  --theme-memory-bg: rgba(138, 79, 214, 0.06);
+  --theme-memory-accent: #8a4fd6;
+  --theme-memory-accent-soft: rgba(138, 79, 214, 0.15);
+  --theme-memory-ink: #5d2fa0;
+  --theme-memory-glow: rgba(138, 79, 214, 0.4);
+
+  --theme-pinyinFriend-bg: rgba(47, 128, 233, 0.06);
+  --theme-pinyinFriend-accent: #2f80e9;
+  --theme-pinyinFriend-accent-soft: rgba(47, 128, 233, 0.15);
+  --theme-pinyinFriend-ink: #1a5fb4;
+  --theme-pinyinFriend-glow: rgba(47, 128, 233, 0.4);
+
+  --theme-listenCard-bg: rgba(47, 168, 79, 0.06);
+  --theme-listenCard-accent: #2fa84f;
+  --theme-listenCard-accent-soft: rgba(47, 168, 79, 0.15);
+  --theme-listenCard-ink: #1a7035;
+  --theme-listenCard-glow: rgba(47, 168, 79, 0.4);
+
+  --theme-stroopTrain-bg: rgba(233, 79, 79, 0.06);
+  --theme-stroopTrain-accent: #e94f4f;
+  --theme-stroopTrain-accent-soft: rgba(233, 79, 79, 0.15);
+  --theme-stroopTrain-ink: #b32f2f;
+  --theme-stroopTrain-glow: rgba(233, 79, 79, 0.4);
+
+  --theme-lobby-bg: rgba(247, 215, 92, 0.04);
+  --theme-lobby-accent: #f5cd2f;
+  --theme-lobby-accent-soft: rgba(247, 215, 92, 0.12);
+  --theme-lobby-ink: #b5941f;
+  --theme-lobby-glow: rgba(247, 215, 92, 0.3);
 }
 
 * {
@@ -127,6 +167,58 @@ button {
   display: none !important;
 }
 
+/* ===== [data-game] 主题色中间变量 hook（Phase 1A，2026-08-01 立）=====
+ * body[data-game="match"] 时，--theme-accent 等中间变量映射到 match 主题；
+ * 默认 lobby。业务代码只用中间变量，不用具体游戏变量。 */
+[data-game="match"] {
+  --theme-bg: var(--theme-match-bg);
+  --theme-accent: var(--theme-match-accent);
+  --theme-accent-soft: var(--theme-match-accent-soft);
+  --theme-ink: var(--theme-match-ink);
+  --theme-glow: var(--theme-match-glow);
+}
+
+[data-game="memory"] {
+  --theme-bg: var(--theme-memory-bg);
+  --theme-accent: var(--theme-memory-accent);
+  --theme-accent-soft: var(--theme-memory-accent-soft);
+  --theme-ink: var(--theme-memory-ink);
+  --theme-glow: var(--theme-memory-glow);
+}
+
+[data-game="pinyinFriend"] {
+  --theme-bg: var(--theme-pinyinFriend-bg);
+  --theme-accent: var(--theme-pinyinFriend-accent);
+  --theme-accent-soft: var(--theme-pinyinFriend-accent-soft);
+  --theme-ink: var(--theme-pinyinFriend-ink);
+  --theme-glow: var(--theme-pinyinFriend-glow);
+}
+
+[data-game="listenCard"] {
+  --theme-bg: var(--theme-listenCard-bg);
+  --theme-accent: var(--theme-listenCard-accent);
+  --theme-accent-soft: var(--theme-listenCard-accent-soft);
+  --theme-ink: var(--theme-listenCard-ink);
+  --theme-glow: var(--theme-listenCard-glow);
+}
+
+[data-game="stroopTrain"] {
+  --theme-bg: var(--theme-stroopTrain-bg);
+  --theme-accent: var(--theme-stroopTrain-accent);
+  --theme-accent-soft: var(--theme-stroopTrain-accent-soft);
+  --theme-ink: var(--theme-stroopTrain-ink);
+  --theme-glow: var(--theme-stroopTrain-glow);
+}
+
+/* 默认（lobby）— 第一个出现时 --theme-* 还没设上，body 未设 data-game 时 fallback */
+body:not([data-game]) {
+  --theme-bg: var(--theme-lobby-bg);
+  --theme-accent: var(--theme-lobby-accent);
+  --theme-accent-soft: var(--theme-lobby-accent-soft);
+  --theme-ink: var(--theme-lobby-ink);
+  --theme-glow: var(--theme-lobby-glow);
+}
+
 /* ============================================================================
  * Stage wrapper (由 scripts/stage.js 控制缩放)
  * ============================================================================ */
@@ -139,13 +231,11 @@ button {
 }
 
 .stage-canvas {
-  /* JS: width=360px; height=640px; transform: translate(-50%,-50%) scale(sf) */
+  /* 设计画布：草稿纸/书本的米黄色 var(--bg)。宽度撑满屏幕时圆角/阴影会露出黑角，去掉 */
   background: var(--bg);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 24px 60px rgba(0, 0, 0, 0.22);
+  box-shadow: none;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 /* ============================================================================
@@ -197,6 +287,62 @@ button {
   gap: 10px;
   margin-bottom: 8px;
   flex-shrink: 0;
+}
+
+.topbar-right,
+.game-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+/* Game 区 mascot：48px 比大厅 64px 小一档，避免挤掉"听"按钮 */
+.mascot-host.game-mascot {
+  width: 48px;
+  height: 48px;
+}
+
+/* === 圆形图标按钮（齿轮 / 关闭 / 听音等）=== */
+.icon-button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: rgb(var(--color-primary-soft));
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: rgb(var(--color-primary-strong));
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.icon-button:hover {
+  background: rgb(var(--color-primary-hover));
+  border-color: var(--accent);
+  color: var(--panel);
+}
+
+.icon-button:active {
+  transform: scale(0.94);
+}
+
+.icon-button-sm {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.icon-button-sm:hover {
+  background: var(--bg);
+  border-color: var(--line);
+  color: var(--ink);
 }
 
 .topbar.compact {
@@ -269,30 +415,31 @@ h2 {
   align-content: start;
 }
 
+/* 纵向布局：图标在上、标题在中、副标题在下 */
 .game-entry {
-  min-height: 100px;
-  padding: 14px;
-  display: grid;
-  grid-template-columns: 48px 1fr;
-  gap: 12px;
+  min-height: 104px;
+  padding: 10px 8px 8px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  text-align: left;
+  text-align: center;
   background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: var(--radius-md);  /* 8px, SOP ≤8px */
+  border: 0;                       /* 去 border，避免任何"黑边"感 */
+  border-radius: var(--radius-md); /* 8px, SOP ≤8px */
   box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
 }
 
 .game-entry .entry-icon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  background: var(--color-primary-soft);  /* 浅绿圆形背景 */
-  border-radius: var(--radius-sm);  /* 6px */
+  background: rgb(var(--color-primary-soft));  /* 浅绿背景 */
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
+  margin-bottom: 4px;
 }
 
 .game-entry .entry-icon img {
@@ -304,23 +451,28 @@ h2 {
 .game-entry .entry-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  gap: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .game-entry .entry-title {
-  font-size: var(--fs-h3);  /* 16px */
-  font-weight: var(--fw-black);
+  font-size: 16px;                 /* 恢复原始字号，对比度强 */
+  font-weight: var(--fw-black);    /* 900 黑体：粗、强、清晰 */
   color: var(--ink);
   line-height: 1.2;
-  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .game-entry .entry-copy {
-  font-size: var(--fs-tiny);  /* 11px */
+  font-size: 11px;
   color: var(--muted);
   line-height: 1.3;
-  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .game-entry:hover {
@@ -333,10 +485,13 @@ h2 {
   transform: scale(0.96);
 }
 
-/* Lobby Mascot 接入（扩展 Phase A .mascot-host）：welcome bounce + hover bounce */
+/* Lobby Mascot 接入（扩展 Phase A .mascot-host）：welcome bounce + hover bounce
+ * SVG 用 viewBox="0 0 64 64" + 移除内部 width/height，让 CSS 控制 size 自动 scale */
 .mascot-host {
   width: 64px;
-  height: 64px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;        /* 画布自适应：保持正方形，SVG 内部按 viewBox 自动 scale */
   flex: 0 0 auto;
   animation: mascot-welcome var(--motion-celebrate) var(--ease-emphasized) 0.5s 1;
 }
@@ -505,8 +660,12 @@ h2 {
 
 .tile.matched {
   pointer-events: none;
-  opacity: 0;
-  transform: scale(0.74);
+  animation: tile-fade-out 280ms ease-out forwards;
+}
+
+@keyframes tile-fade-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.74); }
 }
 
 .board.memory .tile.matched,
@@ -678,7 +837,7 @@ h2 {
   font-size: var(--fs-display);  /* 32px */
   font-weight: var(--fw-black);
   font-variant-numeric: tabular-nums;
-  color: var(--color-primary-strong);
+  color: rgb(var(--color-primary-strong));
   line-height: 1.1;
 }
 
@@ -686,7 +845,7 @@ h2 {
   margin: 0 0 14px;
   font-size: var(--fs-h3);  /* 16px */
   font-weight: var(--fw-black);
-  color: var(--color-warning-strong);
+  color: rgb(var(--color-warning-strong));
 }
 
 .complete-panel .actions {
@@ -706,7 +865,7 @@ h2 {
 }
 
 .complete-panel .primary-button:hover {
-  background: var(--color-primary-hover);
+  background: rgb(var(--color-primary-hover));
   transform: translateY(-2px);
   box-shadow: var(--shadow-overlay);
 }
@@ -723,7 +882,7 @@ h2 {
 
 .complete-panel .secondary-button:hover {
   border-color: var(--accent);
-  color: var(--color-primary-strong);
+  color: rgb(var(--color-primary-strong));
 }
 
 /* ============================================================================
@@ -737,8 +896,9 @@ h2 {
 .stroop-board {
   --size: 3;
   --board-gap: var(--zone-gap);
-  --stroop-cell-font: 32px;
+  --stroop-cell-font: 22px;   /* 默认 fallback，calcStroopFont() 会重算 */
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--size), minmax(0, 1fr));   /* 锁等高：内容不能撑开 row */
   gap: var(--board-gap);
   /* 局部 override：stroop 有 3 个 n×n 元素挤 640 设计画布，board 不能 300×300
    * 详 AGENTS.md《迭代开发方法论》 stroop 已知设计冲突记录 */
@@ -758,6 +918,10 @@ h2 {
   border-radius: 6px;
   display: grid;
   place-items: center;
+  min-height: 0;          /* 防止内容撑高 cell */
+  min-width: 0;
+  overflow: hidden;        /* 内容过大裁切不撑开 cell */
+  aspect-ratio: 1;        /* 单独锁定正方形，双保险 */
   transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
 }
 
@@ -785,6 +949,7 @@ h2 {
   --size: 3;
   --board-gap: var(--zone-gap);
   grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--size), minmax(0, 1fr));   /* 锁等高 */
   gap: var(--board-gap);
   margin: 0;
   padding: 6px;
@@ -804,6 +969,9 @@ h2 {
   font-weight: 900;
   color: var(--cell-color, #c8caa0);
   background-color: #fafaf2;
+  min-height: 0;          /* 防 grid row 被内容撑高 */
+  min-width: 0;
+  overflow: hidden;        /* 防字撑开 cell */
   background-image:
     linear-gradient(to right, transparent calc(50% - 1px), rgba(120, 110, 70, 0.32) 50%, transparent calc(50% + 1px)),
     linear-gradient(to bottom, transparent calc(50% - 1px), rgba(120, 110, 70, 0.32) 50%, transparent calc(50% + 1px)),
@@ -932,31 +1100,32 @@ h2 {
 .tile.is-selected,
 .option-button.is-selected {
   background: var(--tile-selected);
-  border-color: var(--color-warning-strong);
+  border-color: rgb(var(--color-warning-strong));
   transform: scale(0.96);
 }
 
 .tile.is-correct,
 .option-button.is-correct,
 .stroop-select-cell.is-correct {
-  background: var(--color-primary-soft);
+  background: rgb(var(--color-primary-soft));
   border-color: var(--accent);
-  color: var(--color-primary-strong);
+  color: rgb(var(--color-primary-strong));
   animation: tile-correct-spring var(--motion-celebrate) var(--ease-emphasized);
+  will-change: transform;
 }
 
 .tile.is-wrong,
 .option-button.is-wrong,
 .stroop-select-cell.is-wrong {
-  background: var(--color-danger-soft);
-  border-color: var(--color-danger);
-  color: var(--color-danger-strong);
+  background: rgb(var(--color-danger-soft));
+  border-color: rgb(var(--color-danger));
+  color: rgb(var(--color-danger-strong));
   animation: tile-wrong-shake 320ms var(--ease-standard);
 }
 
 .tile.is-bonus {
-  background: var(--color-primary-soft);
-  color: var(--color-primary-strong);
+  background: rgb(var(--color-primary-soft));
+  color: rgb(var(--color-primary-strong));
 }
 
 .tile.is-hidden {
@@ -1036,8 +1205,8 @@ h2 {
 
 @keyframes tile-correct-spring {
   0%   { transform: scale(1); }
-  40%  { transform: scale(1.12); }
-  70%  { transform: scale(0.98); }
+  40%  { transform: scale(1.2); }
+  70%  { transform: scale(0.94); }
   100% { transform: scale(1); }
 }
 
@@ -1114,4 +1283,162 @@ h2 {
   35%      { transform: translateY(-12px) scale(1.08); }
   60%      { transform: translateY(0) scale(0.96); }
   80%      { transform: translateY(-4px) scale(1.02); }
+}
+
+/* ============================================================================
+ * Voice picker modal（body-level, position: fixed，不被 .stage-canvas transform: scale 影响）
+ * ============================================================================ */
+
+.voice-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  animation: voice-modal-in 200ms var(--ease-emphasized);
+}
+
+@keyframes voice-modal-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.voice-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(46, 58, 49, 0.55);
+}
+
+.voice-modal-panel {
+  position: relative;
+  background: var(--panel);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+  width: min(320px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.voice-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--line);
+  gap: 8px;
+}
+
+.voice-modal-head h2 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.voice-modal-hint {
+  margin: 0;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.voice-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.voice-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.voice-section:first-child {
+  padding-top: 2px;
+}
+
+.voice-section + .voice-section {
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+}
+
+.voice-section-title {
+  margin: 0;
+  padding: 6px 4px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.voice-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 8px 36px 8px 12px;
+  background: var(--bg);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.voice-option:hover {
+  background: rgb(var(--color-primary-soft));
+  border-color: var(--accent);
+}
+
+.voice-option:active {
+  transform: scale(0.98);
+}
+
+.voice-option.is-selected {
+  border-color: var(--accent);
+  background: rgb(var(--color-primary-soft));
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.voice-option.is-selected::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  color: rgb(var(--color-primary-strong));
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.voice-name {
+  font-weight: 800;            /* 强调：标题加粗 800 */
+  font-size: 15px;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.voice-sub {
+  font-weight: 400;            /* 非强调：副标题正常字重 */
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
 }

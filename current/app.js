@@ -233,9 +233,9 @@ function playVoiceVariant(baseKey, options = {}) {
 }
 
 // Mascot 4 状态切换（用 <img class="mascot-host"> src 切换 + .bounce 动画触发）
+// 重要：DOM 里有多个 .mascot-host（大厅 + 游戏区），必须全部同步，否则 querySelector
+// 只返回第一个（大厅那个被隐藏的），游戏区始终停在 wave.svg。
 function setMascotState(state, bounce = true) {
-  const mascotImg = document.querySelector(".mascot-host");
-  if (!mascotImg) return;
   const states = {
     wave: "assets/mascot-wave.svg",
     happy: "assets/mascot-happy.svg",
@@ -243,12 +243,16 @@ function setMascotState(state, bounce = true) {
     celebrate: "assets/mascot-celebrate.svg",
   };
   if (!states[state]) return;
-  mascotImg.src = states[state];
-  if (bounce) {
-    mascotImg.classList.remove("bounce");
-    void mascotImg.offsetWidth; // force reflow to restart animation
-    mascotImg.classList.add("bounce");
-  }
+  const mascotImgs = document.querySelectorAll(".mascot-host");
+  if (!mascotImgs.length) return;
+  mascotImgs.forEach((mascotImg) => {
+    mascotImg.src = states[state];
+    if (bounce) {
+      mascotImg.classList.remove("bounce");
+      void mascotImg.offsetWidth; // force reflow to restart animation
+      mascotImg.classList.add("bounce");
+    }
+  });
 }
 
 // Confetti 粒子（多邻国式完成撒花）
@@ -302,6 +306,24 @@ document.querySelector("#open-stroop-train").addEventListener("click", () => cho
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
 document.querySelector("#replay-sound").addEventListener("click", () => playReplayVoice());
 // “再听一遍” 按钮在听音点卡 + 看字识颜色 中隐藏（不依赖读音重播）
+
+// 页面初始化：默认 lobby 主题（即使还没点任何卡，body 也有正确 data-game）
+syncTheme("lobby");
+
+// Voice picker：齿轮打开 / 点 backdrop 或 ✕ 关闭
+document.querySelector("#open-voice-picker")?.addEventListener("click", () => {
+  waitForVoices().then(openVoicePicker);
+});
+document.querySelectorAll('[data-close="voice-picker"]').forEach((el) => {
+  el.addEventListener("click", closeVoicePicker);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !document.getElementById("voice-picker").hidden) {
+    closeVoicePicker();
+  }
+});
+// 提前把 voices 拉一遍（让首答时不要等）
+waitForVoices();
 function syncReplayVisibility() {
   const replayBtn = document.querySelector("#replay-sound");
   if (!replayBtn) return;
@@ -309,12 +331,12 @@ function syncReplayVisibility() {
   replayBtn.hidden = !needsReplay;
 }
 
-// 看字识颜色 游戏不需要计时器和匹配进度（计时无意义、进度靠视觉感知）
+// 看字识颜色：计时器保留（结算页新纪录判定依赖 elapsedMs），进度靠视觉感知故隐藏
 function syncStroopHud() {
   const isStroop = state.game === GAMES.stroopTrain.id;
   const hudTimer = document.querySelector(".hud-timer");
   const hudProgress = document.querySelector(".hud-progress");
-  if (hudTimer) hudTimer.hidden = isStroop;
+  if (hudTimer) hudTimer.hidden = false;
   if (hudProgress) hudProgress.hidden = isStroop;
 }
 document.querySelector("#next-board").addEventListener("click", () => {
@@ -351,6 +373,14 @@ if (stroopBoard) new ResizeObserver(() => calcStroopFont()).observe(stroopBoard)
 function showScreen(name) {
   Object.values(screens).forEach((screen) => screen.classList.remove("active"));
   screens[name].classList.add("active");
+  // 返回 lobby 时重置主题色（默认进 setup 不走这个，因为 chooseGame 会主动设）
+  if (name === "lobby") syncTheme(null);
+}
+
+// Per-game 主题色同步（Phase 1A，2026-08-01 立）
+// gameId 传 null / undefined / 'lobby' → 默认 lobby 主题
+function syncTheme(gameId) {
+  document.body.dataset.game = gameId || "lobby";
 }
 
 function leaveGame() {
@@ -371,6 +401,7 @@ function chooseGame(gameId) {
   state.game = gameId;
   const game = getCurrentGame();
   setupTitle.textContent = `${game.name} · 选择难度`;
+  syncTheme(gameId);  // 同步主题色到 body[data-game]
   syncReplayVisibility();
   syncStroopHud();
   showScreen("setup");
@@ -447,7 +478,7 @@ function startGame(size) {
   }
 
   setHint(game.startHint);
-  playVoice("prompt.start", "开始", { replayable: false });
+  playVoiceVariant("prompt.start", { replayable: false });
 }
 
 function calcTileFont() {
@@ -471,8 +502,8 @@ function calcStroopFont() {
   // 用实际 boardSize（state.size=7 时仍渲染 6×6，见 STROOP_SETTINGS），不用 state.size
   const sizeVar = parseInt(stroopBoard.style.getPropertyValue("--size"), 10) || 3;
   const cellSize = (boardW - gap * (sizeVar - 1)) / sizeVar;
-  const ratio = sizeVar >= 6 ? 0.78 : 0.86;
-  const fontSize = Math.max(12, Math.floor(cellSize * ratio));
+  const ratio = sizeVar >= 6 ? 0.45 : 0.5;
+  const fontSize = Math.max(10, Math.floor(cellSize * ratio));
   stroopBoard.style.setProperty("--stroop-cell-font", `${fontSize}px`);
   // 同步到待选格
   if (stroopSelect) stroopSelect.style.setProperty("--stroop-cell-font", `${fontSize}px`);
@@ -588,7 +619,7 @@ function handleMatchTileClick(tileId) {
       state.locked = false;
       updateProgress();
       checkComplete();
-    }, 220);
+    }, 520);
   } else {
     state.locked = true;
     // 统一状态类: .is-wrong 触发 tile-wrong-shake + 红色背景
@@ -653,7 +684,7 @@ function handleMemoryTileClick(tileId) {
       state.locked = false;
       updateProgress();
       checkComplete();
-    }, 220);
+    }, 520);
   } else {
     state.locked = true;
     // 统一状态类: .is-wrong 触发 tile-wrong-shake + 红色背景 (两张都错)
@@ -1020,17 +1051,20 @@ function checkComplete() {
     const best = getBestRecord(state.size);
     const isNewRecord = !best || elapsedMs < best.elapsedMs;
     updateTimerDisplay(elapsedMs);
-    completeTime.textContent = `成功率 ${correct} / ${total}（${rate}%）`;
+    completeTime.textContent = `用时 ${formatTime(elapsedMs)} · 成功率 ${correct} / ${total}（${rate}%）`;
     bestRecord.hidden = !isNewRecord;
     if (isNewRecord) {
       saveBestRecord(state.size, elapsedMs);
     }
     setMascotState("celebrate");  // 多邻国式 mascot 庆祝
     playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
+    // 隐藏 stroop-host 避免与 complete-panel 同时出现造成 823 > 640 溢出
+    if (stroopHost) stroopHost.hidden = true;
     window.setTimeout(() => {
       completePanel.hidden = false;
-      // 跨尺寸不同，颜色 + 字顺序不同，不跨尺寸连关
-      document.querySelector("#next-board").hidden = true;
+      // 与其他游戏一致：3→4→…→7 提供“下一关”（7 到头隐藏），新棋盘重新生成颜色+字序
+      const next = nextSize(state.size);
+      document.querySelector("#next-board").hidden = !next;
       spawnConfetti(28);  // 多邻国式撒花
     }, 260);
     return;
@@ -1105,7 +1139,7 @@ function startStroopGame(size) {
   setStroopActive();
   updateProgress();
   setHint(getCurrentGame().startHint);
-  playVoice("prompt.start", "开始", { replayable: false });
+  playVoiceVariant("prompt.start", { replayable: false });
   startTimer();
 }
 
@@ -1289,35 +1323,15 @@ function applyStroopColor(idx, colorName) {
   }, 320);
 }
 
-// 读音反馈：正确 → 中文颜色名 + 英文颜色名；错误 → 仅错误提示
+// 读音反馈：正确 → 中文颜色名；错误 → 仅错误提示
 function playStroopFeedback(isCorrect, colorName, question) {
   if (isCorrect) {
-    // 找颜色对象 → 取英文名（不要把汉字塞给 speakEnglish，否则英语 voice 会念中文）
-    const colorMeta = STROOP_COLORS.find((c) => c.name === colorName);
-    const englishName = colorMeta ? colorMeta.english : colorName;
-    // 1. 中文颜色名（确认答对了 → "蓝色"），强化“颜色”不是“字”
+    // 中文颜色名（确认答对了 → "蓝色"），强化“颜色”不是“字”
     speak(colorName);
-    // 2. 英文颜色名（双语强化 → "blue"）
-    setTimeout(() => speakEnglish(englishName), 380);
   } else {
     setHint(`是${question.colorName}，不是${colorName}`);
     playVoiceVariant("prompt.tryAgain", { replayable: false });  // 多邻国式随机鼓励
   }
-}
-
-// 英文 TTS：用浏览器 SpeechSynthesis（lang=en-US），失败静默
-function speakEnglish(text) {
-  if (!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-  utterance.rate = 0.85;
-  utterance.pitch = 1.05;
-  const voice = window.speechSynthesis
-    .getVoices()
-    .find((item) => item.lang.toLowerCase().startsWith("en"));
-  if (voice) utterance.voice = voice;
-  window.speechSynthesis.speak(utterance);
 }
 
 function getCurrentGame() {
@@ -1371,23 +1385,187 @@ function getWordVoiceKey(word) {
   return `word.${codePoints}`;
 }
 
+// === Voice picker：跨平台优先列表 + localStorage 记忆 ===
+// 优先级：localStorage 用户选定的 → 跨平台童声/年轻女声 → 任何 zh
+const VOICE_PREFER = [
+  /Tingting/i,            // macOS 婷婷 (童声友好女声)
+  /Yaoyao/i,              // Win Microsoft 瑶瑶 (年轻女声)
+  /Microsoft Huihui/i,    // Win Microsoft 慧慧 (成熟女声)
+  /Mei-Jia/i,             // macOS 美佳 (台湾普通话)
+  /Microsoft HanHan/i,    // Win Microsoft 涵涵 (台湾)
+  /Microsoft Kangkang/i,  // Win Microsoft 康康 (男声)
+];
+const STORAGE_VOICE_KEY = "beta_words_voice_pref";
+const VOICE_SAMPLE = "准备好啦，太棒了！";
+
+// 仅过滤中文普通话 zh-CN (不含 zh-TW/zh-HK 等台湾粤语)
+function listChineseVoices() {
+  if (!("speechSynthesis" in window)) return [];
+  return window.speechSynthesis
+    .getVoices()
+    .filter((v) => {
+      const lang = (v.lang || "").toLowerCase();
+      return lang === "zh-cn" || lang.startsWith("zh-cn-");
+    });
+}
+
+// 推断 voice 平台 / 类型 / 语言区 / 品质。返回 { kind, subtitle }
+// subtitle 拼接: "平台 · 语言区[ · 品质]"  例: "macOS 内置 · 大陆普通话 · 自然音"
+function detectQuality(name) {
+  if (/\bNatural\b/i.test(name)) return "自然音";
+  if (/\bNeural\b/i.test(name)) return "Neural";
+  if (/\bEnhanced\b/i.test(name)) return "增强";
+  if (/\bPremium\b/i.test(name)) return "高级";
+  if (/\bStandard\b/i.test(name)) return "标准";
+  return "";
+}
+
+function detectRegion(lang) {
+  const l = (lang || "").toLowerCase();
+  if (l === "zh-cn" || l.startsWith("zh-cn-")) return "大陆普通话";
+  if (l.startsWith("zh-tw")) return "台湾国语";
+  if (l.startsWith("zh-hk")) return "粤语";
+  return "普通话";
+}
+
+function describeVoice(v) {
+  let platform;
+  if (!v.localService) platform = "在线服务";
+  else if (/Microsoft/i.test(v.name)) platform = "Windows 系统";
+  else platform = "macOS 内置";
+  const region = detectRegion(v.lang);
+  const quality = detectQuality(v.name);
+  let subtitle = `${platform} · ${region}`;
+  if (quality) subtitle += ` · ${quality}`;
+  return { kind: !v.localService ? "online" : "local", subtitle };
+}
+
+// 精简 voice.name 方便显示（去 Microsoft 前缀、China 后缀）
+function cleanVoiceName(name) {
+  const m = name.match(/^Microsoft\s+(.+?)\s*-\s*Chinese/);
+  if (m) return m[1];
+  return name;
+}
+
+function pickBestVoice() {
+  const voices = listChineseVoices();
+  if (!voices.length) return null;
+  // 1. localStorage 选定的
+  try {
+    const saved = localStorage.getItem(STORAGE_VOICE_KEY);
+    if (saved) {
+      const v = voices.find((x) => x.name === saved);
+      if (v) return v;
+    }
+  } catch (_) {}
+  // 2. 偏好列表第一个匹配的
+  for (const re of VOICE_PREFER) {
+    const v = voices.find((x) => re.test(x.name));
+    if (v) return v;
+  }
+  // 3. 第一个中文
+  return voices[0];
+}
+
+function buildVoiceRow(voice, savedName) {
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "voice-option";
+  row.setAttribute("role", "listitem");
+  if (savedName === voice.name) row.classList.add("is-selected");
+
+  const title = document.createElement("span");
+  title.className = "voice-name";
+  title.textContent = cleanVoiceName(voice.name);
+
+  const sub = document.createElement("span");
+  sub.className = "voice-sub";
+  sub.textContent = describeVoice(voice).subtitle;
+
+  row.append(title, sub);
+  row.addEventListener("click", () => previewAndSelectVoice(voice, row));
+  return row;
+}
+
+function buildVoiceSection(label, voices, savedName) {
+  const section = document.createElement("div");
+  section.className = "voice-section";
+  const h = document.createElement("h3");
+  h.className = "voice-section-title";
+  h.textContent = label;
+  section.appendChild(h);
+  voices.forEach((v) => section.appendChild(buildVoiceRow(v, savedName)));
+  return section;
+}
+
+function openVoicePicker() {
+  const modal = document.getElementById("voice-picker");
+  if (!modal) return;
+  const list = document.getElementById("voice-list");
+  list.innerHTML = "";
+  const voices = listChineseVoices();
+  if (!voices.length) {
+    const empty = document.createElement("p");
+    empty.className = "voice-modal-hint";
+    empty.textContent = "浏览器里没有找到普通话声音，请检查系统设置。";
+    list.appendChild(empty);
+  } else {
+    const saved = (() => { try { return localStorage.getItem(STORAGE_VOICE_KEY); } catch (_) { return null; } })();
+    const local = voices.filter((v) => v.localService);
+    const online = voices.filter((v) => !v.localService);
+    if (local.length) list.appendChild(buildVoiceSection("本地", local, saved));
+    if (online.length) list.appendChild(buildVoiceSection("在线", online, saved));
+  }
+  modal.hidden = false;
+}
+
+function previewAndSelectVoice(voice, row) {
+  try { localStorage.setItem(STORAGE_VOICE_KEY, voice.name); } catch (_) {}
+  document.querySelectorAll(".voice-option.is-selected").forEach((el) => el.classList.remove("is-selected"));
+  row.classList.add("is-selected");
+  // 试听示例句
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(VOICE_SAMPLE);
+  u.lang = voice.lang || "zh-CN";
+  u.voice = voice;
+  u.rate = 0.95;
+  u.pitch = 1.1;
+  window.speechSynthesis.speak(u);
+}
+
+function closeVoicePicker() {
+  const modal = document.getElementById("voice-picker");
+  if (modal) modal.hidden = true;
+  window.speechSynthesis.cancel();
+}
+
+// 确保 voices 列表加载完（chromium 异步）
+function waitForVoices(timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    if (!("speechSynthesis" in window)) return resolve([]);
+    if (window.speechSynthesis.getVoices().length) return resolve(window.speechSynthesis.getVoices());
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      window.speechSynthesis.removeEventListener?.("voiceschanged", finish);
+      resolve(window.speechSynthesis.getVoices());
+    };
+    window.speechSynthesis.addEventListener?.("voiceschanged", finish);
+    setTimeout(finish, timeoutMs);
+  });
+}
+
 function speak(text) {
   if (!("speechSynthesis" in window)) return;
-
   stopCurrentAudio();
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "zh-CN";
-  utterance.rate = 0.82;
-  utterance.pitch = 1.08;
-
-  const voice = window.speechSynthesis
-    .getVoices()
-    .find((item) => item.lang.toLowerCase().startsWith("zh"));
-  if (voice) {
-    utterance.voice = voice;
-  }
-
+  utterance.rate = 0.95;
+  utterance.pitch = 1.12;
+  const picked = pickBestVoice();
+  if (picked) utterance.voice = picked;
   window.speechSynthesis.speak(utterance);
 }
 
