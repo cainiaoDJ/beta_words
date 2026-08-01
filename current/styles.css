@@ -1442,3 +1442,73 @@ h2 {
   margin-top: 2px;
   letter-spacing: 0.02em;
 }
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1B match 试点，2026-08-01 立)
+ * 业务代码用 [data-game="..."] 选择器应用主题色，不动现有 .tile / .hud-timer
+ * 等基础规则。本节只覆盖需要的视觉属性，theme-bg/accent/ink/glow 来自 Phase 1A
+ * 中间变量。其他 4 游戏（memory / pinyinFriend / listenCard / stroopTrain）在
+ * Phase 1C 各自独立 commit，**不能**在本文件批量加其他游戏主题。
+ *
+ * 详见 docs/phase-plans/phase-1-theme-tokens.md §Phase 1B
+ * ============================================================================ */
+
+/* 顶栏：setup 进入时 h2 显示游戏名（"识字消消乐 · 选择难度"），加主题色 */
+[data-game="match"] #setup-title {
+  color: var(--theme-ink);
+}
+
+/* 难度按钮：边框用主题色，hover 加深 */
+[data-game="match"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="match"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+
+/* HUD 计时器：用主题色（match 是橙色，替换原 sun 黄） */
+[data-game="match"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+
+/* HUD 进度 / hint：muted 变 theme-ink（柔和但有色彩感） */
+[data-game="match"] .hud-progress,
+[data-game="match"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 棋盘：底色用主题色极浅版（6% 不透明，不抢 cream 画布戏） */
+[data-game="match"] .board {
+  background: var(--theme-bg);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+/* 字卡：默认用主题色浅描边，hover / 选中加主题色 */
+[data-game="match"] .tile {
+  border-color: var(--theme-accent-soft);
+  box-shadow: 0 4px 12px var(--theme-glow);
+}
+[data-game="match"] .tile:hover {
+  border-color: var(--theme-accent);
+  box-shadow: 0 6px 16px var(--theme-glow);
+}
+[data-game="match"] .tile.selected {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+  /* 保留 scale(0.96) 来自基础 .tile.selected */
+}
+
+/* 完成面板：主按钮用主题色（其他游戏继续用 sun 黄） */
+[data-game="match"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="match"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}

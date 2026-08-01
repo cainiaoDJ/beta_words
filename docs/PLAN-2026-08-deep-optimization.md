@@ -306,7 +306,13 @@
 
 6. 截图给主人确认效果
 
-7. merge 回 main → 立刻部署（tar+ssh）
+7. 【部署策略 2026-08-01 17:12 修订】
+   ├─ 本期所有 commit（feat/theme-tokens 起）：**只部署本机**
+   │     tar ... | tar -xzf - -C /home/alpha/apps/beta_words/current/
+   │     本机服务运行中 (beta-words.service on 192.168.31.60:8091)
+   ├─ **全部 phase 完成**后再统一发 VPS：
+   │     tar ... | ssh ... 'tar -xzf - -C /var/www/games/current/'
+   └─ 避免开发期每次小改都双向同步、主人审不到位
 
 8. 更新 phase-plans/phase-X-<name>.md 为 completed（标 ✅ + 实际改动摘要）
 ```
