@@ -1920,3 +1920,32 @@ h2 {
   background: var(--theme-ink);
   border-color: var(--theme-accent);
 }
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.5 lobby 黄 #f5cd2f，2026-08-02)
+ * 大厅主场：所有游戏入口图标统一用 lobby 黄；吉祥物 mascot-host 加黄 glow
+ * ============================================================================ */
+
+/* 游戏入口图标：统一 lobby 黄（替换原 rgb(var(--color-primary-soft)) 浅绿） */
+[data-game="lobby"] .entry-icon {
+  background: var(--theme-accent-soft);
+}
+[data-game="lobby"] .game-entry:hover {
+  border-color: var(--theme-accent);
+}
+
+/* 吉祥物在 lobby 时加暖黄光晕（出场动画更活泼） */
+[data-game="lobby"] .mascot-host {
+  filter: drop-shadow(0 0 8px var(--theme-glow));
+  animation: mascot-welcome var(--motion-celebrate) var(--ease-emphasized) 0.5s 1,
+             lobby-glow 3s ease-in-out 0.5s infinite;
+}
+@keyframes lobby-glow {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--theme-glow)); }
+  50%       { filter: drop-shadow(0 0 14px var(--theme-accent)); }
+}
+
+/* 大厅标题：主题色 */
+[data-game="lobby"] #lobby-title {
+  color: var(--theme-ink);
+}
