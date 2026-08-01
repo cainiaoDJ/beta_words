@@ -1512,3 +1512,73 @@ h2 {
   background: var(--theme-ink);
   border-color: var(--theme-accent);
 }
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.1 memory 紫 #8a4fd6，2026-08-01 立)
+ * 结构同 match，但 memory 的 .tile.hidden-face / .tile.matched 需要单独 override
+ * ============================================================================ */
+
+/* 顶栏 / 难度按钮 / HUD 同 match 模式 */
+[data-game="memory"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="memory"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="memory"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="memory"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="memory"] .hud-progress,
+[data-game="memory"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 棋盘底色 */
+[data-game="memory"] .board {
+  background: var(--theme-bg);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+/* memory 特色：字卡默认（背面）+ matched（已配对露出）都用主题色 */
+[data-game="memory"] .tile {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="memory"] .tile:hover {
+  border-color: var(--theme-accent);
+}
+
+/* 背面：theme 极浅底 + accent-soft 描边（替换原 #e8ede3 浅绿灰） */
+[data-game="memory"] .board.memory .tile.hidden-face {
+  background: var(--theme-bg);
+  border-color: var(--theme-accent-soft);
+  box-shadow: inset 0 0 0 2px var(--theme-accent-soft), 0 6px 14px var(--theme-glow);
+}
+[data-game="memory"] .board.memory .tile.hidden-face:hover {
+  background: var(--theme-accent-soft);
+}
+
+/* matched：accent-soft 底 + accent 描边 + ink 字色（替换原 var(--accent) 绿） */
+[data-game="memory"] .board.memory .tile.matched,
+[data-game="memory"] .board.memory .tile.memory-matched {
+  background: var(--theme-accent-soft);
+  border-color: var(--theme-accent);
+  color: var(--theme-ink);
+}
+
+/* 完成面板主按钮 */
+[data-game="memory"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="memory"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
