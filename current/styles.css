@@ -1582,3 +1582,217 @@ h2 {
   background: var(--theme-ink);
   border-color: var(--theme-accent);
 }
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.2 pinyinFriend 蓝 #2f80e9，2026-08-01)
+ * pinyin-friend 题型：题目卡 .quiz-word / 选项 .option-button
+ * ============================================================================ */
+
+[data-game="pinyinFriend"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="pinyinFriend"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="pinyinFriend"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="pinyinFriend"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="pinyinFriend"] .hud-progress,
+[data-game="pinyinFriend"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 题目卡：蓝色主题（替换原 var(--tile) 白 + var(--line) 灰） */
+[data-game="pinyinFriend"] .quiz-word {
+  border-color: var(--theme-accent-soft);
+  box-shadow: 0 6px 14px var(--theme-glow);
+}
+
+/* 选项按钮：蓝色边框 / hover */
+[data-game="pinyinFriend"] .option-button {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="pinyinFriend"] .option-button:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="pinyinFriend"] .option-button.correct {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="pinyinFriend"] .option-button.wrong {
+  background: #ffe7dd;
+  border-color: #d86d4c;
+}
+
+/* 完成面板主按钮 */
+[data-game="pinyinFriend"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="pinyinFriend"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.3 listenCard 绿 #2fa84f，2026-08-01)
+ * listen-card 题型：听音提示卡 .listen-prompt + .listen-mark（喇叭图标）
+ * ============================================================================ */
+
+[data-game="listenCard"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="listenCard"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="listenCard"] .hud-progress,
+[data-game="listenCard"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 听音提示卡：绿色主题 */
+[data-game="listenCard"] .listen-prompt {
+  border-color: var(--theme-accent-soft);
+  box-shadow: 0 6px 14px var(--theme-glow);
+}
+
+/* 喇叭图标：绿色背景（替换原 var(--sun) 黄） */
+[data-game="listenCard"] .listen-mark {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+
+/* 选项按钮 */
+[data-game="listenCard"] .option-button {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .option-button:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .option-button.correct {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="listenCard"] .option-button.wrong {
+  background: #ffe7dd;
+  border-color: #d86d4c;
+}
+
+/* 完成面板主按钮 */
+[data-game="listenCard"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="listenCard"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.4 stroopTrain 红 #e94f4f，2026-08-01)
+ * stroop 的 active outline / pulse 替换为红色系；字色卡 .stroop-color-btn
+ * 保持原样（游戏机制色）；选色板 .stroop-select 底色可主题化
+ * ============================================================================ */
+
+[data-game="stroopTrain"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="stroopTrain"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="stroopTrain"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="stroopTrain"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="stroopTrain"] .hud-progress,
+[data-game="stroopTrain"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 选中格：红色描边 + 红色 glow（替换原 green accent） */
+[data-game="stroopTrain"] .stroop-cell.active {
+  outline-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px var(--theme-glow);
+}
+
+/* stroop pulse 动画：红色系（覆盖上方全局 @keyframes，不支持则降级） */
+@keyframes stroop-pulse-red {
+  0%, 100% { transform: scale(1.04); outline-color: var(--theme-accent); }
+  50%      { transform: scale(1.0);  outline-color: var(--theme-accent-soft); }
+}
+[data-game="stroopTrain"] .stroop-cell.active {
+  animation: stroop-pulse-red 1.1s ease-in-out infinite;
+}
+
+/* 待选区底色：主题极浅（替换原 #f8f7ea 米黄） */
+[data-game="stroopTrain"] .stroop-select {
+  background: var(--theme-bg);
+}
+
+/* 完成面板主按钮 */
+[data-game="stroopTrain"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="stroopTrain"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.5 lobby 黄 #f5cd2f，2026-08-01)
+ * 大厅主场：所有游戏入口图标统一用 lobby 黄；吉祥物 mascot-host 加黄 glow
+ * ============================================================================ */
+
+/* 游戏入口图标：统一 lobby 黄（替换原 rgb(var(--color-primary-soft)) 浅绿） */
+[data-game="lobby"] .entry-icon {
+  background: var(--theme-accent-soft);
+}
+[data-game="lobby"] .game-entry:hover {
+  border-color: var(--theme-accent);
+}
+
+/* 吉祥物在 lobby 时加暖黄光晕（出场动画更活泼） */
+[data-game="lobby"] .mascot-host {
+  filter: drop-shadow(0 0 8px var(--theme-glow));
+  animation: mascot-welcome var(--motion-celebrate) var(--ease-emphasized) 0.5s 1,
+             lobby-glow 3s ease-in-out 0.5s infinite;
+}
+@keyframes lobby-glow {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--theme-glow)); }
+  50%       { filter: drop-shadow(0 0 14px var(--theme-accent)); }
+}
+
+/* lobby 顶栏标题色跟随主题 */
+[data-game="lobby"] .lobby-title,
+[data-game="lobby"] .topbar-title {
+  color: var(--theme-ink);
+}
