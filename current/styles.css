@@ -1796,3 +1796,70 @@ h2 {
 [data-game="lobby"] .topbar-title {
   color: var(--theme-ink);
 }
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.3 listenCard 绿 #2fa84f，2026-08-02)
+ * listen-card 题型：听音提示卡 .listen-prompt + .listen-mark（喇叭图标）
+ * ============================================================================ */
+
+[data-game="listenCard"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="listenCard"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="listenCard"] .hud-progress,
+[data-game="listenCard"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 听音提示卡：绿色主题（替换原 var(--tile) 白 + var(--line) 灰） */
+[data-game="listenCard"] .listen-prompt {
+  border-color: var(--theme-accent-soft);
+  box-shadow: 0 6px 14px var(--theme-glow);
+}
+
+/* 喇叭图标：绿色背景（替换原 var(--sun) 黄） */
+[data-game="listenCard"] .listen-mark {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+
+/* 选项按钮 */
+[data-game="listenCard"] .option-button {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .option-button:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .option-button.correct {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="listenCard"] .option-button.wrong {
+  background: #ffe7dd;
+  border-color: #d86d4c;
+}
+
+/* 完成面板主按钮 */
+[data-game="listenCard"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="listenCard"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
