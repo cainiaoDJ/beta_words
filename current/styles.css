@@ -1863,3 +1863,60 @@ h2 {
   background: var(--theme-ink);
   border-color: var(--theme-accent);
 }
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.4 stroopTrain 红 #e94f4f，2026-08-02)
+ * stroop 的 active outline / pulse 替换为红色系；选色板 .stroop-color-btn
+ * 保持原样（游戏机制色）；待选区 .stroop-select 底色主题化
+ * ============================================================================ */
+
+[data-game="stroopTrain"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="stroopTrain"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="stroopTrain"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="stroopTrain"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="stroopTrain"] .hud-progress,
+[data-game="stroopTrain"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 选中格：红色描边 + 红色 glow（替换原 green accent） */
+[data-game="stroopTrain"] .stroop-cell.active {
+  outline-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px var(--theme-glow);
+}
+
+/* stroop pulse 动画：红色系（覆盖默认 green→sun 动画） */
+@keyframes stroop-pulse-red {
+  0%, 100% { transform: scale(1.04); outline-color: var(--theme-accent); }
+  50%      { transform: scale(1.0);  outline-color: var(--theme-accent-soft); }
+}
+[data-game="stroopTrain"] .stroop-cell.active {
+  animation: stroop-pulse-red 1.1s ease-in-out infinite;
+}
+
+/* 待选区底色：主题极浅（替换原 #f8f7ea 米黄） */
+[data-game="stroopTrain"] .stroop-select {
+  background: var(--theme-bg);
+}
+
+/* 完成面板主按钮 */
+[data-game="stroopTrain"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="stroopTrain"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
