@@ -808,6 +808,17 @@ function handleMemoryTileClick(tileId) {
     playVoiceVariant("prompt.correct", { replayable: false });
     setMascotState("happy");
     playVoice("sfx.correct-ding", "", { replayable: false });
+    // Phase 5C.2：memory 配对成功 — 从 tile 位置 burst 8 片紫色小彩屑
+    // memory 主题色 hue=270（紫）
+    const memCorrectRect = getTileButton(tile.id)?.getBoundingClientRect();
+    if (memCorrectRect) {
+      spawnMiniConfetti(
+        memCorrectRect.left + memCorrectRect.width / 2,
+        memCorrectRect.top + memCorrectRect.height / 2,
+        270,  // memory 主题色 hue
+        8
+      );
+    }
 
     window.setTimeout(() => {
       markTile(tile.id, "is-correct", false);
@@ -831,6 +842,8 @@ function handleMemoryTileClick(tileId) {
     playVoiceVariant("prompt.tryAgain", { replayable: false });
     setMascotState("sad");
     playVoice("sfx.wrong-buzz", "", { replayable: false });
+    // Phase 5C.2：memory 配对错误 — 屏幕边缘红光闪
+    flashError();
 
     window.setTimeout(() => {
       tile.revealed = false;
@@ -957,6 +970,16 @@ function handleQuizOptionClick(option, button) {
     playVoiceVariant("prompt.correct", { replayable: false });  // 多邻国式随机赞美
     setMascotState("happy");
     playVoice("sfx.correct-ding", "", { replayable: false });
+    // Phase 5C.2：pinyin / listen 答对 — 从 button 位置 burst 8 片彩屑
+    // 主题色 hue: pinyinFriend=210（蓝）, listenCard=130（绿）
+    const quizHue = state.game === GAMES.listenCard.id ? 130 : 210;
+    const quizRect = button.getBoundingClientRect();
+    spawnMiniConfetti(
+      quizRect.left + quizRect.width / 2,
+      quizRect.top + quizRect.height / 2,
+      quizHue,
+      8
+    );
 
     window.setTimeout(() => {
       button.classList.remove("is-correct");
@@ -972,6 +995,8 @@ function handleQuizOptionClick(option, button) {
   playVoiceVariant("prompt.tryAgain", { replayable: false });  // 多邻国式随机鼓励
   setMascotState("sad");
   playVoice("sfx.wrong-buzz", "", { replayable: false });
+  // Phase 5C.2：pinyin / listen 答错 — 屏幕边缘红光闪
+  flashError();
 
   window.setTimeout(() => {
     button.classList.remove("is-wrong");
@@ -1462,9 +1487,20 @@ function applyStroopColor(idx, colorName) {
     if (isCorrect) {
       setMascotState("happy");
       playVoice("sfx.correct-ding", "", { replayable: false });
+      // Phase 5C.2：stroop 填对 — 从 selectCell 位置 burst 8 片红色小彩屑
+      // stroop 主题色 hue=0（红）
+      const stroopRect = selectCell.getBoundingClientRect();
+      spawnMiniConfetti(
+        stroopRect.left + stroopRect.width / 2,
+        stroopRect.top + stroopRect.height / 2,
+        0,  // stroop 主题色 hue
+        8
+      );
     } else {
       setMascotState("sad");
       playVoice("sfx.wrong-buzz", "", { replayable: false });
+      // Phase 5C.2：stroop 填错 — 屏幕边缘红光闪
+      flashError();
     }
   }
 
