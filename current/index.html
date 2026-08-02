@@ -18,7 +18,15 @@
             <p class="eyebrow">幼小衔接</p>
             <h1 id="lobby-title">识字小游戏</h1>
           </div>
-          <img class="mascot-host" src="assets/mascot-wave.svg" alt="小书本招手" />
+          <div class="topbar-right">
+            <button id="open-voice-picker" class="icon-button" type="button" aria-label="选声音" title="选声音">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+            <img class="mascot-host" src="assets/mascot-wave.svg" alt="小书本招手" />
+          </div>
         </div>
 
         <div class="game-list">
@@ -107,7 +115,10 @@
             <p id="game-subtitle" class="eyebrow">识字消消乐</p>
             <h2 id="game-title">找到相同的字</h2>
           </div>
-          <button id="replay-sound" class="round-button" type="button" aria-label="再听一遍">听</button>
+          <div class="game-topbar-right">
+            <img class="mascot-host game-mascot" src="assets/mascot-wave.svg" alt="小书本" />
+            <button id="replay-sound" class="round-button" type="button" aria-label="再听一遍">听</button>
+          </div>
         </div>
 
         <div class="game-hud" aria-label="游戏状态">
@@ -142,6 +153,23 @@
         </div>
       </section>
     </main>
+      </div>
+    </div>
+
+    <!-- Voice picker modal: body-level, position:fixed, NOT inside .stage-canvas (避免被 transform scale 压住) -->
+    <div id="voice-picker" class="voice-modal" hidden role="dialog" aria-labelledby="voice-picker-title" aria-modal="true">
+      <div class="voice-modal-backdrop" data-close="voice-picker"></div>
+      <div class="voice-modal-panel">
+        <div class="voice-modal-head">
+          <h2 id="voice-picker-title">选个喜欢的声音</h2>
+          <button class="icon-button icon-button-sm" type="button" data-close="voice-picker" aria-label="关闭">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <p class="voice-modal-hint">点一行试听，喜欢就定了</p>
+        <div id="voice-list" class="voice-list" role="list"></div>
       </div>
     </div>
 
