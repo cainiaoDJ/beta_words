@@ -256,21 +256,77 @@ function setMascotState(state, bounce = true) {
 }
 
 // Confetti 粒子（多邻国式完成撒花）
+// Phase 4B 决策 3 选 A：随机彩色 hsl（之前是 4 色固定，扩展为全色相）
 function spawnConfetti(count = 24) {
   const host = document.createElement("div");
   host.className = "confetti-host";
   document.body.appendChild(host);
-  const colors = ["#2F8C73", "#F7D75C", "#E94F4F", "#5DADE2"];
   for (let i = 0; i < count; i++) {
     const piece = document.createElement("div");
     piece.className = "confetti-piece";
     piece.style.left = `${Math.random() * 100}vw`;
-    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    // 随机色相 + 亮彩 + 随机色（亮黄/粉/蓝/绿...）
+    const hue = Math.floor(Math.random() * 360);
+    const sat = 75 + Math.floor(Math.random() * 20);  // 75-95%
+    const light = 55 + Math.floor(Math.random() * 15); // 55-70%
+    piece.style.background = `hsl(${hue}, ${sat}%, ${light}%)`;
     piece.style.animationDelay = `${Math.random() * 300}ms`;
     host.appendChild(piece);
   }
   setTimeout(() => host.remove(), 1500);
 }
+
+// ============================================================
+// Phase 4B — 奖杯 + 星星 + 历史最佳
+// 父文档：docs/phase-plans/phase-4-complete-panel.md
+// 决策：1/2/3 选 A A A
+// ============================================================
+
+// 决策 1 A：简单档位 stars
+// rate<0.5: 0 颗, <0.8: 1 颗, <1.0: 2 颗, 1.0: 3 颗
+function calcStarCount(correct, total) {
+  if (!total) return 0;
+  const rate = correct / total;
+  if (rate < 0.5) return 0;
+  if (rate < 0.8) return 1;
+  if (rate < 1.0) return 2;
+  return 3;
+}
+
+// 奖杯档位：rate<0.5 不显示，<0.8 铜，<1.0 银，1.0 金
+function calcTrophyTier(correct, total) {
+  if (!total) return null;
+  const rate = correct / total;
+  if (rate < 0.5) return null;
+  if (rate < 0.8) return "bronze";
+  if (rate < 1.0) return "silver";
+  return "gold";
+}
+
+// 决策 2 A：奖杯 + 星星都显示
+// showTrophy: 只显示 1 档奖杯（init 全部 hidden，动态显示 1 档）
+function showTrophy(tier) {
+  document.querySelectorAll(".trophy").forEach((t) => { t.hidden = true; });
+  if (!tier) return;
+  const el = document.querySelector(`.trophy[data-tier="${tier}"]`);
+  if (el) el.hidden = false;
+}
+
+// showStars: 标记 earned（只 mark 已点亮，未点亮保持浅灰）
+function showStars(starCount) {
+  document.querySelectorAll(".complete-panel .star").forEach((s, i) => {
+    s.classList.toggle("is-earned", i < starCount);
+  });
+}
+
+// 统一调用：phase 4B 打包入口
+function renderTrophiesAndStars(correct, total) {
+  const stars = calcStarCount(correct, total);
+  const tier = calcTrophyTier(correct, total);
+  showTrophy(tier);
+  showStars(stars);
+}
+
 
 const screens = {
   lobby: document.querySelector("#lobby"),
@@ -1132,6 +1188,8 @@ function checkComplete() {
   }
   setMascotState("celebrate");  // 多邻国式 mascot 庆祝
   playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
+  // Phase 4B：match / memory 通用 — 奖杯 + 星星（状态类已包含）
+  renderTrophiesAndStars(state.matchedCount, state.totalTargets);
   window.setTimeout(() => {
     completePanel.hidden = false;
     const next = nextSize(state.size);
