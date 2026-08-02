@@ -277,6 +277,46 @@ function spawnConfetti(count = 24) {
 }
 
 // ============================================================
+// Phase 5A — 反馈动效基础设施（小彩屑 + 红光闪）
+// 父文档：docs/phase-plans/phase-5-feedback-animations.md
+// 决策：决策 1/2/3 选 A A A（每次答对彩屑 / 屏幕红光闪 / mascot 不动）
+// ============================================================
+
+// R-5A.1：答对小彩屑（从 (x, y) burst 散开 8 片）
+// Phase 5A fix：pieces 直接 appendChild 到 body（跳过 host div 避免 height:0 截断）
+function spawnMiniConfetti(x, y, hue, count = 8) {
+  const pieces = [];
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-mini-piece";
+    // 圆形 burst 散开 + 随机角度抖动
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+    const distance = 30 + Math.random() * 40;
+    piece.style.setProperty("--tx", `${Math.cos(angle) * distance}px`);
+    piece.style.setProperty("--ty", `${Math.sin(angle) * distance}px`);
+    piece.style.left = `${x}px`;
+    piece.style.top = `${y}px`;
+    // 主色 + 邻近色相随机
+    piece.style.background = `hsl(${(hue || 30) + (Math.random() * 30 - 15)}, 80%, 60%)`;
+    document.body.appendChild(piece);
+    pieces.push(piece);
+  }
+  setTimeout(() => pieces.forEach((p) => p.remove()), 800);
+}
+
+// R-5A.2：屏幕边缘红光闪（答错时）
+function flashError() {
+  const flash = document.createElement("div");
+  flash.className = "error-flash";
+  document.body.appendChild(flash);
+  requestAnimationFrame(() => flash.classList.add("is-active"));
+  setTimeout(() => {
+    flash.classList.remove("is-active");
+    setTimeout(() => flash.remove(), 400);
+  }, 80);
+}
+
+// ============================================================
 // Phase 4B — 奖杯 + 星星 + 历史最佳
 // 父文档：docs/phase-plans/phase-4-complete-panel.md
 // 决策：1/2/3 选 A A A
@@ -1033,6 +1073,13 @@ function getElapsedTime() {
 
 function updateTimerDisplay(elapsedMs) {
   timer.textContent = formatTime(elapsedMs);
+  // Phase 5A R-5A.3：计时器阈值变橙/红
+  // 阈值：>30s warning（橙），>60s danger（红+脉动）
+  const hudTimerEl = document.querySelector(".hud-timer");
+  if (hudTimerEl) {
+    hudTimerEl.classList.toggle("warning", elapsedMs > 30000 && elapsedMs <= 60000);
+    hudTimerEl.classList.toggle("danger", elapsedMs > 60000);
+  }
 }
 
 function formatTime(elapsedMs) {
