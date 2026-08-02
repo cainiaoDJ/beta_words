@@ -733,6 +733,17 @@ function handleMatchTileClick(tileId) {
     playVoiceVariant("prompt.correct", { replayable: false });
     setMascotState("happy");
     playVoice("sfx.correct-ding", "", { replayable: false });
+    // Phase 5B：match 配对成功 — 从第二个 tile 位置 burst 8 片橙色小彩屑
+    // match 主题色 hue=30（暖橙）
+    const secondRect = getTileButton(secondId)?.getBoundingClientRect();
+    if (secondRect) {
+      spawnMiniConfetti(
+        secondRect.left + secondRect.width / 2,
+        secondRect.top + secondRect.height / 2,
+        30,  // match 主题色 hue
+        8
+      );
+    }
 
     window.setTimeout(() => {
       markTile(firstId, "is-correct", false);
@@ -752,6 +763,8 @@ function handleMatchTileClick(tileId) {
     playVoiceVariant("prompt.tryAgain", { replayable: false });
     setMascotState("sad");
     playVoice("sfx.wrong-buzz", "", { replayable: false });
+    // Phase 5B：match 配对错误 — 屏幕边缘红光闪
+    flashError();
 
     window.setTimeout(() => {
       markTile(tileId, "is-wrong", false);
