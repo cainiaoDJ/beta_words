@@ -1,11 +1,15 @@
-<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="25" y="34" width="110" height="92" rx="8" fill="#F7D75C"/>
-  <path d="M34 42H78C87 42 94 49 94 58V126H50C41 126 34 119 34 110V42Z" fill="#FFF8D8"/>
-  <path d="M126 42H82C73 42 66 49 66 58V126H110C119 126 126 119 126 110V42Z" fill="#FFFFFF"/>
-  <path d="M80 50V126" stroke="#2B2B2B" stroke-width="5" stroke-linecap="round"/>
-  <path d="M50 66H67M50 82H67M93 66H110M93 82H110" stroke="#2B2B2B" stroke-width="5" stroke-linecap="round"/>
-  <path d="M48 102C53 96 63 96 68 102" stroke="#2B2B2B" stroke-width="5" stroke-linecap="round" fill="none"/>
-  <path d="M92 102C97 96 107 96 112 102" stroke="#2B2B2B" stroke-width="5" stroke-linecap="round" fill="none"/>
-  <path d="M65 110C72 124 88 124 95 110" stroke="#2B2B2B" stroke-width="5" stroke-linecap="round" fill="none"/>
-  <path d="M140 50 L142 56 L148 58 L142 60 L140 66 L138 60 L132 58 L138 56 Z" fill="#2F8C73"/>
+<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <rect x="8" y="16" width="48" height="36" rx="5" fill="#F7D75C"/>
+  <path d="M10 18H30C31 18 32 19 32 20V50H12C11 50 10 49 10 48V18Z" fill="#FFF8D8"/>
+  <path d="M54 18H34C33 18 32 19 32 20V50H52C53 50 54 49 54 48V18Z" fill="#FFFFFF"/>
+  <!-- 左眯眼笑（弧线朝下，加粗） -->
+  <path d="M14 30Q20 22 26 30" stroke="#2F8C73" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- 右眯眼笑 -->
+  <path d="M38 30Q44 22 50 30" stroke="#2F8C73" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- 大笑嘴（开口笑，加粗） -->
+  <path d="M22 38Q32 48 42 38Q32 44 22 38Z" fill="#2F8C73"/>
+  <path d="M24 39Q32 46 40 39" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+  <!-- 红脸蛋 -->
+  <circle cx="12" cy="36" r="3" fill="#F08080" opacity="0.6"/>
+  <circle cx="52" cy="36" r="3" fill="#F08080" opacity="0.6"/>
 </svg>

@@ -61,11 +61,11 @@
 
 ---
 
-## 🎨 Phase 1 — 主题色 token 基础设施（半天）✅ COMPLETED 2026-08-02
+## 🎨 Phase 1 — 主题色 token 基础设施（半天）
 
 **目标**：建立 per-game 主题色系统，让所有游戏组件能"切主题"而不需要重写组件。
 
-**做了什么**
+**做什么**
 - `:root` 加 `--theme-{gameId}-{slot}` 变量组（每组含 `-bg / -accent / -accent-soft / -ink / -glow`）
 - body 加 `data-game` 属性（与现有 `state.game` 同步），CSS 用 `[data-game="match"]` 选择器 hook
 - 现有 `.theme-` 组件类（按钮/卡片/进度条）扩展支持主题色
@@ -79,20 +79,6 @@
 - 252/252 测试通过（Phase A 完成时也要跑，证明没破）
 - 进每个游戏，主题色自动切换（不需手动加 class）
 - 详细 plan: `phase-plans/phase-1-theme-tokens.md`
-
-**实际 commit（feat/theme-tokens 分支）**
-- `ba8bcbe` Phase 1A 基础设施（30 变量 + data-game hook + syncTheme）
-- `4ae088d` Phase 1B 试点 match（橙）
-- `b4b1069` Phase 1C.1 memory（紫）
-- `4131e0f` Phase 1C.3 listenCard（绿）
-- `238587f` Phase 1C.4 stroopTrain（红）
-- `34654c1` Phase 1C.5 lobby（黄）
-- `bc79223` 修复（lobby 变量映射缺失 + stroop .is-active class 错误 + 重复块去重）
-
-**踩坑记录**（写进 topics/09）
-1. Phase 1A 漏写 `[data-game="lobby"]` 变量映射块 → lobby 主题色从未生效
-2. stroop 选中态 CSS 用 `.active` 但 app.js 用 `.is-active` → override 全失效，用 `!important` + 正确 class 修复
-3. append 重复块导致文件尾部两批相同 CSS → 手动去重时误删 memory/pinyin，从 git commit 恢复
 
 ---
 
@@ -320,13 +306,7 @@
 
 6. 截图给主人确认效果
 
-7. 【部署策略 2026-08-01 17:12 修订】
-   ├─ 本期所有 commit（feat/theme-tokens 起）：**只部署本机**
-   │     tar ... | tar -xzf - -C /home/alpha/apps/beta_words/current/
-   │     本机服务运行中 (beta-words.service on 192.168.31.60:8091)
-   ├─ **全部 phase 完成**后再统一发 VPS：
-   │     tar ... | ssh ... 'tar -xzf - -C /var/www/games/current/'
-   └─ 避免开发期每次小改都双向同步、主人审不到位
+7. merge 回 main → 立刻部署（tar+ssh）
 
 8. 更新 phase-plans/phase-X-<name>.md 为 completed（标 ✅ + 实际改动摘要）
 ```

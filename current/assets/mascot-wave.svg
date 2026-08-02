@@ -1,11 +1,17 @@
-<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="25" y="34" width="110" height="92" rx="8" fill="#F7D75C"/>
-  <path d="M34 42H78C87 42 94 49 94 58V126H50C41 126 34 119 34 110V42Z" fill="#FFF8D8"/>
-  <path d="M126 42H82C73 42 66 49 66 58V126H110C119 126 126 119 126 110V42Z" fill="#FFFFFF"/>
-  <path d="M80 50V126" stroke="#2B2B2B" stroke-width="5" stroke-linecap="round"/>
-  <path d="M50 66H67M50 82H67M93 66H110M93 82H110" stroke="#2B2B2B" stroke-width="5" stroke-linecap="round"/>
-  <circle cx="58" cy="105" r="5" fill="#2B2B2B"/>
-  <circle cx="102" cy="105" r="5" fill="#2B2B2B"/>
-  <path d="M70 113C76 119 84 119 90 113" stroke="#2B2B2B" stroke-width="5" stroke-linecap="round"/>
-  <path d="M143 70 Q148 75 143 80 M148 75 Q153 80 148 85" stroke="#2F8C73" stroke-width="3" stroke-linecap="round" fill="none"/>
+<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <!-- 书身：四周留出透明 padding，让 SVG 边缘更干净，避免抗锯齿"黑边"感 -->
+  <rect x="8" y="16" width="48" height="36" rx="5" fill="#F7D75C"/>
+  <!-- 左页（米白）撑满书身内部 -->
+  <path d="M10 18H30C31 18 32 19 32 20V50H12C11 50 10 49 10 48V18Z" fill="#FFF8D8"/>
+  <!-- 右页（纯白） -->
+  <path d="M54 18H34C33 18 32 19 32 20V50H52C53 50 54 49 54 48V18Z" fill="#FFFFFF"/>
+  <!-- 不用书脊线了，左右页颜色对比已经做了视觉分隔 -->
+  <!-- 左眼（实心圆，深绿色） -->
+  <circle cx="20" cy="30" r="3" fill="#2F8C73"/>
+  <!-- 右眼 -->
+  <circle cx="44" cy="30" r="3" fill="#2F8C73"/>
+  <!-- 笑嘴（加粗） -->
+  <path d="M26 38Q32 44 38 38" stroke="#2F8C73" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- 招手三道（加粗） -->
+  <path d="M48 24L56 16M48 30L56 22M48 36L56 28" stroke="#2F8C73" stroke-width="3" stroke-linecap="round" fill="none"/>
 </svg>
