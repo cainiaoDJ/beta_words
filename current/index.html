@@ -456,10 +456,111 @@
         </svg>
       </div>
       <div class="letterbox-bg" data-bg="stroopTrain" aria-hidden="true">
-        <!-- Phase 6C 待填：彩虹 + 太阳 (6B 占位) -->
-        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #b32f2f"/>
-        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #b32f2f"/>
-        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #b32f2f"/>
+        <!-- Phase 6C stroopTrain: 太阳 + 彩虹 / 彩色泡泡 + 风车 / 上升彩球 + 闪星
+             配色：深红底 (#b32f2f) + 彩虹 6 色 + 黄/白高对比元素
+             Stroop 主题是颜色识别，所以 letterbox 元素颜色尽量丰富 -->
+        <!-- Layer 1 远景（60s 漂）：上半太阳（多层光晕）+ 下半 3 彩虹弧 -->
+        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #b32f2f">
+          <!-- 上半太阳：1 主体 + 4 层光晕 -->
+          <circle cx="240" cy="38" r="18" fill="#fff3a8" opacity="1"/>
+          <circle cx="240" cy="38" r="25" fill="#ffd43b" opacity="0.6"/>
+          <circle cx="240" cy="38" r="35" fill="#ffd43b" opacity="0.35"/>
+          <circle cx="240" cy="38" r="48" fill="#ffa94d" opacity="0.2"/>
+          <circle cx="240" cy="38" r="62" fill="#ffa94d" opacity="0.1"/>
+          <!-- 上半小彩虹弧（3 色） -->
+          <path d="M 30 50 a 30 30 0 0 1 60 0" stroke="#69db7c" stroke-width="3" fill="none" opacity="1"/>
+          <path d="M 35 50 a 25 25 0 0 1 50 0" stroke="#4dabf7" stroke-width="3" fill="none" opacity="1"/>
+          <path d="M 40 50 a 20 20 0 0 1 40 0" stroke="#9775fa" stroke-width="3" fill="none" opacity="1"/>
+          <!-- 下半小彩虹弧（3 色） -->
+          <path d="M 50 760 a 35 35 0 0 1 70 0" stroke="#ffd43b" stroke-width="3" fill="none" opacity="1"/>
+          <path d="M 55 760 a 30 30 0 0 1 60 0" stroke="#69db7c" stroke-width="3" fill="none" opacity="1"/>
+          <path d="M 60 760 a 25 25 0 0 1 50 0" stroke="#4dabf7" stroke-width="3" fill="none" opacity="1"/>
+          <!-- 下半右太阳（更小） -->
+          <circle cx="265" cy="775" r="14" fill="#fff3a8" opacity="1"/>
+          <circle cx="265" cy="775" r="20" fill="#ffd43b" opacity="0.5"/>
+          <circle cx="265" cy="775" r="28" fill="#ffa94d" opacity="0.2"/>
+        </svg>
+        <!-- Layer 2 中景（30s 漂）：4 风车 + 4 彩色泡泡 -->
+        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #b32f2f">
+          <!-- 上半 2 风车（4 叶片 path + 中心圆） -->
+          <g transform="translate(60, 50)">
+            <path d="M 0 0 L -6 -12 L 0 -10 L 6 -12 Z" fill="#ffffff" opacity="0.95"/>
+            <path d="M 0 0 L 12 -6 L 10 0 L 12 6 Z" fill="#ffd43b" opacity="0.95"/>
+            <path d="M 0 0 L 6 12 L 0 10 L -6 12 Z" fill="#69db7c" opacity="0.95"/>
+            <path d="M 0 0 L -12 6 L -10 0 L -12 -6 Z" fill="#4dabf7" opacity="0.95"/>
+            <circle cx="0" cy="0" r="2" fill="#b32f2f" opacity="1"/>
+            <line x1="0" y1="0" x2="0" y2="15" stroke="#ffffff" stroke-width="0.8" opacity="0.6"/>
+          </g>
+          <g transform="translate(180, 30)">
+            <path d="M 0 0 L -5 -10 L 0 -8 L 5 -10 Z" fill="#ffd43b" opacity="0.95"/>
+            <path d="M 0 0 L 10 -5 L 8 0 L 10 5 Z" fill="#ffffff" opacity="0.95"/>
+            <path d="M 0 0 L 5 10 L 0 8 L -5 10 Z" fill="#4dabf7" opacity="0.95"/>
+            <path d="M 0 0 L -10 5 L -8 0 L -10 -5 Z" fill="#69db7c" opacity="0.95"/>
+            <circle cx="0" cy="0" r="1.5" fill="#b32f2f" opacity="1"/>
+          </g>
+          <!-- 下半 2 风车 -->
+          <g transform="translate(110, 760)">
+            <path d="M 0 0 L -6 -12 L 0 -10 L 6 -12 Z" fill="#69db7c" opacity="0.95"/>
+            <path d="M 0 0 L 12 -6 L 10 0 L 12 6 Z" fill="#ffffff" opacity="0.95"/>
+            <path d="M 0 0 L 6 12 L 0 10 L -6 12 Z" fill="#ffd43b" opacity="0.95"/>
+            <path d="M 0 0 L -12 6 L -10 0 L -12 -6 Z" fill="#4dabf7" opacity="0.95"/>
+            <circle cx="0" cy="0" r="2" fill="#b32f2f" opacity="1"/>
+          </g>
+          <g transform="translate(230, 785)">
+            <path d="M 0 0 L -4 -8 L 0 -7 L 4 -8 Z" fill="#4dabf7" opacity="0.95"/>
+            <path d="M 0 0 L 8 -4 L 7 0 L 8 4 Z" fill="#ffd43b" opacity="0.95"/>
+            <path d="M 0 0 L 4 8 L 0 7 L -4 8 Z" fill="#ffffff" opacity="0.95"/>
+            <path d="M 0 0 L -8 4 L -7 0 L -8 -4 Z" fill="#69db7c" opacity="0.95"/>
+            <circle cx="0" cy="0" r="1.5" fill="#b32f2f" opacity="1"/>
+          </g>
+          <!-- 4 彩色泡泡（半透明圆 + 高光） -->
+          <circle cx="120" cy="35" r="6" fill="#ffffff" opacity="0.7"/>
+          <circle cx="118" cy="33" r="2" fill="#ffffff" opacity="1"/>
+          <circle cx="240" cy="55" r="5" fill="#69db7c" opacity="0.75"/>
+          <circle cx="238" cy="53" r="2" fill="#ffffff" opacity="1"/>
+          <circle cx="50" cy="775" r="5" fill="#4dabf7" opacity="0.75"/>
+          <circle cx="48" cy="773" r="2" fill="#ffffff" opacity="1"/>
+          <circle cx="180" cy="750" r="6" fill="#ffd43b" opacity="0.75"/>
+          <circle cx="178" cy="748" r="2" fill="#ffffff" opacity="1"/>
+        </svg>
+        <!-- Layer 3 近景（15s 漂）：5 上升彩球 + 4 闪星 + 2 风车点 -->
+        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #b32f2f">
+          <!-- 上半 2 上升彩球 -->
+          <circle cx="35" cy="40" r="4" fill="#ffd43b" opacity="0.95">
+            <animate attributeName="cy" values="55;25;55" dur="4s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="4s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="200" cy="50" r="3.5" fill="#69db7c" opacity="0.95">
+            <animate attributeName="cy" values="65;30;65" dur="5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="5s" repeatCount="indefinite"/>
+          </circle>
+          <!-- 下半 2 上升彩球 -->
+          <circle cx="65" cy="755" r="3.5" fill="#4dabf7" opacity="0.95">
+            <animate attributeName="cy" values="780;730;780" dur="4.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="4.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="240" cy="770" r="4" fill="#ffffff" opacity="0.95">
+            <animate attributeName="cy" values="790;745;790" dur="5.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="5.5s" repeatCount="indefinite"/>
+          </circle>
+          <!-- 上半 2 闪星 -->
+          <polygon points="100,30 102,34 106,34 103,37 104,41 100,39 96,41 97,37 94,34 98,34" fill="#ffffff">
+            <animate attributeName="opacity" values="0.4;1;0.4" dur="2.2s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="160,60 162,64 166,64 163,67 164,71 160,69 156,71 157,67 154,64 158,64" fill="#ffd43b">
+            <animate attributeName="opacity" values="1;0.4;1" dur="1.8s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 下半 2 闪星 -->
+          <polygon points="40,790 42,794 46,794 43,797 44,801 40,799 36,801 37,797 34,794 38,794" fill="#69db7c">
+            <animate attributeName="opacity" values="0.4;1;0.4" dur="2.4s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="195,755 197,759 201,759 198,762 199,766 195,764 191,766 192,762 189,759 193,759" fill="#ffffff">
+            <animate attributeName="opacity" values="1;0.4;1" dur="1.7s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 2 小彩点（点缀） -->
+          <circle cx="135" cy="45" r="2" fill="#4dabf7" opacity="0.85"/>
+          <circle cx="280" cy="745" r="2" fill="#ffd43b" opacity="0.85"/>
+        </svg>
       </div>
       <div class="stage-canvas">
         <main class="app" aria-live="polite">
