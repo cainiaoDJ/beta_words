@@ -70,10 +70,92 @@
         </svg>
       </div>
       <div class="letterbox-bg" data-bg="match" aria-hidden="true">
-        <!-- Phase 6C 待填：橙秋叶 + 阳光 (6B 占位) -->
-        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #cd5e1f"/>
-        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #cd5e1f"/>
-        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #cd5e1f"/>
+        <!-- Phase 6C match: 阳光 + 秋叶 / 气球 + 飘带 / 上升星 + 彩屑
+             元素全部集中在 letterbox 区域 (cy 0-75 上半 / cy 728-800 下半)
+             中间 canvas 区域（cy 80-720）不放元素（被 cream 画布覆盖）-->
+        <!-- Layer 1 远景（60s 漂）：上半阳光 + 4 片秋叶（上下半各 2）-->
+        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #cd5e1f">
+          <!-- 上半 letterbox 阳光：1 主体 + 3 层光晕 -->
+          <circle cx="240" cy="35" r="22" fill="#fff3a8" opacity="0.9"/>
+          <circle cx="240" cy="35" r="32" fill="#f7d75c" opacity="0.35"/>
+          <circle cx="240" cy="35" r="45" fill="#f7d75c" opacity="0.2"/>
+          <circle cx="240" cy="35" r="60" fill="#f7d75c" opacity="0.1"/>
+          <!-- 上半 2 片秋叶 -->
+          <path d="M 30 40 q 7 -9 14 0 q 7 9 0 16 q -7 9 -14 0 q -7 -9 0 -16 z" fill="#f7d75c" opacity="0.85" transform="rotate(20 37 48)"/>
+          <path d="M 100 65 q 6 -8 12 0 q 6 8 0 14 q -6 8 -12 0 q -6 -8 0 -14 z" fill="#fff3a8" opacity="0.8" transform="rotate(-30 106 72)"/>
+          <!-- 下半 2 片秋叶 -->
+          <path d="M 160 750 q 6 -8 12 0 q 6 8 0 14 q -6 8 -12 0 q -6 -8 0 -14 z" fill="#fff3a8" opacity="0.85" transform="rotate(45 166 757)"/>
+          <path d="M 60 785 q 7 -9 14 0 q 7 9 0 16 q -7 9 -14 0 q -7 -9 0 -16 z" fill="#f7d75c" opacity="0.8" transform="rotate(60 67 793)"/>
+        </svg>
+        <!-- Layer 2 中景（30s 漂）：上半 3 气球 + 下半 3 气球 + 2 飘带 -->
+        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #cd5e1f">
+          <!-- 上半 letterbox 气球 3 个 -->
+          <ellipse cx="30" cy="30" rx="7" ry="9" fill="#fff3a8" opacity="0.95"/>
+          <line x1="30" y1="40" x2="30" y2="72" stroke="#3d2410" stroke-width="0.6" opacity="0.5"/>
+          <ellipse cx="100" cy="50" rx="7" ry="9" fill="#ffffff" opacity="0.95"/>
+          <line x1="100" y1="60" x2="100" y2="72" stroke="#3d2410" stroke-width="0.6" opacity="0.5"/>
+          <ellipse cx="170" cy="25" rx="7" ry="9" fill="#f7d75c" opacity="0.95"/>
+          <line x1="170" y1="35" x2="170" y2="70" stroke="#3d2410" stroke-width="0.6" opacity="0.5"/>
+          <!-- 下半 letterbox 气球 3 个 -->
+          <ellipse cx="60" cy="745" rx="7" ry="9" fill="#ffffff" opacity="0.95"/>
+          <line x1="60" y1="755" x2="60" y2="790" stroke="#3d2410" stroke-width="0.6" opacity="0.5"/>
+          <ellipse cx="145" cy="755" rx="7" ry="9" fill="#fff3a8" opacity="0.95"/>
+          <line x1="145" y1="765" x2="145" y2="795" stroke="#3d2410" stroke-width="0.6" opacity="0.5"/>
+          <ellipse cx="230" cy="740" rx="7" ry="9" fill="#f7d75c" opacity="0.95"/>
+          <line x1="230" y1="750" x2="230" y2="788" stroke="#3d2410" stroke-width="0.6" opacity="0.5"/>
+          <!-- 2 条飘带（短弯曲，位于 letterbox 区域）-->
+          <path d="M 80 30 q 8 15 -3 28" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+          <path d="M 240 740 q -8 18 3 32" stroke="#fff3a8" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+        </svg>
+        <!-- Layer 3 近景（15s 漂）：6 星 + 6 彩点（全部 letterbox 区域）-->
+        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #cd5e1f">
+          <!-- 上半 3 星 -->
+          <polygon points="40,30 42,36 48,36 43,40 45,46 40,42 35,46 37,40 32,36 38,36" fill="#ffffff">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="140,55 141,59 145,59 142,61 143,65 140,63 137,65 138,61 135,59 139,59" fill="#ffffff">
+            <animate attributeName="opacity" values="1;0.5;1" dur="1.8s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="200,30 202,36 208,36 203,40 205,46 200,42 195,46 197,40 192,36 198,36" fill="#fff3a8">
+            <animate attributeName="opacity" values="0.6;1;0.6" dur="2.2s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 下半 3 星 -->
+          <polygon points="35,755 37,761 43,761 38,765 40,771 35,767 30,771 32,765 27,761 33,761" fill="#ffffff">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2.4s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="170,775 172,781 178,781 173,785 175,791 170,787 165,791 167,785 162,781 168,781" fill="#fff3a8">
+            <animate attributeName="opacity" values="1;0.5;1" dur="1.6s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="260,760 262,766 268,766 263,770 265,776 260,772 255,776 257,770 252,766 258,766" fill="#ffffff">
+            <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 上半 3 彩点（上下浮动但不出 letterbox）-->
+          <circle cx="65" cy="50" r="2.5" fill="#ffffff" opacity="0.85">
+            <animate attributeName="cy" values="60;30;60" dur="5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="125" cy="30" r="2" fill="#fff3a8" opacity="0.85">
+            <animate attributeName="cy" values="40;15;40" dur="6s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="6s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="265" cy="55" r="2.5" fill="#ffffff" opacity="0.85">
+            <animate attributeName="cy" values="65;35;65" dur="4.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="4.5s" repeatCount="indefinite"/>
+          </circle>
+          <!-- 下半 3 彩点 -->
+          <circle cx="90" cy="765" r="2.5" fill="#ffffff" opacity="0.85">
+            <animate attributeName="cy" values="780;745;780" dur="5.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="5.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="195" cy="745" r="2" fill="#fff3a8" opacity="0.85">
+            <animate attributeName="cy" values="760;730;760" dur="6.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="6.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="115" cy="780" r="2.5" fill="#ffffff" opacity="0.85">
+            <animate attributeName="cy" values="795;755;795" dur="5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="5s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
       </div>
       <div class="letterbox-bg" data-bg="memory" aria-hidden="true">
         <!-- Phase 6C 待填：紫星空 + 弯月 (6B 占位) -->
