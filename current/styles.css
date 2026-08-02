@@ -2041,3 +2041,62 @@ h2 {
   40%  { transform: scale(1.12); box-shadow: 0 0 0 12px transparent; }
   100% { transform: scale(1.08); box-shadow: 0 0 0 0 transparent; }
 }
+
+/* ============================================================================
+ * Phase 3C — 推广 4 游戏 + 专属装饰（无决策依赖部分）
+ * 父文档：docs/phase-plans/phase-3-board-decoration.md
+ * 依赖：Phase 3A + 3B
+ *
+ * 本节先做不依赖决策 1/2 的部分：
+ *   - 4 游戏通用 .is-correct / .is-wrong 主题色化
+ *   - stroop 专属：待选区虚线换主题色 + 颜色条按钮 4px 主题色描边
+ *
+ * 决策 1 (memory 3D 翻牌) / 决策 2 (pinyin/listen 小耳朵) 等主人拍板再做。
+ * ============================================================================
+ */
+
+/* ---- 4 游戏通用 .is-correct 主题色化 ---- */
+[data-game="memory"] .tile.is-correct,
+[data-game="pinyinFriend"] .option-button.is-correct,
+[data-game="listenCard"] .option-button.is-correct {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="memory"] .tile.is-correct {
+  animation: match-flash 700ms ease-out forwards;
+}
+[data-game="pinyinFriend"] .option-button.is-correct,
+[data-game="listenCard"] .option-button.is-correct {
+  animation: option-correct-spring 600ms ease-out forwards;
+}
+@keyframes option-correct-spring {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* ---- stroop 待选区外框虚线换主题色 ---- */
+[data-game="stroopTrain"] .stroop-select {
+  border: 2px dashed var(--theme-accent);
+}
+/* ---- 颜色条按钮 4px 主题色描边（区分已选） ---- */
+[data-game="stroopTrain"] .stroop-color-btn {
+  border: 4px solid transparent;
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+[data-game="stroopTrain"] .stroop-color-btn.is-active,
+[data-game="stroopTrain"] .stroop-color-btn:active {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px var(--theme-glow);
+}
+
+/* ---- 通用题目卡（listen-prompt / quiz-word）主题色加粗 + 1° 微动 ---- */
+[data-game="listenCard"] .listen-prompt {
+  border: 3px solid var(--theme-accent);
+  transform: rotate(-1deg);
+}
+[data-game="pinyinFriend"] .quiz-word {
+  border: 3px solid var(--theme-accent);
+  transform: rotate(1deg);
+}
