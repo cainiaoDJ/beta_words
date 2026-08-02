@@ -942,6 +942,8 @@ function completeQuizGame() {
   }
   setMascotState("celebrate");  // 多邻国式 mascot 庆祝
   playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
+  // Phase 4C：pinyin / listen quiz 类 — 奖杯 + 星星
+  renderTrophiesAndStars(state.matchedCount, state.totalTargets);
   window.setTimeout(() => {
     completePanel.hidden = false;
     const next = nextSize(state.size);
