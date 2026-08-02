@@ -2338,3 +2338,19 @@ h2 {
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.05); }
 }
+
+/* ============================================================================
+ * Phase 5C.1 — Stroop 待选格填色滑入动画
+ * 父文档：docs/phase-plans/phase-5-feedback-animations.md
+ * ============================================================================
+ */
+
+.stroop-select-cell.is-correct,
+.stroop-select-cell.is-wrong {
+  animation: stroop-fill-slide 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes stroop-fill-slide {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1.04); opacity: 1; }
+}
