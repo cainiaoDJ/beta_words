@@ -13,38 +13,58 @@
       <!-- Phase 6A: letterbox 3 层 parallax SVG 背景（每个游戏/场景 1 个） -->
       <div class="letterbox-bg" data-bg="lobby" aria-hidden="true">
         <!-- Layer 1 远景：暖云朵 + 太阳光晕（60s 漂）-->
-        <svg class="bg-layer bg-layer-1" viewBox="0 0 200 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="20" cy="30" r="10" fill="#fff8d8" opacity="0.6"/>
-          <ellipse cx="50" cy="35" rx="14" ry="6" fill="#f5e8c5" opacity="0.5"/>
-          <circle cx="100" cy="20" r="8" fill="#fff8d8" opacity="0.55"/>
-          <ellipse cx="140" cy="40" rx="12" ry="5" fill="#f5e8c5" opacity="0.5"/>
-          <circle cx="180" cy="25" r="9" fill="#fff8d8" opacity="0.6"/>
+        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="30" cy="40" r="12" fill="#fff8d8" opacity="0.6"/>
+          <ellipse cx="80" cy="50" rx="20" ry="8" fill="#f5e8c5" opacity="0.5"/>
+          <circle cx="160" cy="30" r="10" fill="#fff8d8" opacity="0.55"/>
+          <ellipse cx="220" cy="55" rx="18" ry="7" fill="#f5e8c5" opacity="0.5"/>
+          <circle cx="280" cy="35" r="11" fill="#fff8d8" opacity="0.6"/>
+          <!-- 下半 letterbox 也分布云朵 -->
+          <circle cx="60" cy="700" r="12" fill="#fff8d8" opacity="0.6"/>
+          <ellipse cx="120" cy="720" rx="18" ry="7" fill="#f5e8c5" opacity="0.5"/>
+          <circle cx="220" cy="710" r="10" fill="#fff8d8" opacity="0.55"/>
+          <ellipse cx="280" cy="730" rx="16" ry="6" fill="#f5e8c5" opacity="0.5"/>
         </svg>
         <!-- Layer 2 中景：飘动气球 + 铃铛（30s 漂）-->
-        <svg class="bg-layer bg-layer-2" viewBox="0 0 200 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="30" cy="40" rx="4" ry="5" fill="#f08c3a" opacity="0.7"/>
-          <line x1="30" y1="46" x2="30" y2="80" stroke="#999" stroke-width="0.3" opacity="0.6"/>
-          <ellipse cx="80" cy="55" rx="3" ry="4" fill="#8a4fd6" opacity="0.7"/>
-          <line x1="80" y1="60" x2="80" y2="90" stroke="#999" stroke-width="0.3" opacity="0.6"/>
-          <ellipse cx="130" cy="30" rx="4" ry="5" fill="#2fa84f" opacity="0.7"/>
-          <line x1="130" y1="36" x2="130" y2="70" stroke="#999" stroke-width="0.3" opacity="0.6"/>
-          <ellipse cx="170" cy="50" rx="3" ry="4" fill="#2f80e9" opacity="0.7"/>
-          <line x1="170" y1="55" x2="170" y2="85" stroke="#999" stroke-width="0.3" opacity="0.6"/>
+        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="50" cy="60" rx="6" ry="8" fill="#f08c3a" opacity="0.7"/>
+          <line x1="50" y1="70" x2="50" y2="120" stroke="#999" stroke-width="0.5" opacity="0.6"/>
+          <ellipse cx="130" cy="80" rx="5" ry="7" fill="#8a4fd6" opacity="0.7"/>
+          <line x1="130" y1="89" x2="130" y2="140" stroke="#999" stroke-width="0.5" opacity="0.6"/>
+          <ellipse cx="220" cy="50" rx="6" ry="8" fill="#2fa84f" opacity="0.7"/>
+          <line x1="220" y1="60" x2="220" y2="110" stroke="#999" stroke-width="0.5" opacity="0.6"/>
+          <ellipse cx="280" cy="75" rx="5" ry="7" fill="#2f80e9" opacity="0.7"/>
+          <line x1="280" y1="84" x2="280" y2="135" stroke="#999" stroke-width="0.5" opacity="0.6"/>
+          <!-- 下半 letterbox 气球 -->
+          <ellipse cx="60" cy="680" rx="6" ry="8" fill="#f08c3a" opacity="0.7"/>
+          <line x1="60" y1="690" x2="60" y2="740" stroke="#999" stroke-width="0.5" opacity="0.6"/>
+          <ellipse cx="180" cy="720" rx="5" ry="7" fill="#8a4fd6" opacity="0.7"/>
+          <line x1="180" y1="729" x2="180" y2="770" stroke="#999" stroke-width="0.5" opacity="0.6"/>
         </svg>
         <!-- Layer 3 近景：闪烁小星 + 慢速彩屑（15s 漂）-->
-        <svg class="bg-layer bg-layer-3" viewBox="0 0 200 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="40,20 42,25 47,25 43,28 45,33 40,30 35,33 37,28 33,25 38,25" fill="#f7d75c">
+        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="60,40 63,46 69,46 64,50 67,56 60,52 53,56 56,50 51,46 57,46" fill="#f7d75c">
             <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
           </polygon>
-          <polygon points="90,60 91,63 94,63 92,65 93,68 90,66 87,68 88,65 86,63 89,63" fill="#f7d75c">
+          <polygon points="180,80 182,84 187,84 184,87 186,91 180,88 174,91 176,87 173,84 178,84" fill="#f7d75c">
             <animate attributeName="opacity" values="1;0.3;1" dur="1.8s" repeatCount="indefinite"/>
           </polygon>
-          <polygon points="150,30 152,34 156,34 153,37 154,41 150,38 146,41 147,37 144,34 148,34" fill="#f7d75c">
+          <polygon points="270,55 273,61 279,61 274,65 277,71 270,67 263,71 266,65 261,61 267,61" fill="#f7d75c">
             <animate attributeName="opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite"/>
           </polygon>
-          <circle cx="60" cy="70" r="1.5" fill="#e94f4f" opacity="0.6"/>
-          <circle cx="120" cy="20" r="1.2" fill="#5DADE2" opacity="0.6"/>
-          <circle cx="180" cy="80" r="1.3" fill="#2fa84f" opacity="0.6"/>
+          <!-- 下半 letterbox 星点 -->
+          <polygon points="50,720 52,724 57,724 53,727 55,731 50,728 45,731 47,727 43,724 48,724" fill="#f7d75c">
+            <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="200,760 202,764 207,764 203,767 205,771 200,768 195,771 197,767 193,764 198,764" fill="#f7d75c">
+            <animate attributeName="opacity" values="0.3;1;0.3" dur="1.8s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="280,710 282,714 287,714 283,717 285,721 280,718 275,721 277,717 273,714 278,714" fill="#f7d75c">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite"/>
+          </polygon>
+          <circle cx="100" cy="100" r="2" fill="#e94f4f" opacity="0.6"/>
+          <circle cx="200" cy="30" r="2" fill="#5DADE2" opacity="0.6"/>
+          <circle cx="80" cy="750" r="2" fill="#2fa84f" opacity="0.6"/>
         </svg>
       </div>
       <div class="stage-canvas">

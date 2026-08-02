@@ -2381,15 +2381,29 @@ h2 {
 /* Phase 6A 修复：layer width 100% + slice 自然裁切填满 letterbox
  * 漂移用 viewBox 内元素的 x 坐标实现（不同 layer 不同 x range）
  * 当前 6A 简化：去掉漂移动画，先让 letterbox 可见（漂移留到 6B） */
+/* Phase 6A 修复：拉宽 200% + drift 动画
+ * viewBox 320x800 + width 200% = 640，translateX(-320px) 回到原位
+ * 漂移速度：远 60s / 中 30s / 近 15s（plan 决策 2 A 同方向漂）*/
 .bg-layer {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  width: 200%;
   height: 100%;
   pointer-events: none;
 }
-.bg-layer-1 { opacity: 0.25; }
-.bg-layer-2 { opacity: 0.35; }
-.bg-layer-3 { opacity: 0.40; }
-/* 6B 再加 bg-drift 动画：viewBox 200x100 + slice fill，3 层用 transform: translateX 慢漂 */
+.bg-layer-1 { opacity: 0.25; animation: bg-drift-slow 60s linear infinite; }
+.bg-layer-2 { opacity: 0.35; animation: bg-drift-medium 30s linear infinite; }
+.bg-layer-3 { opacity: 0.40; animation: bg-drift-fast 15s linear infinite; }
+@keyframes bg-drift-slow {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-320px); }
+}
+@keyframes bg-drift-medium {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-320px); }
+}
+@keyframes bg-drift-fast {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-320px); }
+}
