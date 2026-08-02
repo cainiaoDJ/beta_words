@@ -557,16 +557,20 @@ function createTile(kind, value) {
 
 function renderBoard() {
   board.innerHTML = "";
+  const isMemory = state.game === GAMES.memory.id;
   state.tiles.forEach((tile, index) => {
     const button = document.createElement("button");
     button.className = `tile ${tile.kind === "bonus" ? "bonus" : ""}`;
     button.type = "button";
     button.dataset.id = tile.id;
     button.setAttribute("role", "gridcell");
-    // Phase 3D 决策 1：memory 3D 翻牌 — 内部加 .tile-front / .tile-back
-    button.innerHTML =
-      `<span class="tile-face tile-back" aria-hidden="true">?</span>` +
-      `<span class="tile-face tile-front" aria-hidden="true"></span>`;
+    // Phase 3D 决策 1：memory 3D 翻牌 — 只在 memory 模式加 .tile-face / .tile-back DOM
+    // match 模式直接用 button textContent（避免多出来 "?"）
+    if (isMemory) {
+      button.innerHTML =
+        `<span class="tile-face tile-back" aria-hidden="true">?</span>` +
+        `<span class="tile-face tile-front" aria-hidden="true"></span>`;
+    }
     updateTileButton(button, tile);
     button.style.transitionDelay = `${Math.min(index * 8, 80)}ms`;
     button.addEventListener("click", () => handleTileClick(tile.id));
@@ -916,9 +920,14 @@ function updateTileButton(button, tile) {
   const isFlipped = isMemory && tile.kind === "word" && (tile.revealed || tile.matched) && !isHidden;
   button.classList.toggle("flipped", isFlipped);
   button.setAttribute("aria-label", getTileLabel(tile, isHidden));
-  // Phase 3D 决策 1：内部结构化 — 文字写到 .tile-front，.tile-back 是 "?"
-  const front = button.querySelector(".tile-front");
-  if (front) front.textContent = getTileText(tile, isHidden);
+  if (isMemory) {
+    // 内部结构化 — 文字写到 .tile-front，.tile-back 是 "?"
+    const front = button.querySelector(".tile-front");
+    if (front) front.textContent = getTileText(tile, isHidden);
+  } else {
+    // match 模式：直接用 button textContent（无 DOM 结构）
+    button.textContent = getTileText(tile, false);
+  }
 }
 
 function getTileText(tile, isHidden) {

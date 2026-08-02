@@ -2091,14 +2091,14 @@ h2 {
   box-shadow: 0 0 0 3px var(--theme-glow);
 }
 
-/* ---- 通用题目卡（listen-prompt / quiz-word）主题色加粗 + 1° 微动 ---- */
+/* ---- 通用题目卡（listen-prompt / quiz-word）主题色加粗 + 0.4° 微动（主人反馈 1° 太歪）---- */
 [data-game="listenCard"] .listen-prompt {
   border: 3px solid var(--theme-accent);
-  transform: rotate(-1deg);
+  transform: rotate(-0.4deg);
 }
 [data-game="pinyinFriend"] .quiz-word {
   border: 3px solid var(--theme-accent);
-  transform: rotate(1deg);
+  transform: rotate(0.4deg);
 }
 
 /* ============================================================================
@@ -2139,8 +2139,8 @@ h2 {
 }
 @keyframes ear-wiggle {
   0%, 100% { transform: translateY(-50%) rotate(0deg); }
-  25%      { transform: translateY(-50%) rotate(-12deg); }
-  75%      { transform: translateY(-50%) rotate(12deg); }
+  25%      { transform: translateY(-50%) rotate(-6deg); }
+  75%      { transform: translateY(-50%) rotate(6deg); }
 }
 /* 已选状态：耳朵保持显眼 */
 .option-button.is-correct .option-ear,
