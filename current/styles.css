@@ -2100,3 +2100,51 @@ h2 {
   border: 3px solid var(--theme-accent);
   transform: rotate(1deg);
 }
+
+/* ============================================================================
+ * Phase 3D — 决策 1 + 决策 2 落地
+ * 父文档：docs/phase-plans/phase-3-board-decoration.md
+ * 决策 1: Memory 3D 翻牌（A — 完整做）
+ * 决策 2: Pinyin/Listen 小耳朵图标（A — 完整做）
+ * ============================================================================
+ */
+
+/* ---- 决策 2: pinyin/listen option-button 右上角小耳朵 ---- */
+.option-button {
+  position: relative;
+  padding-right: 36px !important;  /* 给耳朵留位（覆盖基础 padding: 8px 12px） */
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start;
+}
+.option-button .option-text {
+  flex: 1;
+  text-align: left;
+}
+.option-button .option-ear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--theme-accent);
+  opacity: 0.55;
+  flex-shrink: 0;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.option-button:hover .option-ear {
+  opacity: 1;
+  animation: ear-wiggle 0.5s ease-in-out;
+}
+@keyframes ear-wiggle {
+  0%, 100% { transform: translateY(-50%) rotate(0deg); }
+  25%      { transform: translateY(-50%) rotate(-12deg); }
+  75%      { transform: translateY(-50%) rotate(12deg); }
+}
+/* 已选状态：耳朵保持显眼 */
+.option-button.is-correct .option-ear,
+.option-button.is-wrong .option-ear {
+  opacity: 1;
+  color: var(--panel);  /* 实心背景上用白色 */
+}
