@@ -130,7 +130,11 @@ function parseLabel(label) {
         // 触发 complete panel（fixed overlay，不影响 .screen.active 高度和 zone 结构）
         await page.evaluate(() => {
           document.querySelector('#complete-panel').hidden = false;
-          document.querySelector('#complete-time').textContent = '本次用时 00:42';
+          const stats = document.querySelector('#complete-stats');
+          if (stats) stats.textContent = '用时 00:42 · 成功率 8 / 8（100%）';
+          // 向后兼容（Phase 4 之前用 #complete-time）
+          const legacy = document.querySelector('#complete-time');
+          if (legacy) legacy.textContent = '本次用时 00:42';
         });
         await page.waitForTimeout(150);
         results.push({ device: t.name, ...(await measure(`play:${g.replace('open-','')}:${sz}:complete`)) });

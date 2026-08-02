@@ -145,8 +145,57 @@
         </div>
 
         <div id="complete-panel" class="complete-panel" hidden>
+          <!-- Phase 4A: 奖杯 + 星星 + 统计 -->
+          <div class="trophy-row" aria-hidden="true">
+            <!-- 3 档奖杯，init 全部 hidden，完成时按档位显示 1 档 -->
+            <div class="trophy" data-tier="bronze" hidden>
+              <svg class="trophy-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 18c-4 0-4 10 0 10" stroke="#cd7f32" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M56 18c4 0 4 10 0 10" stroke="#cd7f32" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M16 12h32v18c0 8-7 14-16 14s-16-6-16-14V12z" fill="#cd7f32"/>
+                <path d="M16 12h32v3H16z" fill="#e89858"/>
+                <rect x="24" y="44" width="16" height="4" fill="#a6611f"/>
+                <rect x="18" y="48" width="28" height="6" rx="1" fill="#8b4a0f"/>
+                <text x="32" y="32" text-anchor="middle" font-size="14" font-weight="900" fill="#fff8d8" font-family="system-ui">3</text>
+              </svg>
+            </div>
+            <div class="trophy" data-tier="silver" hidden>
+              <svg class="trophy-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 18c-4 0-4 10 0 10" stroke="#c0c0c0" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M56 18c4 0 4 10 0 10" stroke="#c0c0c0" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M16 12h32v18c0 8-7 14-16 14s-16-6-16-14V12z" fill="#d4d4d4"/>
+                <path d="M16 12h32v3H16z" fill="#f0f0f0"/>
+                <rect x="24" y="44" width="16" height="4" fill="#a0a0a0"/>
+                <rect x="18" y="48" width="28" height="6" rx="1" fill="#808080"/>
+                <text x="32" y="32" text-anchor="middle" font-size="14" font-weight="900" fill="#fff" font-family="system-ui">2</text>
+              </svg>
+            </div>
+            <div class="trophy" data-tier="gold" hidden>
+              <svg class="trophy-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 18c-4 0-4 10 0 10" stroke="#f7d75c" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M56 18c4 0 4 10 0 10" stroke="#f7d75c" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M16 12h32v18c0 8-7 14-16 14s-16-6-16-14V12z" fill="#f7d75c"/>
+                <path d="M16 12h32v3H16z" fill="#fff3a8"/>
+                <rect x="24" y="44" width="16" height="4" fill="#d4a72c"/>
+                <rect x="18" y="48" width="28" height="6" rx="1" fill="#a3780f"/>
+                <text x="32" y="32" text-anchor="middle" font-size="14" font-weight="900" fill="#5a4500" font-family="system-ui">1</text>
+              </svg>
+            </div>
+          </div>
+          <!-- 3 颗星：完成时按 earned 数标记 -->
+          <div class="star-row" aria-label="星星数">
+            <svg class="star" data-star="1" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2L14.85 8.5L22 9.27L16.5 14.14L18.18 21L12 17.27L5.82 21L7.5 14.14L2 9.27L9.15 8.5L12 2Z"/>
+            </svg>
+            <svg class="star" data-star="2" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2L14.85 8.5L22 9.27L16.5 14.14L18.18 21L12 17.27L5.82 21L7.5 14.14L2 9.27L9.15 8.5L12 2Z"/>
+            </svg>
+            <svg class="star" data-star="3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2L14.85 8.5L22 9.27L16.5 14.14L18.18 21L12 17.27L5.82 21L7.5 14.14L2 9.27L9.15 8.5L12 2Z"/>
+            </svg>
+          </div>
           <p class="complete-title">都找到了</p>
-          <p id="complete-time" class="complete-time">本次用时 00:00</p>
+          <p id="complete-stats" class="complete-stats">用时 00:00 · 成功率 0 / 0（0%）</p>
           <p id="best-record" class="complete-record" hidden>新纪录！</p>
           <div class="actions">
             <button id="play-again" class="primary-button" type="button">再玩一次</button>

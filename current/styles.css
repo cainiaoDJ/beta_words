@@ -2195,3 +2195,93 @@ h2 {
   border-color: var(--theme-accent);
   color: var(--theme-ink);
 }
+
+/* ============================================================================
+ * Phase 4A — 结算页基础（奖杯 + 星星 + 撒花）
+ * 父文档：docs/phase-plans/phase-4-complete-panel.md
+ * 决策：决策 1/2/3 选 A A A（简单档位 / 都显示 / 随机彩色撒花）
+ * ============================================================================
+ */
+
+/* ---- R-4A.1: 奖杯行 ---- */
+.complete-panel .trophy-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 64px;
+  margin: 0 0 8px;
+}
+.complete-panel .trophy {
+  display: inline-block;
+  animation: trophy-rise 600ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.complete-panel .trophy-svg {
+  width: 56px;
+  height: 56px;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+@keyframes trophy-rise {
+  from { transform: translateY(24px) scale(0.6); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ---- R-4A.1: 星星行 ---- */
+.complete-panel .star-row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 0 0 12px;
+  font-size: 28px;
+  line-height: 1;
+}
+.complete-panel .star {
+  width: 28px;
+  height: 28px;
+  color: rgba(0, 0, 0, 0.12);  /* 未点亮：浅灰 */
+  transition: color 0ms;
+  animation: star-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.complete-panel .star.is-earned {
+  color: #f7d75c;  /* 已点亮：金黄 */
+  filter: drop-shadow(0 0 4px rgba(247, 215, 92, 0.6));
+}
+.complete-panel .star:nth-child(1) { animation-delay: 200ms; }
+.complete-panel .star:nth-child(2) { animation-delay: 400ms; }
+.complete-panel .star:nth-child(3) { animation-delay: 600ms; }
+@keyframes star-pop {
+  0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+  60%  { transform: scale(1.4) rotate(20deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* ---- R-4A.1: 统计文案（替代旧 .complete-time） ---- */
+.complete-panel .complete-stats {
+  margin: 0 0 4px;
+  font-size: var(--fs-display, 24px);
+  font-weight: var(--fw-black, 900);
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--color-primary-strong, 47 140 115));
+  line-height: 1.1;
+}
+/* 兼容旧 .complete-time（保留 fallback） */
+.complete-panel .complete-time {
+  display: none;  /* 旧 class 隐藏，统一用 .complete-stats */
+}
+
+/* ---- R-4A.5: 撒花 confetti ---- */
+.confetti {
+  position: fixed;
+  top: -20px;
+  width: 10px;
+  height: 16px;
+  z-index: 200;
+  pointer-events: none;
+  border-radius: 2px;
+  animation: confetti-fall 1.6s ease-in forwards;
+  will-change: transform, opacity;
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotateZ(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotateZ(720deg); opacity: 0; }
+}

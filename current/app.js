@@ -283,7 +283,7 @@ const progress = document.querySelector("#progress");
 const timer = document.querySelector("#timer");
 const hint = document.querySelector("#hint");
 const completePanel = document.querySelector("#complete-panel");
-const completeTime = document.querySelector("#complete-time");
+const completeTime = document.querySelector("#complete-stats");  // Phase 4A: 改用 #complete-stats
 const bestRecord = document.querySelector("#best-record");
 const gameSubtitle = document.querySelector("#game-subtitle");
 const gameTitle = document.querySelector("#game-title");
@@ -443,7 +443,7 @@ function startGame(size) {
   state.replayText = null;
   completePanel.hidden = true;
   bestRecord.hidden = true;
-  completeTime.textContent = "本次用时 00:00";
+  if (completeTime) completeTime.textContent = "用时 00:00 · 成功率 0 / 0（0%）";
   const game = getCurrentGame();
   gameSubtitle.textContent = `${game.name} ${size} x ${size}`;
   gameTitle.textContent = game.title;
@@ -879,7 +879,7 @@ function completeQuizGame() {
   const best = getBestRecord(state.size);
   const isNewRecord = !best || elapsedMs < best.elapsedMs;
   updateTimerDisplay(elapsedMs);
-  completeTime.textContent = `本次用时 ${formatTime(elapsedMs)}`;
+  if (completeTime) completeTime.textContent = `本次用时 ${formatTime(elapsedMs)}`;
   bestRecord.hidden = !isNewRecord;
   if (isNewRecord) {
     saveBestRecord(state.size, elapsedMs);
@@ -1125,7 +1125,7 @@ function checkComplete() {
   const best = getBestRecord(state.size);
   const isNewRecord = !best || elapsedMs < best.elapsedMs;
   updateTimerDisplay(elapsedMs);
-  completeTime.textContent = `本次用时 ${formatTime(elapsedMs)}`;
+  if (completeTime) completeTime.textContent = `本次用时 ${formatTime(elapsedMs)}`;
   bestRecord.hidden = !isNewRecord;
   if (isNewRecord) {
     saveBestRecord(state.size, elapsedMs);
