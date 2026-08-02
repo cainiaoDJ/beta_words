@@ -1964,3 +1964,47 @@ h2 {
 #setup .text-button[data-action="back-lobby"]:hover {
   color: var(--theme-ink);
 }
+
+/* ============================================================================
+ * Phase 3A — 棋盘/字卡通用装饰（hover 凸起 + 选中脉动 + active 反馈）
+ * 父文档：docs/phase-plans/phase-3-board-decoration.md
+ * 依赖：Phase 1 主题色 token + Phase 3 整体规划
+ * ============================================================================
+ *
+ * 策略：追加新规则到末尾，不动基础 .tile 规则，避免影响 per-game override
+ * [data-game] 块。per-game 主题色 box-shadow（如 match .tile:hover）继承叠加。
+ */
+
+/* R-3A.1: 字卡 hover 凸起（追加 transform，per-game box-shadow 已存在） */
+.tile:hover {
+  transform: scale(1.05) translateY(-2px);
+  z-index: 1;
+}
+.tile:not(.selected):not(.matched):not(.hidden-face) {
+  transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease, border-color 200ms ease;
+}
+
+/* R-3A.2: 选中态主题色脉动（保留 scale(0.96) 选中视觉，加 box-shadow 波纹） */
+.tile.selected,
+.stroop-cell.active {
+  animation: tile-pulse 1.1s ease-in-out infinite;
+}
+@keyframes tile-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--theme-glow, rgba(0,0,0,0.1)); }
+  50%      { box-shadow: 0 0 0 6px transparent; }
+}
+
+/* R-3A.4: 短促点击缩放反馈（不动 selected/matched 的 transform） */
+.tile:active,
+.option-button:active,
+.stroop-color-btn:active {
+  transform: scale(0.94);
+  transition: transform 80ms ease;
+}
+/* 选中/已配对时点击不缩放（避免冲突） */
+.tile.selected:active,
+.tile.matched:active,
+.option-button:disabled:active,
+.stroop-cell.active:active {
+  transform: scale(1);
+}
