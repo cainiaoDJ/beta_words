@@ -2008,3 +2008,36 @@ h2 {
 .stroop-cell.active:active {
   transform: scale(1);
 }
+
+/* ============================================================================
+ * Phase 3B — match 试点 + 配对 flash
+ * 父文档：docs/phase-plans/phase-3-board-decoration.md
+ * 依赖：Phase 3A + 现有 .is-correct / .is-wrong class（app.js 触发）
+ * ============================================================================
+ *
+ * 现状：app.js 在 match 配对时：
+ *   1. markTile(id, "is-correct") 临时加（触发 tile-correct-spring）
+ *   2. ~800ms 后清掉
+ *   3. markTile(id, "matched") 永久（触发 fade-out 280ms）
+ *
+ * 错配时：
+ *   1. markTile(id, "is-wrong") 临时加（触发 tile-wrong-shake 320ms）
+ *   2. ~400ms 后清掉
+ *
+ * Phase 3B 改动：match 专属 .is-correct 用主题色（橙）替代默认 primary-soft（绿），
+ * 并加双格同色 box-shadow 波纹（match-flash 700ms）。
+ */
+
+/* match 配对成功：用主题色替代默认 primary-soft */
+[data-game="match"] .tile.is-correct {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+  animation: match-flash 700ms ease-out forwards;
+  box-shadow: 0 0 0 0 var(--theme-glow);
+}
+@keyframes match-flash {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 var(--theme-glow); }
+  40%  { transform: scale(1.12); box-shadow: 0 0 0 12px transparent; }
+  100% { transform: scale(1.08); box-shadow: 0 0 0 0 transparent; }
+}
