@@ -248,10 +248,95 @@
         </svg>
       </div>
       <div class="letterbox-bg" data-bg="pinyinFriend" aria-hidden="true">
-        <!-- Phase 6C 待填：蓝白云 + 彩虹 (6B 占位) -->
-        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #1a5fb4"/>
-        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #1a5fb4"/>
-        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #1a5fb4"/>
+        <!-- Phase 6C pinyinFriend: 白云 + 彩虹 / 纸飞机 + 雨滴 / 蝴蝶 + 雪花
+             配色：深蓝底 (#1a5fb4) + 浅蓝/白/彩虹色高对比元素 -->
+        <!-- Layer 1 远景（60s 漂）：彩虹弧 + 3 朵白云 -->
+        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #1a5fb4">
+          <!-- 上半彩虹弧（6 色 stroke arc，弧顶裁出上半 letterbox，仅底部弧可见） -->
+          <path d="M 60 70 a 100 100 0 0 1 200 0" stroke="#ff6b6b" stroke-width="3.5" fill="none" opacity="1"/>
+          <path d="M 70 70 a 90 90 0 0 1 180 0" stroke="#ffa94d" stroke-width="3.5" fill="none" opacity="1"/>
+          <path d="M 80 70 a 80 80 0 0 1 160 0" stroke="#ffd43b" stroke-width="3.5" fill="none" opacity="1"/>
+          <path d="M 90 70 a 70 70 0 0 1 140 0" stroke="#69db7c" stroke-width="3.5" fill="none" opacity="1"/>
+          <path d="M 100 70 a 60 60 0 0 1 120 0" stroke="#4dabf7" stroke-width="3.5" fill="none" opacity="1"/>
+          <path d="M 110 70 a 50 50 0 0 1 100 0" stroke="#9775fa" stroke-width="3.5" fill="none" opacity="1"/>
+          <!-- 下半 3 朵白云（椭圆 + 椭圆） -->
+          <g opacity="0.85">
+            <ellipse cx="60" cy="755" rx="14" ry="8" fill="#ffffff"/>
+            <ellipse cx="75" cy="750" rx="12" ry="9" fill="#ffffff"/>
+            <ellipse cx="50" cy="752" rx="10" ry="7" fill="#ffffff"/>
+          </g>
+          <g opacity="0.85">
+            <ellipse cx="180" cy="775" rx="12" ry="7" fill="#ffffff"/>
+            <ellipse cx="195" cy="772" rx="10" ry="8" fill="#ffffff"/>
+          </g>
+          <g opacity="0.85">
+            <ellipse cx="270" cy="755" rx="13" ry="8" fill="#ffffff"/>
+            <ellipse cx="258" cy="752" rx="11" ry="7" fill="#ffffff"/>
+          </g>
+        </svg>
+        <!-- Layer 2 中景（30s 漂）：4 纸飞机（path 三角形）+ 3 雨滴 -->
+        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #1a5fb4">
+          <!-- 上半 2 纸飞机 -->
+          <path d="M 60 30 L 90 45 L 60 50 L 70 35 z" fill="#ffffff" opacity="0.95"/>
+          <path d="M 60 30 L 90 45 L 70 35 z" fill="#a5d8ff" opacity="0.95"/>
+          <path d="M 200 50 L 230 65 L 200 70 L 210 55 z" fill="#ffffff" opacity="0.95"/>
+          <path d="M 200 50 L 230 65 L 210 55 z" fill="#a5d8ff" opacity="0.95"/>
+          <!-- 下半 2 纸飞机 -->
+          <path d="M 100 745 L 130 760 L 100 765 L 110 750 z" fill="#ffffff" opacity="0.95"/>
+          <path d="M 100 745 L 130 760 L 110 750 z" fill="#a5d8ff" opacity="0.95"/>
+          <path d="M 230 770 L 260 785 L 230 790 L 240 775 z" fill="#ffffff" opacity="0.95"/>
+          <path d="M 230 770 L 260 785 L 240 775 z" fill="#a5d8ff" opacity="0.95"/>
+          <!-- 3 雨滴（上半 1 + 下半 2） -->
+          <path d="M 150 35 q -4 5 0 10 q 4 -5 0 -10 z" fill="#a5d8ff" opacity="0.9"/>
+          <path d="M 165 745 q -4 5 0 10 q 4 -5 0 -10 z" fill="#a5d8ff" opacity="0.9"/>
+          <path d="M 40 780 q -4 5 0 10 q 4 -5 0 -10 z" fill="#ffffff" opacity="0.9"/>
+        </svg>
+        <!-- Layer 3 近景（15s 漂）：4 蝴蝶 + 4 雪花（带 animate 闪烁） -->
+        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #1a5fb4">
+          <!-- 上半 2 蝴蝶（4 翼 + body） -->
+          <g transform="translate(50, 45)">
+            <ellipse cx="-5" cy="-5" rx="6" ry="8" fill="#a5d8ff" opacity="0.95" transform="rotate(-20)"/>
+            <ellipse cx="5" cy="-5" rx="6" ry="8" fill="#a5d8ff" opacity="0.95" transform="rotate(20)"/>
+            <ellipse cx="-4" cy="5" rx="4" ry="6" fill="#ffffff" opacity="0.95" transform="rotate(-20)"/>
+            <ellipse cx="4" cy="5" rx="4" ry="6" fill="#ffffff" opacity="0.95" transform="rotate(20)"/>
+            <line x1="0" y1="-10" x2="0" y2="10" stroke="#1a5fb4" stroke-width="1"/>
+          </g>
+          <g transform="translate(180, 35)">
+            <ellipse cx="-4" cy="-4" rx="5" ry="7" fill="#ffffff" opacity="0.95" transform="rotate(-20)"/>
+            <ellipse cx="4" cy="-4" rx="5" ry="7" fill="#ffffff" opacity="0.95" transform="rotate(20)"/>
+            <ellipse cx="-3" cy="4" rx="3" ry="5" fill="#a5d8ff" opacity="0.95" transform="rotate(-20)"/>
+            <ellipse cx="3" cy="4" rx="3" ry="5" fill="#a5d8ff" opacity="0.95" transform="rotate(20)"/>
+            <line x1="0" y1="-8" x2="0" y2="8" stroke="#1a5fb4" stroke-width="1"/>
+          </g>
+          <!-- 下半 2 蝴蝶 -->
+          <g transform="translate(70, 770)">
+            <ellipse cx="-4" cy="-4" rx="5" ry="7" fill="#a5d8ff" opacity="0.95" transform="rotate(-20)"/>
+            <ellipse cx="4" cy="-4" rx="5" ry="7" fill="#a5d8ff" opacity="0.95" transform="rotate(20)"/>
+            <ellipse cx="-3" cy="4" rx="3" ry="5" fill="#ffffff" opacity="0.95" transform="rotate(-20)"/>
+            <ellipse cx="3" cy="4" rx="3" ry="5" fill="#ffffff" opacity="0.95" transform="rotate(20)"/>
+            <line x1="0" y1="-8" x2="0" y2="8" stroke="#1a5fb4" stroke-width="1"/>
+          </g>
+          <g transform="translate(210, 755)">
+            <ellipse cx="-5" cy="-5" rx="6" ry="8" fill="#ffffff" opacity="0.95" transform="rotate(-20)"/>
+            <ellipse cx="5" cy="-5" rx="6" ry="8" fill="#ffffff" opacity="0.95" transform="rotate(20)"/>
+            <ellipse cx="-4" cy="5" rx="4" ry="6" fill="#a5d8ff" opacity="0.95" transform="rotate(-20)"/>
+            <ellipse cx="4" cy="5" rx="4" ry="6" fill="#a5d8ff" opacity="0.95" transform="rotate(20)"/>
+            <line x1="0" y1="-10" x2="0" y2="10" stroke="#1a5fb4" stroke-width="1"/>
+          </g>
+          <!-- 4 雪花（6 角 polygon + animate） -->
+          <polygon points="110,25 111,28 114,28 112,30 113,33 110,31 107,33 108,30 106,28 109,28" fill="#ffffff">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="240,60 241,63 244,63 242,65 243,68 240,66 237,68 238,65 236,63 239,63" fill="#ffffff">
+            <animate attributeName="opacity" values="1;0.5;1" dur="1.8s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="135,790 136,793 139,793 137,795 138,798 135,796 132,798 133,795 131,793 134,793" fill="#ffffff">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="265,775 266,778 269,778 267,780 268,783 265,781 262,783 263,780 261,778 264,778" fill="#ffffff">
+            <animate attributeName="opacity" values="1;0.5;1" dur="1.6s" repeatCount="indefinite"/>
+          </polygon>
+        </svg>
       </div>
       <div class="letterbox-bg" data-bg="listenCard" aria-hidden="true">
         <!-- Phase 6C 待填：绿叶 + 树影 (6B 占位) -->
