@@ -404,7 +404,27 @@ function chooseGame(gameId) {
   syncTheme(gameId);  // 同步主题色到 body[data-game]
   syncReplayVisibility();
   syncStroopHud();
+  setRecommendedDifficulty(gameId);  // Phase 2A.2：按游戏标记推荐难度
   showScreen("setup");
+}
+
+// Phase 2A.2：每个游戏的"黄金难度"（详见 docs/phase-plans/phase-2-lobby-setup.md）
+const RECOMMENDED_SIZE = {
+  match: 4,        // 4×4 黄金难度
+  memory: 4,       // 4×4
+  pinyinFriend: 4, // 4×4（setup 没有 6 题选项，取最近意思）
+  listenCard: 4,   // 4×4
+  stroopTrain: 3,  // 3×3 入门（颜色字少不晕）
+};
+
+function setRecommendedDifficulty(gameId) {
+  const size = RECOMMENDED_SIZE[gameId];
+  document.querySelectorAll('#setup .difficulty').forEach((btn) => {
+    btn.removeAttribute('data-recommended');
+    if (parseInt(btn.dataset.size, 10) === size) {
+      btn.setAttribute('data-recommended', 'true');
+    }
+  });
 }
 
 function startGame(size) {

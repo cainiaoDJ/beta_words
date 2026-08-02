@@ -1903,3 +1903,64 @@ h2 {
 .game-entry[id="open-match"]:hover {
   transform: scale(1.01);
 }
+
+/* ============================================================================
+ * Phase 2A.2 — Setup 顶栏主题色 + 难度按钮主题色 + 推荐章
+ * 父文档：docs/phase-plans/phase-2-lobby-setup.md
+ * 依赖：Phase 2A.1 + [data-game="..."] 主题色中间变量
+ * ============================================================================
+ */
+
+/* ---- Setup 顶栏底部 2px 主题色条带（视觉轻，不破 cream 画布） ---- */
+#setup .topbar.compact {
+  border-bottom: 2px solid var(--theme-accent);
+}
+
+/* ---- 难度按钮主题色化（5 个游戏共用） ---- */
+.difficulty {
+  background: var(--theme-bg);
+  border: 2px solid var(--theme-accent);
+}
+.difficulty:hover {
+  background: var(--theme-accent-soft);
+  border-color: var(--theme-ink);
+}
+.difficulty strong {
+  color: var(--theme-ink);
+}
+
+/* ---- 推荐难度章：在 .difficulty[data-recommended="true"] 元素角落加 ⭐ 徽章 ---- */
+.difficulty {
+  position: relative;
+}
+.difficulty[data-recommended="true"] {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  box-shadow: 0 2px 8px var(--theme-glow);
+}
+.difficulty[data-recommended="true"] strong,
+.difficulty[data-recommended="true"] span {
+  color: var(--panel);
+}
+.difficulty[data-recommended="true"]::after {
+  content: "⭐ 推荐";
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #f7d75c;
+  color: #5a4500;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+/* ---- Setup 返回按钮主题色 ---- */
+#setup .text-button[data-action="back-lobby"] {
+  color: var(--theme-accent);
+}
+#setup .text-button[data-action="back-lobby"]:hover {
+  color: var(--theme-ink);
+}
