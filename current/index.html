@@ -158,10 +158,94 @@
         </svg>
       </div>
       <div class="letterbox-bg" data-bg="memory" aria-hidden="true">
-        <!-- Phase 6C 待填：紫星空 + 弯月 (6B 占位) -->
-        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #5d2fa0"/>
-        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #5d2fa0"/>
-        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #5d2fa0"/>
+        <!-- Phase 6C memory: 星空 + 弯月 / 萤火 + 星云 / 水晶 + 流星
+             配色：深紫底 (#5d2fa0) + 浅紫/白高对比元素 -->
+        <!-- Layer 1 远景（60s 漂）：弯月 + 5 点星空 -->
+        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #5d2fa0">
+          <!-- 上半 letterbox 弯月（path 画弧月）-->
+          <path d="M 240 30 a 25 25 0 1 0 0 50 a 18 18 0 1 1 0 -50 z" fill="#e0d4ff" opacity="0.9"/>
+          <!-- 上半 2 点紫星 -->
+          <circle cx="40" cy="45" r="2.5" fill="#c9b3ff" opacity="0.85"/>
+          <circle cx="100" cy="30" r="2" fill="#e0d4ff" opacity="0.9"/>
+          <!-- 上半 1 颗亮星 + 2 层光晕 -->
+          <circle cx="160" cy="55" r="3" fill="#ffffff" opacity="0.95"/>
+          <circle cx="160" cy="55" r="6" fill="#c9b3ff" opacity="0.4"/>
+          <circle cx="160" cy="55" r="10" fill="#c9b3ff" opacity="0.2"/>
+          <!-- 下半 2 点紫星 -->
+          <circle cx="60" cy="755" r="2.5" fill="#c9b3ff" opacity="0.85"/>
+          <circle cx="195" cy="780" r="2" fill="#e0d4ff" opacity="0.9"/>
+          <!-- 下半 1 颗亮星 + 2 层光晕 -->
+          <circle cx="270" cy="745" r="3" fill="#ffffff" opacity="0.95"/>
+          <circle cx="270" cy="745" r="6" fill="#c9b3ff" opacity="0.4"/>
+          <circle cx="270" cy="745" r="10" fill="#c9b3ff" opacity="0.2"/>
+        </svg>
+        <!-- Layer 2 中景（30s 漂）：紫萤火 + 星云飘带 -->
+        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #5d2fa0">
+          <!-- 上半 2 萤火（4 圈光晕） -->
+          <circle cx="50" cy="35" r="6" fill="#ffffff" opacity="0.5"/>
+          <circle cx="50" cy="35" r="3" fill="#e0d4ff" opacity="0.95"/>
+          <circle cx="50" cy="35" r="1.5" fill="#ffffff" opacity="1"/>
+          <circle cx="130" cy="60" r="6" fill="#ffffff" opacity="0.5"/>
+          <circle cx="130" cy="60" r="3" fill="#e0d4ff" opacity="0.95"/>
+          <circle cx="130" cy="60" r="1.5" fill="#ffffff" opacity="1"/>
+          <!-- 下半 2 萤火 -->
+          <circle cx="170" cy="750" r="6" fill="#ffffff" opacity="0.5"/>
+          <circle cx="170" cy="750" r="3" fill="#e0d4ff" opacity="0.95"/>
+          <circle cx="170" cy="750" r="1.5" fill="#ffffff" opacity="1"/>
+          <circle cx="95" cy="775" r="6" fill="#ffffff" opacity="0.5"/>
+          <circle cx="95" cy="775" r="3" fill="#e0d4ff" opacity="0.95"/>
+          <circle cx="95" cy="775" r="1.5" fill="#ffffff" opacity="1"/>
+          <!-- 2 条星云飘带 -->
+          <path d="M 200 30 q 15 12 0 25 q -15 13 0 22" stroke="#c9b3ff" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+          <path d="M 30 750 q 12 10 -3 22 q -15 12 5 25" stroke="#e0d4ff" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+        </svg>
+        <!-- Layer 3 近景（15s 漂）：闪烁水晶 + 流星 -->
+        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #5d2fa0">
+          <!-- 上半 3 个闪烁水晶（菱形 + animate） -->
+          <polygon points="35,30 38,38 35,46 32,38" fill="#ffffff">
+            <animate attributeName="opacity" values="0.4;1;0.4" dur="2.2s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="105,55 109,63 105,71 101,63" fill="#e0d4ff">
+            <animate attributeName="opacity" values="1;0.4;1" dur="1.8s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="200,30 204,38 200,46 196,38" fill="#ffffff">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 下半 3 个闪烁水晶 -->
+          <polygon points="50,755 54,763 50,771 46,763" fill="#e0d4ff">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2.3s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="155,780 159,788 155,796 151,788" fill="#ffffff">
+            <animate attributeName="opacity" values="1;0.4;1" dur="1.7s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="255,745 259,753 255,761 251,753" fill="#e0d4ff">
+            <animate attributeName="opacity" values="0.4;1;0.4" dur="2.6s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 2 个流星（动画 cy 漂落） -->
+          <line x1="80" y1="30" x2="80" y2="55" stroke="#ffffff" stroke-width="1.5" opacity="0.85">
+            <animate attributeName="y1" values="-10;30;-10" dur="5s" repeatCount="indefinite"/>
+            <animate attributeName="y2" values="15;55;15" dur="5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0;0.9;0" dur="5s" repeatCount="indefinite"/>
+          </line>
+          <line x1="225" y1="755" x2="225" y2="780" stroke="#e0d4ff" stroke-width="1.5" opacity="0.85">
+            <animate attributeName="y1" values="715;755;715" dur="6s" repeatCount="indefinite"/>
+            <animate attributeName="y2" values="740;780;740" dur="6s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0;0.9;0" dur="6s" repeatCount="indefinite"/>
+          </line>
+          <!-- 4 个小闪烁点 -->
+          <circle cx="65" cy="60" r="1.5" fill="#ffffff" opacity="0.85">
+            <animate attributeName="opacity" values="0.3;1;0.3" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="240" cy="40" r="1.5" fill="#e0d4ff" opacity="0.85">
+            <animate attributeName="opacity" values="1;0.3;1" dur="3.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="100" cy="775" r="1.5" fill="#ffffff" opacity="0.85">
+            <animate attributeName="opacity" values="0.3;1;0.3" dur="3.2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="285" cy="780" r="1.5" fill="#e0d4ff" opacity="0.85">
+            <animate attributeName="opacity" values="1;0.3;1" dur="3.8s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
       </div>
       <div class="letterbox-bg" data-bg="pinyinFriend" aria-hidden="true">
         <!-- Phase 6C 待填：蓝白云 + 彩虹 (6B 占位) -->
