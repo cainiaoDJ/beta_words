@@ -1160,6 +1160,8 @@ function checkComplete() {
     }
     setMascotState("celebrate");  // 多邻国式 mascot 庆祝
     playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
+    // Phase 4C：stroop 推广 — 奖杯 + 星星
+    renderTrophiesAndStars(correct, total);
     // 隐藏 stroop-host 避免与 complete-panel 同时出现造成 823 > 640 溢出
     if (stroopHost) stroopHost.hidden = true;
     window.setTimeout(() => {
