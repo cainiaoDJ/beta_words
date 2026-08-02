@@ -2354,3 +2354,42 @@ h2 {
   60%  { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1.04); opacity: 1; }
 }
+
+/* ============================================================================
+ * Phase 6A — Letterbox 背景基础设施
+ * 父文档：docs/phase-plans/phase-6-letterbox-svg.md
+ * 决策：1/2/3 选 A A A（fade 400ms / 同方向漂 / 手绘 SVG）
+ * ============================================================================
+ *
+ * letterbox 区域（黑色上下）由 .letterbox-bg 容器 + 3 层 SVG 填充
+ * 3 层 parallax：远景 60s / 中景 30s / 近景 15s 全部向左漂
+ */
+
+.letterbox-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;  /* 低于 .stage-canvas (z-index 1) */
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.letterbox-bg.is-active {
+  opacity: 1;
+}
+
+/* Phase 6A 修复：layer width 100% + slice 自然裁切填满 letterbox
+ * 漂移用 viewBox 内元素的 x 坐标实现（不同 layer 不同 x range）
+ * 当前 6A 简化：去掉漂移动画，先让 letterbox 可见（漂移留到 6B） */
+.bg-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.bg-layer-1 { opacity: 0.25; }
+.bg-layer-2 { opacity: 0.35; }
+.bg-layer-3 { opacity: 0.40; }
+/* 6B 再加 bg-drift 动画：viewBox 200x100 + slice fill，3 层用 transform: translateX 慢漂 */

@@ -477,6 +477,16 @@ function showScreen(name) {
 // gameId 传 null / undefined / 'lobby' → 默认 lobby 主题
 function syncTheme(gameId) {
   document.body.dataset.game = gameId || "lobby";
+  // Phase 6A：同步 letterbox 背景
+  syncBgLayer(gameId || "lobby");
+}
+
+// Phase 6A：letterbox 背景切换（fade 400ms）
+function syncBgLayer(gameId) {
+  const target = document.querySelector(`.letterbox-bg[data-bg="${gameId}"]`);
+  if (!target) return;
+  document.querySelectorAll('.letterbox-bg').forEach((el) => el.classList.remove('is-active'));
+  target.classList.add('is-active');
 }
 
 function leaveGame() {
