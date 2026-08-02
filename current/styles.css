@@ -265,6 +265,7 @@ body:not([data-game]) {
   flex: 1;
   min-height: 0;
   flex-direction: column;
+  position: relative; /* Phase 2A：让 .mascot-companion 这种 absolute 子元素定位到 screen 内 */
 }
 
 .screen.active {
@@ -1786,4 +1787,119 @@ h2 {
 [data-game="pinyinFriend"] .complete-panel .primary-button:hover {
   background: var(--theme-ink);
   border-color: var(--theme-accent);
+}
+
+/* ============================================================================
+ * Phase 2A.1 — Lobby「1+2+2 错落 + 主题色化 + 吉祥物右下角」
+ * 父文档：docs/phase-plans/phase-2-lobby-setup.md
+ * 依赖：Phase 1 主题色 token（--theme-{id}-{bg/accent/accent-soft/glow}）
+ * ============================================================================
+ */
+
+/* ---- 1+2+2 错落网格：match 卡跨两列主推 ---- */
+.game-entry[id="open-match"] {
+  grid-column: 1 / -1;
+  min-height: 112px;
+  flex-direction: row;
+  text-align: left;
+  padding: 12px 16px;
+}
+.game-entry[id="open-match"] .entry-icon {
+  margin-right: 14px;
+  margin-bottom: 0;
+  width: 60px;
+  height: 60px;
+}
+.game-entry[id="open-match"] .entry-icon img {
+  width: 44px;
+  height: 44px;
+}
+.game-entry[id="open-match"] .entry-text {
+  flex: 1;
+  align-self: center;
+}
+.game-entry[id="open-match"] .entry-title {
+  font-size: 20px;
+}
+
+/* ---- 5 张卡主题色化（背景 + 边框 + icon 容器背景） ---- */
+.game-entry[id="open-match"] {
+  background: var(--theme-match-bg);
+  border: 2px solid var(--theme-match-accent);
+}
+.game-entry[id="open-match"] .entry-icon {
+  background: var(--theme-match-accent-soft);
+}
+.game-entry[id="open-match"]:hover {
+  box-shadow: 0 4px 16px var(--theme-match-glow);
+}
+
+.game-entry[id="open-memory"] {
+  background: var(--theme-memory-bg);
+  border: 2px solid var(--theme-memory-accent);
+}
+.game-entry[id="open-memory"] .entry-icon {
+  background: var(--theme-memory-accent-soft);
+}
+.game-entry[id="open-memory"]:hover {
+  box-shadow: 0 4px 16px var(--theme-memory-glow);
+}
+
+.game-entry[id="open-pinyin-friend"] {
+  background: var(--theme-pinyinFriend-bg);
+  border: 2px solid var(--theme-pinyinFriend-accent);
+}
+.game-entry[id="open-pinyin-friend"] .entry-icon {
+  background: var(--theme-pinyinFriend-accent-soft);
+}
+.game-entry[id="open-pinyin-friend"]:hover {
+  box-shadow: 0 4px 16px var(--theme-pinyinFriend-glow);
+}
+
+.game-entry[id="open-listen-card"] {
+  background: var(--theme-listenCard-bg);
+  border: 2px solid var(--theme-listenCard-accent);
+}
+.game-entry[id="open-listen-card"] .entry-icon {
+  background: var(--theme-listenCard-accent-soft);
+}
+.game-entry[id="open-listen-card"]:hover {
+  box-shadow: 0 4px 16px var(--theme-listenCard-glow);
+}
+
+.game-entry[id="open-stroop-train"] {
+  background: var(--theme-stroopTrain-bg);
+  border: 2px solid var(--theme-stroopTrain-accent);
+}
+.game-entry[id="open-stroop-train"] .entry-icon {
+  background: var(--theme-stroopTrain-accent-soft);
+}
+.game-entry[id="open-stroop-train"]:hover {
+  box-shadow: 0 4px 16px var(--theme-stroopTrain-glow);
+}
+
+/* ---- 隐藏 lobby 顶栏 mascot（已移到右下角） ---- */
+#lobby .mascot-host {
+  display: none;
+}
+
+/* ---- 吉祥物右下角浮动（lobby 主体内） ---- */
+.mascot-companion {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  z-index: 2;
+  animation: mascot-float 4s ease-in-out infinite;
+}
+@keyframes mascot-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* 主推 hover 用 scale 取代微浮（match 横排卡，低干扰） */
+.game-entry[id="open-match"]:hover {
+  transform: scale(1.01);
 }
