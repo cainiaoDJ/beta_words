@@ -2,7 +2,7 @@
 
 > 📁 父文档：[`../PLAN-2026-08-deep-optimization.md`](../PLAN-2026-08-deep-optimization.md) §Phase 0
 >
-> 状态：🔵 planning（待主人启动 music_generate）
+> 状态：✅ completed（2026-08-09，commit `ec010df` — 6 首 BGM 入库；主人偏好排序 lobby > pinyin > listen > stroop > memory > match, 全保留集成进 Phase 7B）
 
 ---
 
