@@ -2,9 +2,9 @@
 
 > 📁 父文档：[`../PLAN-2026-08-deep-optimization.md`](../PLAN-2026-08-deep-optimization.md)
 >
-> 状态：⏳ Phase 8A in progress → ✅ Phase 8A completed 2026-08-09（commit `adecbc3` + 布局 fix）
+> 状态：⏳ Phase 8A in progress → ✅ Phase 8A completed 2026-08-09（commit `adecbc3` + 布局 fix `6dc48e9`）→ ✅ Phase 8B completed 2026-08-09（commit `8feb117`）
 >
-> 🎯 **本阶段成果**：6 个游戏入口（含 idiomFill 第 6 个）+ 301/301 测试通过（0 fail）+ 紫色主题 + 滚筒 + 候选字池静态展示
+> 🎯 **本阶段成果**：6 个游戏入口（含 idiomFill 第 6 个）+ 301/301 测试通过（0 fail）+ 青绿主题 + 滚筒特效 + 完整两段式交互
 >
 > 📐 **流程**：严格按 `beta_words/AGENTS.md` 三阶段法 + `current/GAME_SOP.md` §13 新增游戏流程 + `current/DESIGN_LANGUAGE.md` v2 统一 token。
 >
@@ -26,7 +26,9 @@
 
 | ID | accent | bg | accent-soft | ink | glow | 视觉感受 |
 |---|---|---|---|---|---|---|
-| **idiomFill** | `#6e3eb8` 靛紫 | `rgba(110,62,184,0.06)` | `rgba(110,62,184,0.15)` | `#4d2789` | `rgba(110,62,184,0.4)` | 典雅文化感（区别 memory `#8a4fd6` 浅紫，更深更"古朴"） |
+| **idiomFill** | `#14b8a6` 青绿 | `rgba(20,184,166,0.06)` | `rgba(20,184,166,0.15)` | `#0d9488` | `rgba(20,184,166,0.4)` | 传统文化感（主人 2026-08-09 反馈：紫色撞 memory，改青绿） |
+
+> 📁 **主题色变更记录**：初版 `#6e3eb8` 靛紫 → 主人反馈与 memory `#8a4fd6` 浅紫冲突 → 2026-08-09 改青绿 `#14b8a6`（跟 5 游戏色相都远 + 文化感）
 
 - accent 用 token，不用大面积铺满（守 SOP §11"不装饰光球渐变"）
 - 跟 memory 区分：memory `#8a4fd6` 是浅紫（神秘），idiomFill `#6e3eb8` 是深靛紫（典雅/书卷气）
