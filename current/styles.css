@@ -2505,17 +2505,17 @@ h2 {
 
 /* 滚筒（slot-machine）3D 旋转木马 — 密码锁效果
  * 主人 2026-08-09 20:17 反馈：放弃 translateY 高斯模糊方向，改用 CSS 3D rotateX
- * 4 字成语作为整体 row 一起旋转（区别密码锁的单个数字）
+ * 主人 2026-08-09 20:33 反馈：row 不能撑满棋盘框，缩小 max-width + 缩 slot
  */
 .idiom-track {
   position: relative;
-  height: 240px;
+  height: 220px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0;
-  perspective: 900px; /* 3D 透视深度 — 让 rotateX 的 row 在 Z 空间可见 */
+  perspective: 700px; /* 3D 透视深度（缩小：让 rotateX 不那么"凸"，主人 2026-08-09 20:33） */
   perspective-origin: 50% 50%;
 }
 
@@ -2534,8 +2534,8 @@ h2 {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 90%;
-  max-width: 320px;
+  width: 80%;
+  max-width: 240px; /* 缩小：避免撑满棋盘框（主人 2026-08-09 20:33 反馈） */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2605,18 +2605,18 @@ h2 {
   align-items: center;
 }
 
-/* 4 个槽位（成语 4 字） */
+/* 4 个槽位（成语 4 字） — 缩小避免撑满棋盘框（主人 2026-08-09 20:33） */
 .idiom-slot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 64px;
-  margin: 0 4px;
-  font-size: 32px;
+  width: 44px;
+  height: 52px;
+  margin: 0 3px;
+  font-size: 26px;
   font-weight: 900;
   font-family: var(--font-display, system-ui);
-  border-radius: 8px;
+  border-radius: 6px;
   border: 2px solid var(--line, #d8d8d8);
   background: white;
   color: var(--ink, #2c2c2c);

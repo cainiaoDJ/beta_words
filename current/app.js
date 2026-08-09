@@ -1628,7 +1628,7 @@ function startIdiomFillGame(size) {
 //   每个 idiom-row 在 3D 空间绕 X 轴定位（rotateX(angle) translateZ(radius)）
 //   focusIdiom = 旋转整个 .idiom-rows 容器让目标 row 转到最前面
 const ROTATE_ANGLE = 35;  // 每行间隔 35°（4-7 行总弧度 105°-210°）
-const ROTATE_RADIUS = 200; // 旋转半径（perspective 距离的一半）
+const ROTATE_RADIUS = 100; // 旋转半径（缩小：避免 row 视觉过大撑满棋盘框，主人 2026-08-09 20:33 反馈）
 
 function renderIdiomRows() {
   if (!idiomTrack) return;
@@ -1695,6 +1695,9 @@ function renderIdiomRows() {
     if (state.idiomCompleted[idiom.id]) row.classList.add("is-complete");
     // Pointer Events 拖拽（桌面 + 移动统一支持）
     row.addEventListener("pointerdown", handleIdiomPointerDown);
+    // 点击成语切换焦点（主人 2026-08-09 20:33 反馈：在棋盘里选择成语）
+    // Pointer Events 拖拽期间（>5px）不会触发 click，5px 内点击触发 → focusIdiomAndMaybeSelect
+    row.addEventListener("click", () => handleIdiomRowClick(idiom.id));
     rowsContainer.appendChild(row);
   });
 }
@@ -1916,6 +1919,28 @@ function focusIdiom(idx) {
   });
 }
 
+// 滚筒切换 + 指针逻辑（主人 2026-08-09 20:33 反馈）
+//   - 新成语未填完 → 自动设置指针到第一个空字（selectFirstBlank）
+//   - 新成语已填完 → 不动字框指针（保留原 selectedSlot 指向原成语）
+// 同时设置 hint 为新成语释义
+function focusIdiomAndMaybeSelect(idx) {
+  focusIdiom(idx);
+  const idiom = state.idioms[idx];
+  if (!idiom) return;
+  setHint(idiom.hint);
+  // 已完成的成语不动指针（保留原 selectedSlot）
+  if (!state.idiomCompleted[idiom.id]) {
+    selectFirstBlank(idiom.id);
+  }
+}
+
+// 手动点击 idiom-row 切换焦点成语（主人 2026-08-09 20:33 反馈：在棋盘里选择成语）
+function handleIdiomRowClick(idiomId) {
+  const idx = state.idioms.findIndex((i) => i.id === idiomId);
+  if (idx < 0 || idx === state.idiomCurrentIdx) return;
+  focusIdiomAndMaybeSelect(idx);
+}
+
 // 自动指针：选中指定成语的第一个未填空格（主人 2026-08-09 UX 反馈：自动指向第一个空，保留两段式能力）
 function selectFirstBlank(idiomId) {
   const idiom = state.idioms.find((i) => i.id === idiomId);
@@ -2113,17 +2138,13 @@ function advanceToNextIdiom() {
   const currentIdx = state.idiomCurrentIdx;
   for (let i = currentIdx + 1; i < state.idioms.length; i++) {
     if (!state.idiomCompleted[state.idioms[i].id]) {
-      focusIdiom(i);
-      setHint(state.idioms[i].hint);
-      selectFirstBlank(state.idioms[i].id);
+      focusIdiomAndMaybeSelect(i);
       return;
     }
   }
   for (let i = 0; i < currentIdx; i++) {
     if (!state.idiomCompleted[state.idioms[i].id]) {
-      focusIdiom(i);
-      setHint(state.idioms[i].hint);
-      selectFirstBlank(state.idioms[i].id);
+      focusIdiomAndMaybeSelect(i);
       return;
     }
   }
