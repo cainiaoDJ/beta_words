@@ -1639,7 +1639,10 @@ function renderIdiomRows() {
     row.className = "idiom-row" + (idx === 0 ? " is-current" : " is-next");
     row.dataset.idiomId = idiom.id;
     row.dataset.idx = String(idx);
-    row.draggable = true; // HTML5 拖拽（主人 2026-08-09 UX：成语列表可拖拽学习回顾）
+    // 不再用 HTML5 drag API（主人 2026-08-09 20:05 反馈：桌面+移动都没生效）
+    //   原因 1：HTML5 drag 在移动端（touch 设备）默认不触发
+    //   原因 2：滚筒 .idiom-row 有 transform: scale(0.7/0.74)，让 drop target 定位错乱
+    // 改用 Pointer Events（桌面+移动统一支持，详见下面 idiomDragState）
     row.setAttribute("aria-label", `成语 ${idiom.value}`);
     // 4 个槽位（恢复已填字 + 完成状态 — 拖拽后保留）
     const slotsRow = document.createElement("div");
@@ -1679,77 +1682,171 @@ function renderIdiomRows() {
       row.appendChild(hintEl);
     }
     if (state.idiomCompleted[idiom.id]) row.classList.add("is-complete");
-    // HTML5 拖拽事件（5 个：dragstart / dragover / dragleave / drop / dragend）
-    row.addEventListener("dragstart", handleIdiomDragStart);
-    row.addEventListener("dragover", handleIdiomDragOver);
-    row.addEventListener("dragleave", handleIdiomDragLeave);
-    row.addEventListener("drop", handleIdiomDrop);
-    row.addEventListener("dragend", handleIdiomDragEnd);
+    // Pointer Events 拖拽（桌面 + 移动统一支持）
+    row.addEventListener("pointerdown", handleIdiomPointerDown);
     rowsContainer.appendChild(row);
   });
 }
 
-// HTML5 拖拽（主人 2026-08-09 UX：成语列表可拖拽学习回顾，不影响选字框）
-function handleIdiomDragStart(e) {
+// ============================================================
+// Phase 8B — 成语拖拽（Pointer Events：桌面 + 移动统一支持）
+// 主人 2026-08-09 20:05 反馈：HTML5 drag API 在手机和电脑都没生效
+// 原因 1：移动端 touch 设备不原生触发 dragstart
+// 原因 2：滚筒 .idiom-row 有 transform (scale 0.7/0.74)，drop target 坐标错乱
+// 解决：用 pointerdown/pointermove/pointerup + 5px 阈值（区分 click vs drag）
+// ============================================================
+
+let idiomDragState = null;
+const DRAG_THRESHOLD_PX = 5; // 移动超过 5px 才进入 drag mode（区分 click vs drag）
+
+function handleIdiomPointerDown(e) {
+  // 只在主按钮触发（左键 / 单指）
+  if (e.button !== undefined && e.button !== 0) return;
+  // 用户点 slot（而不是 row 空白处）→ 不进入 drag 模式，让 fill/slot 逻辑正常
+  if (e.target.classList.contains("idiom-slot")) return;
   const row = e.currentTarget;
-  e.dataTransfer.effectAllowed = "move";
-  e.dataTransfer.setData("text/plain", row.dataset.idx);
-  row.classList.add("is-dragging");
+  const rect = row.getBoundingClientRect();
+  idiomDragState = {
+    phase: "pending", // pending → dragging
+    row,
+    startY: e.clientY,
+    startX: e.clientX,
+    rowTop: rect.top,
+    rowLeft: rect.left,
+    rowHeight: rect.height,
+    rowWidth: rect.width,
+    fromIdx: parseInt(row.dataset.idx, 10),
+    pointerId: e.pointerId,
+    targetIdx: parseInt(row.dataset.idx, 10),
+    targetAfter: false,
+  };
+  // 在 window 上监听后续事件（指针移出 row 仍能继续追踪）
+  window.addEventListener("pointermove", handleIdiomPointerMove);
+  window.addEventListener("pointerup", handleIdiomPointerUp);
+  window.addEventListener("pointercancel", handleIdiomPointerCancel);
+  e.preventDefault(); // 阻止默认（text selection）
 }
 
-function handleIdiomDragEnd(e) {
-  idiomTrack.querySelectorAll(".idiom-row.is-dragging, .idiom-row.is-drop-target").forEach((r) => {
-    r.classList.remove("is-dragging", "is-drop-target");
-  });
-}
-
-function handleIdiomDragOver(e) {
-  e.preventDefault(); // 必须 preventDefault 才能 drop
-  e.dataTransfer.dropEffect = "move";
-  const row = e.currentTarget;
-  if (!row.classList.contains("is-dragging")) {
-    row.classList.add("is-drop-target");
-  }
-}
-
-function handleIdiomDragLeave(e) {
-  e.currentTarget.classList.remove("is-drop-target");
-}
-
-function handleIdiomDrop(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  const fromIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
-  const toRow = e.currentTarget;
-  const toIdx = parseInt(toRow.dataset.idx, 10);
-  // 清除所有拖拽高亮
-  idiomTrack.querySelectorAll(".idiom-row.is-drop-target, .idiom-row.is-dragging").forEach((r) => {
-    r.classList.remove("is-drop-target", "is-dragging");
-  });
-  if (Number.isNaN(fromIdx) || Number.isNaN(toIdx) || fromIdx === toIdx) return;
-  // 重新排序 state.idioms（拖拽不影响 selectedSlot / idiomFilled / idiomCandidates）
-  const [moved] = state.idioms.splice(fromIdx, 1);
-  state.idioms.splice(toIdx, 0, moved);
-  // 保留 selectedSlot（DOM 重建后需要重设 .is-selected）
-  const prevSelectedSlot = state.idiomSelectedSlot ? { ...state.idiomSelectedSlot } : null;
-  // 重新渲染滚筒（从 state 恢复 idiomFilled + idiomCompleted + 拖拽绑定）
-  renderIdiomRows();
-  // 恢复焦点成语 = prevSelectedSlot 所在成语 or 当前 idiomCurrentIdx 所在成语
-  const idiomIdx = prevSelectedSlot
-    ? state.idioms.findIndex((i) => i.id === prevSelectedSlot.idiomId)
-    : state.idiomCurrentIdx;
-  const focusIdx = idiomIdx >= 0 ? idiomIdx : 0;
-  state.idiomCurrentIdx = focusIdx;
-  focusIdiom(focusIdx);
-  // 恢复 selectedSlot 的 .is-selected（如果 slot 仍是 blank 状态）
-  if (prevSelectedSlot) {
-    const slotEl = idiomTrack.querySelector(
-      `.idiom-slot[data-idiom-id="${prevSelectedSlot.idiomId}"][data-slot-idx="${prevSelectedSlot.slotIdx}"]`
-    );
-    if (slotEl && slotEl.classList.contains("is-blank")) {
-      slotEl.classList.add("is-selected");
+function handleIdiomPointerMove(e) {
+  if (!idiomDragState || idiomDragState.phase === "idle") return;
+  const dy = e.clientY - idiomDragState.startY;
+  const dx = e.clientX - idiomDragState.startX;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  // 阈值内不进入 drag（让 click 事件继续 → 正常填字）
+  if (idiomDragState.phase === "pending" && dist < DRAG_THRESHOLD_PX) return;
+  if (idiomDragState.phase === "pending") {
+    // 进入 dragging：fixed 定位 + 视觉跟随手指/鼠标
+    idiomDragState.phase = "dragging";
+    const row = idiomDragState.row;
+    row.classList.add("is-dragging");
+    row.style.position = "fixed";
+    row.style.width = idiomDragState.rowWidth + "px";
+    row.style.left = idiomDragState.rowLeft + "px";
+    row.style.top = idiomDragState.rowTop + "px";
+    row.style.zIndex = "1000";
+    row.style.pointerEvents = "none"; // 跟随时不再触发 row 自己事件
+    try {
+      idiomDragState.row.setPointerCapture(e.pointerId);
+    } catch (err) {
+      // iOS Safari 可能抛 InvalidStateError
     }
   }
+  // 视觉跟随
+  const row = idiomDragState.row;
+  row.style.left = (idiomDragState.rowLeft + dx) + "px";
+  row.style.top = (idiomDragState.rowTop + dy) + "px";
+  // 更新 drop target 指示
+  updateIdiomDropTarget(e.clientY);
+}
+
+function updateIdiomDropTarget(clientY) {
+  if (!idiomDragState) return;
+  const rows = Array.from(idiomTrack.querySelectorAll(".idiom-row:not(.is-dragging)"));
+  let targetIdx = idiomDragState.fromIdx;
+  let targetAfter = false;
+  for (let i = 0; i < rows.length; i++) {
+    const rRect = rows[i].getBoundingClientRect();
+    if (clientY >= rRect.top + rRect.height / 2) {
+      targetIdx = parseInt(rows[i].dataset.idx, 10);
+      targetAfter = true;
+    } else {
+      break;
+    }
+  }
+  rows.forEach((r) => r.classList.remove("is-drop-target-before", "is-drop-target-after"));
+  const targetRow = rows.find((r) => parseInt(r.dataset.idx, 10) === targetIdx);
+  if (targetRow) {
+    if (targetAfter) targetRow.classList.add("is-drop-target-after");
+    else targetRow.classList.add("is-drop-target-before");
+  }
+  idiomDragState.targetIdx = targetIdx;
+  idiomDragState.targetAfter = targetAfter;
+}
+
+function handleIdiomPointerUp(e) {
+  if (!idiomDragState) return;
+  const row = idiomDragState.row;
+  if (idiomDragState.phase === "dragging") {
+    // 清理拖起 row 的 inline style
+    row.style.position = "";
+    row.style.width = "";
+    row.style.left = "";
+    row.style.top = "";
+    row.style.zIndex = "";
+    row.style.pointerEvents = "";
+    row.classList.remove("is-dragging");
+    idiomTrack.querySelectorAll(".idiom-row").forEach((r) => r.classList.remove("is-drop-target-before", "is-drop-target-after"));
+    // 计算最终插入 idx（targetAfter = 在 targetIdx 之后插入）
+    let insertIdx = idiomDragState.targetIdx + (idiomDragState.targetAfter ? 1 : 0);
+    // 移除原位置
+    const [moved] = state.idioms.splice(idiomDragState.fromIdx, 1);
+    // 如果 fromIdx < insertIdx，splice 已移除 fromIdx，insertIdx 需要 -1
+    if (idiomDragState.fromIdx < insertIdx) insertIdx--;
+    state.idioms.splice(insertIdx, 0, moved);
+    // 重新渲染（从 state 恢复 idiomFilled + idiomCompleted + 重新绑定 Pointer 事件）
+    const prevSelectedSlot = state.idiomSelectedSlot ? { ...state.idiomSelectedSlot } : null;
+    renderIdiomRows();
+    // 恢复焦点成语 = prevSelectedSlot 所在成语 or 当前 idiomCurrentIdx 所在成语
+    const idiomIdx = prevSelectedSlot
+      ? state.idioms.findIndex((i) => i.id === prevSelectedSlot.idiomId)
+      : state.idiomCurrentIdx;
+    const focusIdx = idiomIdx >= 0 ? idiomIdx : 0;
+    state.idiomCurrentIdx = focusIdx;
+    focusIdiom(focusIdx);
+    // 恢复 selectedSlot 的 .is-selected
+    if (prevSelectedSlot) {
+      const slotEl = idiomTrack.querySelector(
+        `.idiom-slot[data-idiom-id="${prevSelectedSlot.idiomId}"][data-slot-idx="${prevSelectedSlot.slotIdx}"]`
+      );
+      if (slotEl && slotEl.classList.contains("is-blank")) {
+        slotEl.classList.add("is-selected");
+      }
+    }
+  }
+  // else: phase=pending（点击未移动 < 5px）— 让 click 事件正常触发（不阻止）
+  cleanupIdiomDragListeners();
+  idiomDragState = null;
+}
+
+function handleIdiomPointerCancel(e) {
+  if (!idiomDragState) return;
+  const row = idiomDragState.row;
+  row.style.position = "";
+  row.style.width = "";
+  row.style.left = "";
+  row.style.top = "";
+  row.style.zIndex = "";
+  row.style.pointerEvents = "";
+  row.classList.remove("is-dragging");
+  idiomTrack.querySelectorAll(".idiom-row").forEach((r) => r.classList.remove("is-drop-target-before", "is-drop-target-after"));
+  cleanupIdiomDragListeners();
+  idiomDragState = null;
+}
+
+function cleanupIdiomDragListeners() {
+  window.removeEventListener("pointermove", handleIdiomPointerMove);
+  window.removeEventListener("pointerup", handleIdiomPointerUp);
+  window.removeEventListener("pointercancel", handleIdiomPointerCancel);
 }
 
 function renderIdiomFill() {

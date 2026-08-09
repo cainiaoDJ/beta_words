@@ -2537,6 +2537,11 @@ h2 {
   flex-shrink: 0;
   width: 100%;
   cursor: grab; /* 主人 2026-08-09 UX：成语列表可拖拽学习回顾 */
+  /* 移动端关键：阻止浏览器默认手势（滚动/缩放/双击放大）+ 防止文字被选中 */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   transition: opacity var(--motion-base, 200ms) var(--ease-standard, ease),
               transform var(--motion-base, 200ms) var(--ease-standard, ease),
               filter var(--motion-base, 200ms) var(--ease-standard, ease);
@@ -2545,16 +2550,27 @@ h2 {
   cursor: grabbing;
 }
 
-/* 拖拽中：半透明 + grabbing 光标（不影响 slot click — drag 只在 row 边缘生效） */
+/* 拖拽中（Pointer Events）：fixed 定位 + 视觉跟随手指/鼠标 + 阴影 + 高 z-index */
 .idiom-row.is-dragging {
-  opacity: 0.35;
+  opacity: 0.92;
+  transform: scale(1.03) !important;  /* !important 覆盖 is-current/passed/next 的 scale */
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
   cursor: grabbing;
+  z-index: 1000;
+  filter: none !important;
+  background: white;
+  border-radius: 8px;
+  /* 注意：position/left/top/width 由 inline style 设置 */
 }
 
-/* drop 目标：在 row 顶部显示插入线 */
-.idiom-row.is-drop-target {
+/* drop target 指示线（Pointer Events 用 before/after 区分上下） */
+.idiom-row.is-drop-target-before {
   border-top: 3px solid var(--theme-accent, #14b8a6);
   border-radius: 8px 8px 0 0;
+}
+.idiom-row.is-drop-target-after {
+  border-bottom: 3px solid var(--theme-accent, #14b8a6);
+  border-radius: 0 0 8px 8px;
 }
 
 /* 当前 focus 的成语（最大、最清晰） */
