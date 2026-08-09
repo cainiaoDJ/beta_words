@@ -2536,9 +2536,25 @@ h2 {
   gap: 6px;
   flex-shrink: 0;
   width: 100%;
+  cursor: grab; /* 主人 2026-08-09 UX：成语列表可拖拽学习回顾 */
   transition: opacity var(--motion-base, 200ms) var(--ease-standard, ease),
               transform var(--motion-base, 200ms) var(--ease-standard, ease),
               filter var(--motion-base, 200ms) var(--ease-standard, ease);
+}
+.idiom-row:active {
+  cursor: grabbing;
+}
+
+/* 拖拽中：半透明 + grabbing 光标（不影响 slot click — drag 只在 row 边缘生效） */
+.idiom-row.is-dragging {
+  opacity: 0.35;
+  cursor: grabbing;
+}
+
+/* drop 目标：在 row 顶部显示插入线 */
+.idiom-row.is-drop-target {
+  border-top: 3px solid var(--theme-accent, #14b8a6);
+  border-radius: 8px 8px 0 0;
 }
 
 /* 当前 focus 的成语（最大、最清晰） */

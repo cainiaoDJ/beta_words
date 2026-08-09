@@ -1623,20 +1623,25 @@ function startIdiomFillGame(size) {
   renderIdiomFill();
 }
 
-function renderIdiomFill() {
-  if (!idiomHost || !idiomTrack || !idiomPool) return;
-  idiomHost.hidden = false;
-  // 滚筒渲染（slot-machine：.idiom-rows 容器内垂直堆叠，focusIdiom 用 translateY 平滑切换）
-  idiomTrack.innerHTML = "";
-  const rowsContainer = document.createElement("div");
-  rowsContainer.className = "idiom-rows";
+// 成语行渲染（从 state 重建 .idiom-rows 容器 — 拖拽后 + 状态恢复时复用，idempotent）
+function renderIdiomRows() {
+  if (!idiomTrack) return;
+  let rowsContainer = idiomTrack.querySelector(".idiom-rows");
+  if (!rowsContainer) {
+    rowsContainer = document.createElement("div");
+    rowsContainer.className = "idiom-rows";
+    idiomTrack.innerHTML = "";
+    idiomTrack.appendChild(rowsContainer);
+  }
+  rowsContainer.innerHTML = "";
   state.idioms.forEach((idiom, idx) => {
     const row = document.createElement("div");
     row.className = "idiom-row" + (idx === 0 ? " is-current" : " is-next");
     row.dataset.idiomId = idiom.id;
     row.dataset.idx = String(idx);
+    row.draggable = true; // HTML5 拖拽（主人 2026-08-09 UX：成语列表可拖拽学习回顾）
     row.setAttribute("aria-label", `成语 ${idiom.value}`);
-    // 4 个槽位：被扣字位置显示空格，其他显示字
+    // 4 个槽位（恢复已填字 + 完成状态 — 拖拽后保留）
     const slotsRow = document.createElement("div");
     slotsRow.className = "idiom-slots";
     for (let slotIdx = 0; slotIdx < 4; slotIdx++) {
@@ -1646,30 +1651,112 @@ function renderIdiomFill() {
       slot.dataset.idiomId = idiom.id;
       slot.dataset.slotIdx = String(slotIdx);
       const isBlank = idiom.selectedBlanks.includes(slotIdx);
+      const filledChar = state.idiomFilled[idiom.id]?.[slotIdx];
       if (isBlank) {
         slot.classList.add("is-blank");
-        slot.textContent = "";
         slot.setAttribute("aria-label", "空格，点这里选字");
+        if (filledChar) {
+          // 恢复已填字（拖拽后从 state.idiomFilled 还原 DOM）
+          slot.textContent = filledChar;
+          slot.classList.remove("is-blank");
+          slot.classList.add("is-filled");
+        } else {
+          slot.textContent = "";
+        }
       } else {
-        slot.textContent = idiom.value[slotIdx];
         slot.classList.add("is-fixed");
+        slot.textContent = idiom.value[slotIdx];
         slot.setAttribute("aria-label", `${idiom.value[slotIdx]} 字`);
       }
-      // Phase 8B: 空格可点（两段式第一步），实字不可点
       slot.addEventListener("click", () => handleIdiomSlotClick(idiom.id, slotIdx));
       slotsRow.appendChild(slot);
     }
     row.appendChild(slotsRow);
-    // hint 提示（释义）
     if (idiom.hint) {
       const hintEl = document.createElement("div");
       hintEl.className = "idiom-hint";
       hintEl.textContent = idiom.hint;
       row.appendChild(hintEl);
     }
+    if (state.idiomCompleted[idiom.id]) row.classList.add("is-complete");
+    // HTML5 拖拽事件（5 个：dragstart / dragover / dragleave / drop / dragend）
+    row.addEventListener("dragstart", handleIdiomDragStart);
+    row.addEventListener("dragover", handleIdiomDragOver);
+    row.addEventListener("dragleave", handleIdiomDragLeave);
+    row.addEventListener("drop", handleIdiomDrop);
+    row.addEventListener("dragend", handleIdiomDragEnd);
     rowsContainer.appendChild(row);
   });
-  idiomTrack.appendChild(rowsContainer);
+}
+
+// HTML5 拖拽（主人 2026-08-09 UX：成语列表可拖拽学习回顾，不影响选字框）
+function handleIdiomDragStart(e) {
+  const row = e.currentTarget;
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/plain", row.dataset.idx);
+  row.classList.add("is-dragging");
+}
+
+function handleIdiomDragEnd(e) {
+  idiomTrack.querySelectorAll(".idiom-row.is-dragging, .idiom-row.is-drop-target").forEach((r) => {
+    r.classList.remove("is-dragging", "is-drop-target");
+  });
+}
+
+function handleIdiomDragOver(e) {
+  e.preventDefault(); // 必须 preventDefault 才能 drop
+  e.dataTransfer.dropEffect = "move";
+  const row = e.currentTarget;
+  if (!row.classList.contains("is-dragging")) {
+    row.classList.add("is-drop-target");
+  }
+}
+
+function handleIdiomDragLeave(e) {
+  e.currentTarget.classList.remove("is-drop-target");
+}
+
+function handleIdiomDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const fromIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
+  const toRow = e.currentTarget;
+  const toIdx = parseInt(toRow.dataset.idx, 10);
+  // 清除所有拖拽高亮
+  idiomTrack.querySelectorAll(".idiom-row.is-drop-target, .idiom-row.is-dragging").forEach((r) => {
+    r.classList.remove("is-drop-target", "is-dragging");
+  });
+  if (Number.isNaN(fromIdx) || Number.isNaN(toIdx) || fromIdx === toIdx) return;
+  // 重新排序 state.idioms（拖拽不影响 selectedSlot / idiomFilled / idiomCandidates）
+  const [moved] = state.idioms.splice(fromIdx, 1);
+  state.idioms.splice(toIdx, 0, moved);
+  // 保留 selectedSlot（DOM 重建后需要重设 .is-selected）
+  const prevSelectedSlot = state.idiomSelectedSlot ? { ...state.idiomSelectedSlot } : null;
+  // 重新渲染滚筒（从 state 恢复 idiomFilled + idiomCompleted + 拖拽绑定）
+  renderIdiomRows();
+  // 恢复焦点成语 = prevSelectedSlot 所在成语 or 当前 idiomCurrentIdx 所在成语
+  const idiomIdx = prevSelectedSlot
+    ? state.idioms.findIndex((i) => i.id === prevSelectedSlot.idiomId)
+    : state.idiomCurrentIdx;
+  const focusIdx = idiomIdx >= 0 ? idiomIdx : 0;
+  state.idiomCurrentIdx = focusIdx;
+  focusIdiom(focusIdx);
+  // 恢复 selectedSlot 的 .is-selected（如果 slot 仍是 blank 状态）
+  if (prevSelectedSlot) {
+    const slotEl = idiomTrack.querySelector(
+      `.idiom-slot[data-idiom-id="${prevSelectedSlot.idiomId}"][data-slot-idx="${prevSelectedSlot.slotIdx}"]`
+    );
+    if (slotEl && slotEl.classList.contains("is-blank")) {
+      slotEl.classList.add("is-selected");
+    }
+  }
+}
+
+function renderIdiomFill() {
+  if (!idiomHost || !idiomTrack || !idiomPool) return;
+  idiomHost.hidden = false;
+  // 滚筒渲染（slot-machine + draggable 拖拽）
+  renderIdiomRows();
   // 候选字池渲染（底部）
   idiomPool.innerHTML = "";
   state.idiomCandidates.forEach((char, idx) => {
@@ -1841,6 +1928,12 @@ function handleIdiomCandidateClick(idx) {
 
   // 自动指针：填字成功后指向下一个空（保留两段式：用户可点别处切换）
   selectFirstBlank(idiomId);
+
+  // 选字时滚筒自动切回焦点成语（让用户看到字填进哪；主人 2026-08-09 UX 要求）
+  const idiomIdx = state.idioms.findIndex((i) => i.id === idiomId);
+  if (idiomIdx >= 0 && idiomIdx !== state.idiomCurrentIdx) {
+    focusIdiom(idiomIdx);
+  }
 
   // 检查成语是否完成
   checkIdiomComplete(idiomId);
