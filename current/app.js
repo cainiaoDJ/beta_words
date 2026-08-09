@@ -1927,11 +1927,15 @@ function focusIdiom(idx) {
 // 主人 2026-08-09 20:47 反馈：动画时长根据成语状态决定
 //   - 未填完成语 → baseDurationMs（默认 1000ms，每个成语滑动 1s）
 //   - 已填完成语 → 500ms 快速跳过（跳过 0.5s）
+// idiomScrolling 锁：动画期间忽略新切换（wheel/click 不叠加、不跨格）
+let idiomScrolling = false;
 function focusIdiomAndMaybeSelect(idx, baseDurationMs = 1000) {
   const idiom = state.idioms[idx];
   if (!idiom) return;
+  if (idiomScrolling) return; // 动画进行中，忽略新切换（防止叠加滚多格）
   // 已完成成语：0.5s 快速跳过；未完成：1s 标准滑动
   const durationMs = state.idiomCompleted[idiom.id] ? 500 : baseDurationMs;
+  idiomScrolling = true;
   const rowsContainer = idiomTrack.querySelector(".idiom-rows");
   if (rowsContainer) {
     rowsContainer.style.transition = `transform ${durationMs}ms cubic-bezier(0.4, 0, 0.2, 1)`;
@@ -1942,6 +1946,8 @@ function focusIdiomAndMaybeSelect(idx, baseDurationMs = 1000) {
   if (!state.idiomCompleted[idiom.id]) {
     selectFirstBlank(idiom.id);
   }
+  // 动画完成解锁（允许下一次切换）
+  setTimeout(() => { idiomScrolling = false; }, durationMs);
 }
 
 // 手动点击 idiom-row 切换焦点成语（主人 2026-08-09 20:33 反馈：在棋盘里选择成语）
@@ -1954,19 +1960,14 @@ function handleIdiomRowClick(idiomId) {
 // 鼠标滚轮（中键滚动）切换成语 — 主人 2026-08-09 20:47 验收标准
 // 滚下 → 下一个成语；滚上 → 上一个成语
 // 每次 1 个成语 + 1s 平滑动画（已完成成语 0.5s 快速跳过）
-// 防抖：动画期间忽略连续滚轮（避免多次触发抖动）
-let idiomWheelThrottle = false;
+// idiomScrolling 锁：动画期间忽略 wheel（避免叠加，动画完成自动解锁）
 function handleIdiomWheel(e) {
   e.preventDefault();
-  if (idiomWheelThrottle) return;
-  // 用 deltaY 正负判断方向（> 0 滚下 = 下一个，< 0 滚上 = 上一个）
+  if (idiomScrolling) return; // 动画进行中，忽略连续 wheel
   const direction = e.deltaY > 0 ? 1 : -1;
   const newIdx = state.idiomCurrentIdx + direction;
   if (newIdx < 0 || newIdx >= state.idioms.length) return;
-  idiomWheelThrottle = true;
   focusIdiomAndMaybeSelect(newIdx, 1000);
-  // 1s 节流（最长动画时长），期间忽略连续滚轮
-  setTimeout(() => { idiomWheelThrottle = false; }, 1000);
 }
 
 // 自动指针：选中指定成语的第一个未填空格（主人 2026-08-09 UX 反馈：自动指向第一个空，保留两段式能力）
