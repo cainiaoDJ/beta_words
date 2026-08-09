@@ -30,7 +30,7 @@ const TESTS = [
   { name: 'Small phone   (360x640)',  vp: { width: 360, height: 640 } },
   { name: 'Tiny phone    (320x568)',  vp: { width: 320, height: 568 } },
 ];
-const GAMES = ['open-match', 'open-memory', 'open-pinyin-friend', 'open-listen-card', 'open-stroop-train'];
+const GAMES = ['open-match', 'open-memory', 'open-pinyin-friend', 'open-listen-card', 'open-stroop-train', 'open-idiom-fill'];
 const DESIGN_W = 360;
 const DESIGN_H = 640;
 
@@ -41,6 +41,7 @@ const ZONE_EXPECT = {
   'pinyin-friend': { primary: 1, secondary: 1, toolbar: 0 },
   'listen-card':   { primary: 1, secondary: 1, toolbar: 0 },
   'stroop-train':  { primary: 1, secondary: 1, toolbar: 1 },
+  'idiom-fill':    { primary: 1, secondary: 1, toolbar: 0 },  // Phase 8A: 滚筒 + 候选字池
 };
 
 // 从 label 解析 phase/game/size

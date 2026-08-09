@@ -562,6 +562,82 @@
           <circle cx="280" cy="745" r="2" fill="#ffd43b" opacity="0.85"/>
         </svg>
       </div>
+      <div class="letterbox-bg" data-bg="idiomFill" aria-hidden="true">
+        <!-- Phase 6D idiomFill: 深紫星空 + 紫色萤火 + 紫色水晶（呼应 memory 但更深更"古朴"）-->
+        <!-- Layer 1 远景（60s 漂）：上半弯月 + 紫云，下半紫云星云 -->
+        <svg class="bg-layer bg-layer-1" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #2d1b54">
+          <!-- 上半 letterbox 弯月 -->
+          <path d="M 260 25 a 18 18 0 1 0 16 22 a 13 13 0 1 1 -16 -22" fill="#c9a8e8" opacity="0.7"/>
+          <!-- 上半 letterbox 紫色星点（5 颗，错落） -->
+          <circle cx="40" cy="50" r="2" fill="#a87dd9" opacity="0.7"/>
+          <circle cx="120" cy="40" r="1.5" fill="#d4b8f0" opacity="0.6"/>
+          <circle cx="180" cy="55" r="2.5" fill="#a87dd9" opacity="0.7"/>
+          <circle cx="80" cy="65" r="1.5" fill="#c9a8e8" opacity="0.6"/>
+          <circle cx="200" cy="30" r="1.5" fill="#d4b8f0" opacity="0.65"/>
+          <!-- 下半 letterbox 紫色星云 -->
+          <ellipse cx="80" cy="740" rx="30" ry="6" fill="#8a4fd6" opacity="0.3"/>
+          <ellipse cx="220" cy="755" rx="40" ry="7" fill="#6e3eb8" opacity="0.25"/>
+          <!-- 下半 letterbox 紫色星点 -->
+          <circle cx="60" cy="720" r="2" fill="#a87dd9" opacity="0.7"/>
+          <circle cx="180" cy="730" r="1.5" fill="#d4b8f0" opacity="0.6"/>
+          <circle cx="280" cy="745" r="2.5" fill="#a87dd9" opacity="0.7"/>
+          <circle cx="120" cy="770" r="1.5" fill="#c9a8e8" opacity="0.65"/>
+        </svg>
+        <!-- Layer 2 中景（30s 漂）：紫色萤火（letterbox 区域 7 颗，呼吸闪烁）-->
+        <svg class="bg-layer bg-layer-2" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #2d1b54">
+          <!-- 上半 letterbox 萤火 -->
+          <circle cx="40" cy="30" r="3" fill="#f0e6fa" opacity="0.9">
+            <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="120" cy="60" r="2.5" fill="#d4b8f0" opacity="0.85">
+            <animate attributeName="opacity" values="1;0.4;1" dur="1.7s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="220" cy="40" r="3" fill="#f0e6fa" opacity="0.9">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="280" cy="65" r="2.5" fill="#d4b8f0" opacity="0.85">
+            <animate attributeName="opacity" values="1;0.5;1" dur="1.9s" repeatCount="indefinite"/>
+          </circle>
+          <!-- 下半 letterbox 萤火 -->
+          <circle cx="60" cy="735" r="3" fill="#f0e6fa" opacity="0.9">
+            <animate attributeName="opacity" values="1;0.4;1" dur="1.8s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="160" cy="755" r="2.5" fill="#d4b8f0" opacity="0.85">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2.1s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="240" cy="725" r="3" fill="#f0e6fa" opacity="0.9">
+            <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
+        <!-- Layer 3 近景（15s 漂）：紫色水晶 + 闪烁星（letterbox 区域）-->
+        <svg class="bg-layer bg-layer-3" viewBox="0 0 320 800" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background: #2d1b54">
+          <!-- 上半 letterbox 紫色水晶（六边形） -->
+          <polygon points="60,30 70,40 70,55 60,65 50,55 50,40" fill="#8a4fd6" opacity="0.85">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="1.6s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="180,45 188,53 188,65 180,73 172,65 172,53" fill="#6e3eb8" opacity="0.85">
+            <animate attributeName="opacity" values="1;0.6;1" dur="1.9s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 上半 letterbox 闪烁星 -->
+          <polygon points="240,30 242,34 246,34 243,37 245,41 240,38 235,41 237,37 234,34 238,34" fill="#f0e6fa">
+            <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 下半 letterbox 紫色水晶 -->
+          <polygon points="80,735 88,743 88,755 80,763 72,755 72,743" fill="#6e3eb8" opacity="0.85">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="1.8s" repeatCount="indefinite"/>
+          </polygon>
+          <polygon points="240,725 250,735 250,750 240,760 230,750 230,735" fill="#8a4fd6" opacity="0.85">
+            <animate attributeName="opacity" values="1;0.6;1" dur="1.7s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 下半 letterbox 闪烁星 -->
+          <polygon points="160,765 162,769 166,769 163,772 165,776 160,773 155,776 157,772 154,769 158,769" fill="#f0e6fa">
+            <animate attributeName="opacity" values="0.3;1;0.3" dur="1.6s" repeatCount="indefinite"/>
+          </polygon>
+          <!-- 几个小彩点（点缀） -->
+          <circle cx="135" cy="45" r="2" fill="#c9a8e8" opacity="0.85"/>
+          <circle cx="280" cy="745" r="2" fill="#d4b8f0" opacity="0.85"/>
+        </svg>
+      </div>
       <div class="stage-canvas">
         <main class="app" aria-live="polite">
       <section id="lobby" class="screen active" aria-labelledby="lobby-title">
@@ -627,6 +703,16 @@
               <span class="entry-copy">字是什么颜色</span>
             </span>
           </button>
+          <!-- Phase 8A — 成语填空（idiomFill）入口 -->
+          <button id="open-idiom-fill" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-idiom-fill.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">成语填空</span>
+              <span class="entry-copy">把成语填完整</span>
+            </span>
+          </button>
         </div>
 
         <!-- Phase 2A：lobby 主体右下角浮动 mascot（letterbox 内） -->
@@ -689,6 +775,16 @@
           <div id="stroop-board" class="stroop-board zone-primary" role="grid" aria-label="看字识颜色棋盘"></div>
           <div id="stroop-select" class="stroop-select zone-secondary" role="grid" aria-label="待选区（依次填入棋盘每格的颜色）"></div>
           <div id="stroop-palette" class="stroop-palette zone-toolbar" role="group" aria-label="颜色条（选颜色填入待选）"></div>
+        </div>
+
+        <!-- Phase 8A — 成语填空：滚筒 + 候选字池（zone-stack：滚筒 primary + 候选字池 secondary）-->
+        <div id="idiom-host" class="idiom-host zone-stack" hidden>
+          <div id="idiom-track" class="idiom-track zone-primary" aria-label="成语滚筒（每次突出一个成语）">
+            <!-- 滚筒内部由 renderIdiomFill() 动态生成 .idiom-row -->
+          </div>
+          <div id="idiom-pool" class="idiom-pool zone-secondary" aria-label="候选字池（点候选字填入成语空格）">
+            <!-- 候选字池由 renderIdiomFill() 动态生成 .candidate-tile -->
+          </div>
         </div>
 
         <div id="quiz" class="quiz zone-stack" hidden>

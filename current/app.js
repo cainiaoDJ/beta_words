@@ -61,6 +61,15 @@ const GAMES = {
     boardLabel: "看字识颜色棋盘",
     startHint: "看字，选颜色",
     recordPrefix: "beta_words_stroop_train_best"
+  },
+  // Phase 8A — 成语填空（3 年级语文标准）
+  idiomFill: {
+    id: "idiomFill",
+    name: "成语填空",
+    title: "把成语填完整",
+    boardLabel: "成语填空区",
+    startHint: "先点一个空格，再选字",
+    recordPrefix: "beta_words_idiom_fill_best"
   }
 };
 
@@ -139,6 +148,70 @@ const PINYIN_WORDS = [
   { word: "家", pinyin: "jia" }
 ];
 
+// Phase 8A — 成语填空（idiomFill）3 年级语文标准成语数据
+// 数据范围：部编版 3 年级上下册常见成语，4 类共 40 个
+//   - 寓言成语 (10)：亡羊补牢 / 揠苗助长 / 画蛇添足 / 守株待兔 / 叶公好龙 / 狐假虎威 / 自相矛盾 / 刻舟求剑 / 邯郸学步 / 杞人忧天
+//   - 自然成语 (10)：五光十色 / 千姿百态 / 万紫千红 / 五颜六色 / 色彩斑斓 / 莺歌燕舞 / 春暖花开 / 形态各异 / 成群结队 / 芬芳迷人
+//   - 习作性格 (10)：一丝不苟 / 专心致志 / 聚精会神 / 欢声笑语 / 争先恐后 / 各抒己见 / 津津有味 / 不紧不慢 / 垂头丧气 / 哈哈大笑
+//   - ABAC/AABB/数字 (10)：摇摇摆摆 / 清清楚楚 / 明明白白 / 有说有笑 / 走来走去 / 又大又红 / 三心二意 / 五湖四海 / 四面八方 / 七上八下
+// blankSlots: value 中可扣字的 index 数组（运行时随机选）
+const IDIOMS = [
+  // 寓言成语
+  { id: "wybl", value: "亡羊补牢", blankSlots: [2, 3], pinyin: "wáng yáng bǔ láo", hint: "丢失了羊后修补羊圈。比喻出了问题以后想办法补救。" },
+  { id: "ymzz", value: "揠苗助长", blankSlots: [2, 3], pinyin: "yà miáo zhù zhǎng", hint: "把苗拔高帮助它生长。比喻违反事物发展规律，急于求成反而坏事。" },
+  { id: "hstz", value: "画蛇添足", blankSlots: [1, 3], pinyin: "huà shé tiān zú", hint: "画好蛇后再添几只脚。比喻做多余的事，反而把事情弄糟。" },
+  { id: "szdt", value: "守株待兔", blankSlots: [2, 3], pinyin: "shǒu zhū dài tù", hint: "守着树桩等待兔子撞来。比喻死守经验，不知变通。" },
+  { id: "yghl", value: "叶公好龙", blankSlots: [1, 3], pinyin: "yè gōng hào lóng", hint: "叶公喜欢龙，但真龙出现却吓坏了。比喻表面爱好某事物，实际上并不真爱好。" },
+  { id: "hjhw", value: "狐假虎威", blankSlots: [1, 3], pinyin: "hú jiǎ hǔ wēi", hint: "狐狸借老虎的威风吓唬百兽。比喻倚仗别人的势力欺压人。" },
+  { id: "zxmd", value: "自相矛盾", blankSlots: [2, 3], pinyin: "zì xiāng máo dùn", hint: "自己的言行前后抵触。比喻言语或行为自相抵触。" },
+  { id: "kzqj", value: "刻舟求剑", blankSlots: [2, 3], pinyin: "kè zhōu qiú jiàn", hint: "在船上刻记号找掉入水中的剑。比喻拘泥固执，不知变通。" },
+  { id: "hdxb", value: "邯郸学步", blankSlots: [2, 3], pinyin: "hán dān xué bù", hint: "到邯郸学走路。比喻盲目模仿别人，不但学不到本事，反而把原来的本领丢了。" },
+  { id: "qryt", value: "杞人忧天", blankSlots: [2, 3], pinyin: "qǐ rén yōu tiān", hint: "杞国有个人怕天塌下来。比喻不必要或没有根据的忧虑。" },
+  // 自然成语
+  { id: "wgss", value: "五光十色", blankSlots: [1, 2], pinyin: "wǔ guāng shí sè", hint: "形容色彩鲜艳，花样繁多。" },
+  { id: "qzbt", value: "千姿百态", blankSlots: [1, 3], pinyin: "qiān zī bǎi tài", hint: "形容姿态多种多样。" },
+  { id: "wzqh", value: "万紫千红", blankSlots: [1, 3], pinyin: "wàn zǐ qiān hóng", hint: "形容百花齐放，色彩艳丽。" },
+  { id: "wyll", value: "五颜六色", blankSlots: [1, 3], pinyin: "wǔ yán liù sè", hint: "形容色彩丰富繁多。" },
+  { id: "scbl", value: "色彩斑斓", blankSlots: [2, 3], pinyin: "sè cǎi bān lán", hint: "形容色彩灿烂绚丽。" },
+  { id: "ygyw", value: "莺歌燕舞", blankSlots: [1, 3], pinyin: "yīng gē yàn wǔ", hint: "黄莺唱歌，燕子飞舞。形容大好春光或大好形势。" },
+  { id: "cnhk", value: "春暖花开", blankSlots: [1, 3], pinyin: "chūn nuǎn huā kāi", hint: "春天气候暖和，百花盛开。" },
+  { id: "xtgy", value: "形态各异", blankSlots: [1, 3], pinyin: "xíng tài gè yì", hint: "形状姿态各不相同。" },
+  { id: "cqjd", value: "成群结队", blankSlots: [2, 3], pinyin: "chéng qún jié duì", hint: "聚集到一起，形成队伍。" },
+  { id: "ffmr", value: "芬芳迷人", blankSlots: [2, 3], pinyin: "fēn fāng mí rén", hint: "香气浓郁，使人沉醉、迷惑。" },
+  // 习作/性格成语
+  { id: "ysbg", value: "一丝不苟", blankSlots: [2, 3], pinyin: "yī sī bù gǒu", hint: "形容做事认真细致，一点儿不马虎。" },
+  { id: "zxzz", value: "专心致志", blankSlots: [2, 3], pinyin: "zhuān xīn zhì zhì", hint: "集中精神，一心一意。" },
+  { id: "jjhs", value: "聚精会神", blankSlots: [2, 3], pinyin: "jù jīng huì shén", hint: "集中精神，集中注意力。" },
+  { id: "hsxy", value: "欢声笑语", blankSlots: [2, 3], pinyin: "huān shēng xiào yǔ", hint: "欢笑的声音和话语。形容气氛欢快热烈。" },
+  { id: "zxkh", value: "争先恐后", blankSlots: [2, 3], pinyin: "zhēng xiān kǒng hòu", hint: "争着向前，唯恐落后。" },
+  { id: "gsjj", value: "各抒己见", blankSlots: [2, 3], pinyin: "gè shū jǐ jiàn", hint: "各自发表自己的意见。" },
+  { id: "jjyw", value: "津津有味", blankSlots: [2, 3], pinyin: "jīn jīn yǒu wèi", hint: "形容很有滋味或很有趣味。" },
+  { id: "bjbm", value: "不紧不慢", blankSlots: [1, 3], pinyin: "bù jǐn bù màn", hint: "形容从容不迫的样子。" },
+  { id: "ctsq", value: "垂头丧气", blankSlots: [2, 3], pinyin: "chuí tóu sàng qì", hint: "低着头，精神不振。形容失意懊丧的样子。" },
+  { id: "hbdx", value: "哈哈大笑", blankSlots: [2, 3], pinyin: "hā hā dà xiào", hint: "形容开怀大笑。" },
+  // ABAC/AABB/数字成语
+  { id: "yybb", value: "摇摇摆摆", blankSlots: [1, 2, 3], pinyin: "yáo yáo bǎi bǎi", hint: "形容走路不稳或物体摇摆的样子。" },
+  { id: "qqcc", value: "清清楚楚", blankSlots: [1, 2, 3], pinyin: "qīng qīng chǔ chǔ", hint: "清晰明白，容易辨认。" },
+  { id: "mmbb", value: "明明白白", blankSlots: [1, 2, 3], pinyin: "míng míng bái bái", hint: "清清楚楚，明确无误。" },
+  { id: "ysyx", value: "有说有笑", blankSlots: [1, 3], pinyin: "yǒu shuō yǒu xiào", hint: "形容人谈笑不止。" },
+  { id: "zlzq", value: "走来走去", blankSlots: [1, 3], pinyin: "zǒu lái zǒu qù", hint: "来回往返，不停地走。" },
+  { id: "ydyh", value: "又大又红", blankSlots: [2, 3], pinyin: "yòu dà yòu hóng", hint: "形容又大又红的样子。" },
+  { id: "sxey", value: "三心二意", blankSlots: [2, 3], pinyin: "sān xīn èr yì", hint: "形容犹豫不决或意志不坚定。" },
+  { id: "whsh", value: "五湖四海", blankSlots: [1, 3], pinyin: "wǔ hú sì hǎi", hint: "泛指四面八方，全国各地。" },
+  { id: "smbf", value: "四面八方", blankSlots: [2, 3], pinyin: "sì miàn bā fāng", hint: "各个方向，各个地方。" },
+  { id: "qsbx", value: "七上八下", blankSlots: [1, 2], pinyin: "qī shàng bā xià", hint: "形容心里慌乱不安。" },
+];
+
+// 难度梯度（主人 2026-08-09 18:48 拍板）：idiomCount + blankPerIdiom + 干扰字
+// 干扰字从已选成语的未扣字里随机抽（保持纯净，不引入其他字）
+const IDIOM_SETTINGS = {
+  3: { idiomCount: 3, blankPerIdiom: 1 },
+  4: { idiomCount: 4, blankPerIdiom: 1 },
+  5: { idiomCount: 5, blankPerIdiom: 2 },
+  6: { idiomCount: 6, blankPerIdiom: 2 },
+  7: { idiomCount: 7, blankPerIdiom: 2 },
+};
+
 const state = {
   game: GAMES.match.id,
   phase: "playing",
@@ -166,7 +239,16 @@ const state = {
   stroopFilledColors: [],   // 玩家逐格填入的颜色（null = 还未填）
   stroopCursor: 0,          // 当前待填 idx
   stroopCorrectCount: 0,    // 已判定且正确
-  stroopLocked: false       // 提交后短期锁定防双击
+  stroopLocked: false,      // 提交后短期锁定防双击
+  // Phase 8A — 成语填空专用 state（Phase 8B 接交互）
+  idioms: [],               // 本局选的成语数组（按滚筒顺序）[{id, value, blanks, pinyin, hint, selectedBlanks: [slotIdx, ...]}, ...]
+  idiomBlanks: {},          // 各成语被扣字位置 {idiomId: [slotIdx, ...]}（已选）
+  idiomFilled: {},          // 各成语已填字 {idiomId: {slotIdx: char}}
+  idiomCompleted: {},       // 已完成成语 {idiomId: true}
+  idiomCandidates: [],      // 候选字池（被扣字 + 干扰字打乱）
+  idiomCurrentIdx: 0,       // 滚筒当前 focus 的成语 idx
+  idiomSelectedSlot: null,  // 两段式第一步选中的空格 {idiomId, slotIdx} | null
+  idiomTotalCompleted: 0    // 已完成成语数
 };
 
 const AUDIO_MAP = window.BETA_WORDS_AUDIO || {};
@@ -391,6 +473,10 @@ const stroopHost = document.querySelector("#stroop-host");
 const stroopBoard = document.querySelector("#stroop-board");
 const stroopSelect = document.querySelector("#stroop-select");
 const stroopPalette = document.querySelector("#stroop-palette");
+// Phase 8A — 成语填空专用 DOM
+const idiomHost = document.querySelector("#idiom-host");
+const idiomTrack = document.querySelector("#idiom-track");
+const idiomPool = document.querySelector("#idiom-pool");
 
 const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
 
@@ -399,6 +485,8 @@ document.querySelector("#open-memory").addEventListener("click", () => chooseGam
 document.querySelector("#open-pinyin-friend").addEventListener("click", () => chooseGame(GAMES.pinyinFriend.id));
 document.querySelector("#open-listen-card").addEventListener("click", () => chooseGame(GAMES.listenCard.id));
 document.querySelector("#open-stroop-train").addEventListener("click", () => chooseGame(GAMES.stroopTrain.id));
+// Phase 8A — 成语填空入口
+document.querySelector("#open-idiom-fill")?.addEventListener("click", () => chooseGame(GAMES.idiomFill.id));
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
 document.querySelector("#replay-sound").addEventListener("click", () => playReplayVoice());
 // “再听一遍” 按钮在听音点卡 + 看字识颜色 中隐藏（不依赖读音重播）
@@ -501,6 +589,15 @@ function leaveGame() {
   state.stroopCursor = 0;
   state.stroopCorrectCount = 0;
   state.stroopLocked = false;
+  // Phase 8A: 成语填空 state 清理
+  state.idioms = [];
+  state.idiomBlanks = {};
+  state.idiomFilled = {};
+  state.idiomCompleted = {};
+  state.idiomCandidates = [];
+  state.idiomCurrentIdx = 0;
+  state.idiomSelectedSlot = null;
+  state.idiomTotalCompleted = 0;
   // Phase 7B: 离开 play 页面 — fadeOut BGM
   window.bgmController?.stop();
 }
@@ -523,6 +620,7 @@ const RECOMMENDED_SIZE = {
   pinyinFriend: 4, // 4×4（setup 没有 6 题选项，取最近意思）
   listenCard: 4,   // 4×4
   stroopTrain: 3,  // 3×3 入门（颜色字少不晕）
+  idiomFill: 4,    // 4 个成语，1 字/成语（入门梯度）
 };
 
 function setRecommendedDifficulty(gameId) {
@@ -563,10 +661,18 @@ function startGame(size) {
     board.hidden = true;
     quiz.hidden = true;
     if (stroopHost) stroopHost.hidden = false;
+    if (idiomHost) idiomHost.hidden = true;
+  } else if (state.game === GAMES.idiomFill.id) {
+    // Phase 8A: 成语填空（独立 zone-stack，不复用 board/quiz/stroopHost）
+    board.hidden = true;
+    quiz.hidden = true;
+    if (stroopHost) stroopHost.hidden = true;
+    if (idiomHost) idiomHost.hidden = false;
   } else {
     board.hidden = isQuizGame;
     quiz.hidden = !isQuizGame;
     if (stroopHost) stroopHost.hidden = true;
+    if (idiomHost) idiomHost.hidden = true;
   }
   syncStroopHud();
   optionGrid.innerHTML = "";
@@ -581,6 +687,14 @@ function startGame(size) {
 
   if (state.game === GAMES.stroopTrain.id) {
     startStroopGame(size);
+    showScreen("game");
+    window.bgmController?.playForGame(state.game);
+    return;
+  }
+
+  // Phase 8A: 成语填空分支
+  if (state.game === GAMES.idiomFill.id) {
+    startIdiomFillGame(size);
     showScreen("game");
     window.bgmController?.playForGame(state.game);
     return;
@@ -1469,6 +1583,109 @@ function setStroopActive() {
   stroopSelect.querySelectorAll(".stroop-select-cell").forEach((el) => {
     if (el.dataset.idx !== String(cursor)) el.classList.add("is-disabled");
   });
+}
+
+// ============================================================
+// Phase 8A — 成语填空 idiomFill（静态展示 + 候选字池 + 滚筒）
+// 父文档：docs/phase-plans/phase-8-idiom-fill.md
+// 数据：IDIOMS（40 个 3 年级成语）+ IDIOM_SETTINGS（5 档难度）
+// 状态机：Phase 8B 接交互（点 slot + 点候选字 + 退回）
+// ============================================================
+
+function startIdiomFillGame(size) {
+  const settings = IDIOM_SETTINGS[size];
+  // 从 40 个成语里随机选 idiomCount 个
+  const pickedIdioms = shuffle([...IDIOMS]).slice(0, settings.idiomCount);
+  // 给每个成语随机选 blankPerIdiom 个 blanks
+  pickedIdioms.forEach((idiom) => {
+    const candidates = idiom.blankSlots;
+    const blankCount = Math.min(settings.blankPerIdiom, candidates.length);
+    idiom.selectedBlanks = shuffle(candidates).slice(0, blankCount).sort((a, b) => a - b);
+  });
+  state.idioms = pickedIdioms;
+  state.idiomBlanks = Object.fromEntries(pickedIdioms.map((i) => [i.id, i.selectedBlanks]));
+  state.idiomFilled = {};
+  state.idiomCompleted = {};
+  state.idiomCurrentIdx = 0;
+  state.idiomSelectedSlot = null;
+  state.idiomTotalCompleted = 0;
+  // 候选字池：把所有成语的被扣字打乱 + 干扰字（从已选成语未扣字里抽，保持纯净）
+  const blanksChars = pickedIdioms.flatMap((idiom) => idiom.selectedBlanks.map((idx) => idiom.value[idx]));
+  const distractorsPool = pickedIdioms.flatMap((idiom) =>
+    idiom.value.split("").filter((_, idx) => !idiom.selectedBlanks.includes(idx))
+  );
+  const uniqueDistractors = [...new Set(distractorsPool)];
+  const distractorCount = size <= 4 ? 1 : 2;
+  const distractors = shuffle(uniqueDistractors).slice(0, distractorCount);
+  state.idiomCandidates = shuffle([...blanksChars, ...distractors]);
+  // 计时器：从进入游戏开始（GAME_SOP §7，stroop 模式）
+  startTimer();
+  renderIdiomFill();
+}
+
+function renderIdiomFill() {
+  if (!idiomHost || !idiomTrack || !idiomPool) return;
+  idiomHost.hidden = false;
+  // 滚筒渲染（slot-machine：每次突出 1 个成语，其他半隐藏）
+  idiomTrack.innerHTML = "";
+  state.idioms.forEach((idiom, idx) => {
+    const row = document.createElement("div");
+    row.className = "idiom-row" + (idx === 0 ? " is-current" : " is-next");
+    row.dataset.idiomId = idiom.id;
+    row.dataset.idx = String(idx);
+    row.setAttribute("aria-label", `成语 ${idiom.value}`);
+    // 4 个槽位：被扣字位置显示空格，其他显示字
+    for (let slotIdx = 0; slotIdx < 4; slotIdx++) {
+      const slot = document.createElement("button");
+      slot.type = "button";
+      slot.className = "idiom-slot";
+      slot.dataset.idiomId = idiom.id;
+      slot.dataset.slotIdx = String(slotIdx);
+      const isBlank = idiom.selectedBlanks.includes(slotIdx);
+      if (isBlank) {
+        slot.classList.add("is-blank");
+        slot.textContent = "";
+        slot.setAttribute("aria-label", "空格，点这里选字");
+      } else {
+        slot.textContent = idiom.value[slotIdx];
+        slot.classList.add("is-fixed");
+        slot.setAttribute("aria-label", `${idiom.value[slotIdx]} 字`);
+      }
+      row.appendChild(slot);
+    }
+    // hint 提示（释义）
+    if (idiom.hint) {
+      const hintEl = document.createElement("div");
+      hintEl.className = "idiom-hint";
+      hintEl.textContent = idiom.hint;
+      row.appendChild(hintEl);
+    }
+    idiomTrack.appendChild(row);
+  });
+  // 候选字池渲染（底部）
+  idiomPool.innerHTML = "";
+  state.idiomCandidates.forEach((char, idx) => {
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "candidate-tile";
+    tile.dataset.idx = String(idx);
+    tile.dataset.char = char;
+    tile.textContent = char;
+    tile.setAttribute("aria-label", `候选字 ${char}`);
+    tile.addEventListener("click", () => handleIdiomCandidateClick(idx));
+    idiomPool.appendChild(tile);
+  });
+  // 更新 HUD 进度
+  const progressEl = document.querySelector("#progress");
+  if (progressEl) progressEl.textContent = `0 / ${state.idioms.length}`;
+}
+
+// 候选字点击处理（Phase 8A 占位：仅 console.debug 验证事件触发；Phase 8B 接两段式填字）
+function handleIdiomCandidateClick(idx) {
+  const char = state.idiomCandidates[idx];
+  if (!char) return;
+  // Phase 8A 占位：什么都不做（避免噪音 + 等 Phase 8B 实现两段式逻辑）
+  console.debug("[idiomFill] candidate click:", idx, char);
 }
 
 // 棋盘点击：仅 cursor 格接受点击 → 高亮 cursor（视觉反馈）
