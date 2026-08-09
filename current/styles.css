@@ -2503,7 +2503,10 @@ h2 {
   padding: 4px 8px;
 }
 
-/* 滚筒（slot-machine）容器 */
+/* 滚筒（slot-machine）3D 旋转木马 — 密码锁效果
+ * 主人 2026-08-09 20:17 反馈：放弃 translateY 高斯模糊方向，改用 CSS 3D rotateX
+ * 4 字成语作为整体 row 一起旋转（区别密码锁的单个数字）
+ */
 .idiom-track {
   position: relative;
   height: 240px;
@@ -2512,55 +2515,66 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0;
+  perspective: 900px; /* 3D 透视深度 — 让 rotateX 的 row 在 Z 空间可见 */
+  perspective-origin: 50% 50%;
 }
 
-/* 滚筒内部：所有 idiom-row 垂直堆叠，focusIdiom() 用 transform: translateY 平滑切换 */
+/* 滚筒内部：所有 idiom-row 在 3D 空间绕 X 轴排列，focusIdiom 用 rotateX 平滑切换 */
 .idiom-rows {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  transition: transform var(--motion-slow, 400ms) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1));
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d; /* 让 row 在 3D 空间渲染 */
+  transition: transform var(--motion-celebrate, 600ms) cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
 }
 
-/* 每个 idiom-row：滚筒一行（固定高度，flex 堆叠） */
+/* 每个 idiom-row：密码锁旋转木马的一格（3D rotateX 定位，4 字整体旋转） */
 .idiom-row {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90%;
+  max-width: 320px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 6px 12px;
   gap: 6px;
-  flex-shrink: 0;
-  width: 100%;
-  cursor: grab; /* 主人 2026-08-09 UX：成语列表可拖拽学习回顾 */
+  transform-style: preserve-3d;
+  backface-visibility: hidden; /* 背面隐藏（密码锁效果：旋转到后面就消失） */
+  transform-origin: center center;
+  /* transform: translate(-50%, -50%) rotateX(var(--angle)) translateZ(var(--radius)) — JS 设置 */
+  cursor: grab;
   /* 移动端关键：阻止浏览器默认手势（滚动/缩放/双击放大）+ 防止文字被选中 */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  transition: opacity var(--motion-base, 200ms) var(--ease-standard, ease),
-              transform var(--motion-base, 200ms) var(--ease-standard, ease),
-              filter var(--motion-base, 200ms) var(--ease-standard, ease);
+  transition: opacity 400ms ease, filter 400ms ease;
 }
 .idiom-row:active {
   cursor: grabbing;
 }
 
-/* 拖拽中（Pointer Events）：fixed 定位 + 视觉跟随手指/鼠标 + 阴影 + 高 z-index */
+/* 当前 focus 的成语（最清晰、最大、可见） */
+.idiom-row.is-current {
+  opacity: 1;
+  filter: none;
+  z-index: 3;
+}
+
+/* 拖拽中（Pointer Events）：fixed 定位 + 视觉跟随手指/鼠标 + 阴影 + 高 z-index
+ * 注意：不强制 transform — 拖拽时用 inline style 的 position/left/top + 清空 transform（避开 3D 旋转） */
 .idiom-row.is-dragging {
   opacity: 0.92;
-  transform: scale(1.03) !important;  /* !important 覆盖 is-current/passed/next 的 scale */
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
   cursor: grabbing;
   z-index: 1000;
   filter: none !important;
   background: white;
   border-radius: 8px;
-  /* 注意：position/left/top/width 由 inline style 设置 */
 }
 
 /* drop target 指示线（Pointer Events 用 before/after 区分上下） */
@@ -2573,28 +2587,11 @@ h2 {
   border-radius: 0 0 8px 8px;
 }
 
-/* 当前 focus 的成语（最大、最清晰） */
-.idiom-row.is-current {
-  opacity: 1;
-  transform: scale(1);
-  filter: blur(0);
-  z-index: 2;
-}
-
-/* 上一个（半隐藏 + 缩小） */
-.idiom-row.is-passed {
-  opacity: 0.18;
-  transform: scale(0.7);
-  filter: blur(2px);
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* 下一个（半隐藏 + 缩小） */
+/* 上一个 / 下一个（在 3D 空间中自然渐隐 + 轻微模糊 + 变暗 — 密码锁效果） */
+.idiom-row.is-passed,
 .idiom-row.is-next {
-  opacity: 0.22;
-  transform: scale(0.74);
-  filter: blur(2px);
+  opacity: 0.35;
+  filter: blur(1.5px) brightness(0.7);
   z-index: 1;
   pointer-events: none;
 }

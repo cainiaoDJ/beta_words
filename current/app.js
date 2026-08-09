@@ -1624,6 +1624,12 @@ function startIdiomFillGame(size) {
 }
 
 // 成语行渲染（从 state 重建 .idiom-rows 容器 — 拖拽后 + 状态恢复时复用，idempotent）
+// 主人 2026-08-09 20:17 反馈：滚筒效果打回重做，密码锁 3D rotateX 旋转木马方向
+//   每个 idiom-row 在 3D 空间绕 X 轴定位（rotateX(angle) translateZ(radius)）
+//   focusIdiom = 旋转整个 .idiom-rows 容器让目标 row 转到最前面
+const ROTATE_ANGLE = 35;  // 每行间隔 35°（4-7 行总弧度 105°-210°）
+const ROTATE_RADIUS = 200; // 旋转半径（perspective 距离的一半）
+
 function renderIdiomRows() {
   if (!idiomTrack) return;
   let rowsContainer = idiomTrack.querySelector(".idiom-rows");
@@ -1639,6 +1645,11 @@ function renderIdiomRows() {
     row.className = "idiom-row" + (idx === 0 ? " is-current" : " is-next");
     row.dataset.idiomId = idiom.id;
     row.dataset.idx = String(idx);
+    // 3D 旋转木马：每个 row 在 3D 空间绕 X 轴定位（rotateX + translateZ）
+    // 通过 CSS 变量传 angle/radius，让 CSS transform 用 var() 读取
+    row.style.setProperty("--angle", `${idx * ROTATE_ANGLE}deg`);
+    row.style.setProperty("--radius", `${ROTATE_RADIUS}px`);
+    row.style.transform = `translate(-50%, -50%) rotateX(${idx * ROTATE_ANGLE}deg) translateZ(${ROTATE_RADIUS}px)`;
     // 不再用 HTML5 drag API（主人 2026-08-09 20:05 反馈：桌面+移动都没生效）
     //   原因 1：HTML5 drag 在移动端（touch 设备）默认不触发
     //   原因 2：滚筒 .idiom-row 有 transform: scale(0.7/0.74)，让 drop target 定位错乱
@@ -1745,6 +1756,8 @@ function handleIdiomPointerMove(e) {
     row.style.top = idiomDragState.rowTop + "px";
     row.style.zIndex = "1000";
     row.style.pointerEvents = "none"; // 跟随时不再触发 row 自己事件
+    // 拖拽时清空 row 的 3D rotateX 变换（防止旋转木马旋转 + 拖拽定位叠加错乱）
+    row.style.transform = "none";
     try {
       idiomDragState.row.setPointerCapture(e.pointerId);
     } catch (err) {
@@ -1787,13 +1800,14 @@ function handleIdiomPointerUp(e) {
   if (!idiomDragState) return;
   const row = idiomDragState.row;
   if (idiomDragState.phase === "dragging") {
-    // 清理拖起 row 的 inline style
+    // 清理拖起 row 的 inline style（包括 transform — 渲染时会从 CSS 变量重新生成 3D rotateX）
     row.style.position = "";
     row.style.width = "";
     row.style.left = "";
     row.style.top = "";
     row.style.zIndex = "";
     row.style.pointerEvents = "";
+    row.style.transform = "";
     row.classList.remove("is-dragging");
     idiomTrack.querySelectorAll(".idiom-row").forEach((r) => r.classList.remove("is-drop-target-before", "is-drop-target-after"));
     // 计算最终插入 idx（targetAfter = 在 targetIdx 之后插入）
@@ -1837,6 +1851,7 @@ function handleIdiomPointerCancel(e) {
   row.style.top = "";
   row.style.zIndex = "";
   row.style.pointerEvents = "";
+  row.style.transform = "";
   row.classList.remove("is-dragging");
   idiomTrack.querySelectorAll(".idiom-row").forEach((r) => r.classList.remove("is-drop-target-before", "is-drop-target-after"));
   cleanupIdiomDragListeners();
@@ -1883,20 +1898,17 @@ function renderIdiomFill() {
 // 7-05 bug 防护：state.idiomSelectedSlot 单一来源 + 10px 行间距 + .is-selected class 复用
 // ============================================================
 
-// 滚筒切换：translateY 平滑滚动让 idx 居中
+// 滚筒切换：3D rotateX 让 idx 行转到最前面（密码锁旋转木马效果）
 function focusIdiom(idx) {
   if (!idiomTrack) return;
   const rowsContainer = idiomTrack.querySelector(".idiom-rows");
   const rows = idiomTrack.querySelectorAll(".idiom-row");
   if (!rowsContainer || !rows[idx]) return;
   state.idiomCurrentIdx = idx;
-  // 让 idx 行居中：translateY = -(目标行顶部) + (track 高 - 行高)/2
-  const trackH = idiomTrack.clientHeight;
-  const targetTop = rows[idx].offsetTop;
-  const rowH = rows[idx].offsetHeight;
-  const offset = -targetTop + (trackH - rowH) / 2;
-  rowsContainer.style.transform = `translateY(${offset}px)`;
-  // class 更新：当前大不透明，其他半隐藏
+  // 旋转整个 .idiom-rows 容器，让 idx 对应 row 的 rotateX 从 idx*ANGLE 变成 0（前面）
+  // 计算：idx row 当前 rotateX = idx * ANGLE，要把它变成 0，需要 container.rotateX(-idx * ANGLE)
+  rowsContainer.style.transform = `rotateX(${-idx * ROTATE_ANGLE}deg)`;
+  // class 更新：当前 is-current，其他 is-passed/is-next（CSS 控制 opacity + filter）
   rows.forEach((row, i) => {
     row.classList.toggle("is-current", i === idx);
     row.classList.toggle("is-passed", i < idx);
