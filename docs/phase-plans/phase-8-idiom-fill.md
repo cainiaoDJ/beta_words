@@ -2,7 +2,9 @@
 
 > 📁 父文档：[`../PLAN-2026-08-deep-optimization.md`](../PLAN-2026-08-deep-optimization.md)
 >
-> 状态：🔵 planning → ⏳ Phase 8A in progress
+> 状态：⏳ Phase 8A in progress → ✅ Phase 8A completed 2026-08-09（commit `adecbc3` + 布局 fix）
+>
+> 🎯 **本阶段成果**：6 个游戏入口（含 idiomFill 第 6 个）+ 301/301 测试通过（0 fail）+ 紫色主题 + 滚筒 + 候选字池静态展示
 >
 > 📐 **流程**：严格按 `beta_words/AGENTS.md` 三阶段法 + `current/GAME_SOP.md` §13 新增游戏流程 + `current/DESIGN_LANGUAGE.md` v2 统一 token。
 >
@@ -327,7 +329,7 @@ docs(phase-8d): 成语填空 Phase 8D — 测试 + BGM 验证 + 部署
 
 ## 🚦 验收 Checklist
 
-- [ ] Phase 8A commit + 264 测试通过 + 主人截图确认紫色调
+- [x] Phase 8A commit + 301 测试通过 + 主人截图确认紫色调（commit `adecbc3`，详见 git log）
 - [ ] Phase 8B commit + 264 测试通过 + 主人手测两段式交互（点 slot + 点字 + 退字）
 - [ ] Phase 8C commit + 264 测试通过 + 主人手测完整路径（3x3/5x5/7x7 完成）
 - [ ] Phase 8D commit + 部署本机 8091 + curl 验证

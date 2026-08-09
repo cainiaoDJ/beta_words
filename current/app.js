@@ -1635,6 +1635,8 @@ function renderIdiomFill() {
     row.dataset.idx = String(idx);
     row.setAttribute("aria-label", `成语 ${idiom.value}`);
     // 4 个槽位：被扣字位置显示空格，其他显示字
+    const slotsRow = document.createElement("div");
+    slotsRow.className = "idiom-slots";
     for (let slotIdx = 0; slotIdx < 4; slotIdx++) {
       const slot = document.createElement("button");
       slot.type = "button";
@@ -1651,8 +1653,9 @@ function renderIdiomFill() {
         slot.classList.add("is-fixed");
         slot.setAttribute("aria-label", `${idiom.value[slotIdx]} 字`);
       }
-      row.appendChild(slot);
+      slotsRow.appendChild(slot);
     }
+    row.appendChild(slotsRow);
     // hint 提示（释义）
     if (idiom.hint) {
       const hintEl = document.createElement("div");

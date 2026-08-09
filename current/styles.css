@@ -2551,6 +2551,15 @@ h2 {
   pointer-events: none;
 }
 
+/* 4 个槽位横向排列（idiom-row 内部横排容器） */
+.idiom-slots {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
 /* 4 个槽位（成语 4 字） */
 .idiom-slot {
   display: inline-flex;
@@ -2629,9 +2638,9 @@ h2 {
 /* 候选字池（zone-secondary） */
 .idiom-pool {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);  /* 固定 8 列：3-4 字 1 行，10-16 字 2 行 */
+  grid-template-columns: repeat(auto-fit, minmax(36px, 1fr));  /* 自适应列数：3-4 字 1 行，10-16 字 2 行 */
   gap: 6px;
-  padding: 8px;
+  padding: 6px;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid var(--line, #d8d8d8);
   border-radius: 8px;
@@ -2643,8 +2652,8 @@ h2 {
   align-items: center;
   justify-content: center;
   aspect-ratio: 1;
-  min-height: 40px;
-  font-size: 22px;
+  min-height: 36px;
+  font-size: 20px;
   font-weight: 900;
   font-family: var(--font-display, system-ui);
   border-radius: 6px;
