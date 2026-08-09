@@ -134,12 +134,12 @@
   --theme-stroopTrain-ink: #b32f2f;
   --theme-stroopTrain-glow: rgba(233, 79, 79, 0.4);
 
-  /* Phase 8A — idiomFill 靛紫主题色（区别 memory 浅紫 #8a4fd6，更深更"古朴"）*/
-  --theme-idiomFill-bg: rgba(110, 62, 184, 0.06);
-  --theme-idiomFill-accent: #6e3eb8;
-  --theme-idiomFill-accent-soft: rgba(110, 62, 184, 0.15);
-  --theme-idiomFill-ink: #4d2789;
-  --theme-idiomFill-glow: rgba(110, 62, 184, 0.4);
+  /* Phase 8A — idiomFill 青绿主题色（主人 2026-08-09 反馈：紫色撞 memory，改青绿 #14b8a6）*/
+  --theme-idiomFill-bg: rgba(20, 184, 166, 0.06);
+  --theme-idiomFill-accent: #14b8a6;
+  --theme-idiomFill-accent-soft: rgba(20, 184, 166, 0.15);
+  --theme-idiomFill-ink: #0d9488;
+  --theme-idiomFill-glow: rgba(20, 184, 166, 0.4);
 
   --theme-lobby-bg: rgba(247, 215, 92, 0.04);
   --theme-lobby-accent: #f5cd2f;
@@ -217,7 +217,7 @@ button {
   --theme-glow: var(--theme-stroopTrain-glow);
 }
 
-/* Phase 8A — idiomFill 靛紫主题映射 */
+/* Phase 8A — idiomFill 青绿主题映射 */
 [data-game="idiomFill"] {
   --theme-bg: var(--theme-idiomFill-bg);
   --theme-accent: var(--theme-idiomFill-accent);
@@ -1894,6 +1894,18 @@ h2 {
   box-shadow: 0 4px 16px var(--theme-stroopTrain-glow);
 }
 
+/* Phase 8A — 成语填空 entry（第 6 个，青绿主题边框，对齐其他 5 个游戏） */
+.game-entry[id="open-idiom-fill"] {
+  background: var(--theme-idiomFill-bg);
+  border: 2px solid var(--theme-idiomFill-accent);
+}
+.game-entry[id="open-idiom-fill"] .entry-icon {
+  background: var(--theme-idiomFill-accent-soft);
+}
+.game-entry[id="open-idiom-fill"]:hover {
+  box-shadow: 0 4px 16px var(--theme-idiomFill-glow);
+}
+
 /* ---- 隐藏 lobby 顶栏 mascot（已移到右下角） ---- */
 #lobby .mascot-host {
   display: none;
@@ -2502,7 +2514,19 @@ h2 {
   padding: 0;
 }
 
-/* 每个 idiom-row：滚筒一行 */
+/* 滚筒内部：所有 idiom-row 垂直堆叠，focusIdiom() 用 transform: translateY 平滑切换 */
+.idiom-rows {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  transition: transform var(--motion-slow, 400ms) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1));
+  will-change: transform;
+}
+
+/* 每个 idiom-row：滚筒一行（固定高度，flex 堆叠） */
 .idiom-row {
   display: flex;
   flex-direction: column;
@@ -2510,10 +2534,11 @@ h2 {
   justify-content: center;
   padding: 6px 12px;
   gap: 6px;
+  flex-shrink: 0;
+  width: 100%;
   transition: opacity var(--motion-base, 200ms) var(--ease-standard, ease),
               transform var(--motion-base, 200ms) var(--ease-standard, ease),
               filter var(--motion-base, 200ms) var(--ease-standard, ease);
-  width: 100%;
 }
 
 /* 当前 focus 的成语（最大、最清晰） */
@@ -2521,32 +2546,23 @@ h2 {
   opacity: 1;
   transform: scale(1);
   filter: blur(0);
-  position: relative;
   z-index: 2;
 }
 
-/* 上一个（半隐藏 + 上浮） */
+/* 上一个（半隐藏 + 缩小） */
 .idiom-row.is-passed {
   opacity: 0.18;
   transform: scale(0.7);
   filter: blur(2px);
-  position: absolute;
-  top: 6px;
-  left: 0;
-  right: 0;
   z-index: 1;
   pointer-events: none;
 }
 
-/* 下一个（半隐藏 + 下沉） */
+/* 下一个（半隐藏 + 缩小） */
 .idiom-row.is-next {
   opacity: 0.22;
   transform: scale(0.74);
   filter: blur(2px);
-  position: absolute;
-  bottom: 6px;
-  left: 0;
-  right: 0;
   z-index: 1;
   pointer-events: none;
 }
@@ -2677,6 +2693,30 @@ h2 {
 /* Phase 8B 占位：候选字"先点空格"抖动（无 slot 选中时点击候选字） */
 .candidate-tile.is-shake {
   animation: candidate-tile-shake var(--motion-slow, 320ms) var(--ease-standard, ease);
+}
+
+/* Phase 8B：候选字已用（置灰不可点） */
+.candidate-tile.is-used {
+  opacity: 0.25;
+  pointer-events: none;
+  filter: grayscale(1);
+  transform: scale(0.9);
+}
+
+/* Phase 8B：完成成语行高亮（绿脉冲边框） */
+.idiom-row.is-complete {
+  animation: idiom-row-complete 800ms var(--ease-emphasized, ease);
+}
+.idiom-row.is-complete .idiom-slot.is-filled {
+  border-color: var(--color-primary, #2f8c73);
+  background: var(--color-primary-soft, #dff3ea);
+  color: var(--color-primary-strong, #1f6f59);
+}
+
+@keyframes idiom-row-complete {
+  0%   { box-shadow: inset 0 0 0 0 rgba(47, 140, 115, 0); }
+  40%  { box-shadow: inset 0 0 0 4px rgba(47, 140, 115, 0.5); }
+  100% { box-shadow: inset 0 0 0 0 rgba(47, 140, 115, 0); }
 }
 
 @keyframes candidate-tile-shake {

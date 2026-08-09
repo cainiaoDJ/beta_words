@@ -1626,8 +1626,10 @@ function startIdiomFillGame(size) {
 function renderIdiomFill() {
   if (!idiomHost || !idiomTrack || !idiomPool) return;
   idiomHost.hidden = false;
-  // 滚筒渲染（slot-machine：每次突出 1 个成语，其他半隐藏）
+  // 滚筒渲染（slot-machine：.idiom-rows 容器内垂直堆叠，focusIdiom 用 translateY 平滑切换）
   idiomTrack.innerHTML = "";
+  const rowsContainer = document.createElement("div");
+  rowsContainer.className = "idiom-rows";
   state.idioms.forEach((idiom, idx) => {
     const row = document.createElement("div");
     row.className = "idiom-row" + (idx === 0 ? " is-current" : " is-next");
@@ -1653,6 +1655,8 @@ function renderIdiomFill() {
         slot.classList.add("is-fixed");
         slot.setAttribute("aria-label", `${idiom.value[slotIdx]} 字`);
       }
+      // Phase 8B: 空格可点（两段式第一步），实字不可点
+      slot.addEventListener("click", () => handleIdiomSlotClick(idiom.id, slotIdx));
       slotsRow.appendChild(slot);
     }
     row.appendChild(slotsRow);
@@ -1663,8 +1667,9 @@ function renderIdiomFill() {
       hintEl.textContent = idiom.hint;
       row.appendChild(hintEl);
     }
-    idiomTrack.appendChild(row);
+    rowsContainer.appendChild(row);
   });
+  idiomTrack.appendChild(rowsContainer);
   // 候选字池渲染（底部）
   idiomPool.innerHTML = "";
   state.idiomCandidates.forEach((char, idx) => {
@@ -1681,14 +1686,233 @@ function renderIdiomFill() {
   // 更新 HUD 进度
   const progressEl = document.querySelector("#progress");
   if (progressEl) progressEl.textContent = `0 / ${state.idioms.length}`;
+  // 滚筒初始居中第一个成语
+  requestAnimationFrame(() => focusIdiom(0));
 }
 
-// 候选字点击处理（Phase 8A 占位：仅 console.debug 验证事件触发；Phase 8B 接两段式填字）
+// ============================================================
+// Phase 8B — 成语填空交互（两段式：先选空格，再选字）
+// 7-05 bug 防护：state.idiomSelectedSlot 单一来源 + 10px 行间距 + .is-selected class 复用
+// ============================================================
+
+// 滚筒切换：translateY 平滑滚动让 idx 居中
+function focusIdiom(idx) {
+  if (!idiomTrack) return;
+  const rowsContainer = idiomTrack.querySelector(".idiom-rows");
+  const rows = idiomTrack.querySelectorAll(".idiom-row");
+  if (!rowsContainer || !rows[idx]) return;
+  state.idiomCurrentIdx = idx;
+  // 让 idx 行居中：translateY = -(目标行顶部) + (track 高 - 行高)/2
+  const trackH = idiomTrack.clientHeight;
+  const targetTop = rows[idx].offsetTop;
+  const rowH = rows[idx].offsetHeight;
+  const offset = -targetTop + (trackH - rowH) / 2;
+  rowsContainer.style.transform = `translateY(${offset}px)`;
+  // class 更新：当前大不透明，其他半隐藏
+  rows.forEach((row, i) => {
+    row.classList.toggle("is-current", i === idx);
+    row.classList.toggle("is-passed", i < idx);
+    row.classList.toggle("is-next", i > idx);
+  });
+}
+
+// 两段式第一步：点空格（选中 / 取消 / 退字）
+function handleIdiomSlotClick(idiomId, slotIdx) {
+  const idiom = state.idioms.find((i) => i.id === idiomId);
+  if (!idiom) return;
+  if (state.idiomCompleted[idiomId]) return; // 已完成成语不可再点
+  const slotEl = idiomTrack.querySelector(
+    `.idiom-slot[data-idiom-id="${idiomId}"][data-slot-idx="${slotIdx}"]`
+  );
+  if (!slotEl) return;
+  const isBlank = idiom.selectedBlanks.includes(slotIdx);
+  if (!isBlank) return; // 实字不可点
+
+  // 情况 1：已填字 → 退回候选字池
+  if (state.idiomFilled[idiomId] && state.idiomFilled[idiomId][slotIdx]) {
+    const char = state.idiomFilled[idiomId][slotIdx];
+    delete state.idiomFilled[idiomId][slotIdx];
+    slotEl.textContent = "";
+    slotEl.classList.remove("is-filled", "is-selected");
+    slotEl.classList.add("is-blank");
+    restoreCandidateToPool(char);
+    state.idiomSelectedSlot = null;
+    setHint("再选一个空格");
+    return;
+  }
+
+  // 情况 2：该 slot 已是选中 → 取消选中
+  if (
+    state.idiomSelectedSlot &&
+    state.idiomSelectedSlot.idiomId === idiomId &&
+    state.idiomSelectedSlot.slotIdx === slotIdx
+  ) {
+    state.idiomSelectedSlot = null;
+    slotEl.classList.remove("is-selected");
+    setHint("点下面的字");
+    return;
+  }
+
+  // 情况 3：切换选中（清除旧选中）
+  if (state.idiomSelectedSlot) {
+    const prevEl = idiomTrack.querySelector(
+      `.idiom-slot[data-idiom-id="${state.idiomSelectedSlot.idiomId}"][data-slot-idx="${state.idiomSelectedSlot.slotIdx}"]`
+    );
+    if (prevEl) prevEl.classList.remove("is-selected");
+  }
+
+  state.idiomSelectedSlot = { idiomId, slotIdx };
+  slotEl.classList.add("is-selected");
+  setHint("点下面的字");
+}
+
+// 候选字点击处理（两段式第二步：填字 / 无选中时抖动提示）
 function handleIdiomCandidateClick(idx) {
   const char = state.idiomCandidates[idx];
-  if (!char) return;
-  // Phase 8A 占位：什么都不做（避免噪音 + 等 Phase 8B 实现两段式逻辑）
-  console.debug("[idiomFill] candidate click:", idx, char);
+  if (!char) return; // 已被用掉
+
+  // 无 selectedSlot → 抖动候选字池 + TTS 提示先点空格
+  if (!state.idiomSelectedSlot) {
+    const tileEl = idiomPool.querySelector(`.candidate-tile[data-idx="${idx}"]`);
+    if (tileEl) {
+      tileEl.classList.add("is-shake");
+      setTimeout(() => tileEl.classList.remove("is-shake"), 400);
+    }
+    setHint("先点一个空格");
+    playVoiceVariant("prompt.tryAgain", { replayable: false });
+    return;
+  }
+
+  const { idiomId, slotIdx } = state.idiomSelectedSlot;
+  const idiom = state.idioms.find((i) => i.id === idiomId);
+  if (!idiom) return;
+  const slotEl = idiomTrack.querySelector(
+    `.idiom-slot[data-idiom-id="${idiomId}"][data-slot-idx="${slotIdx}"]`
+  );
+  if (!slotEl) return;
+
+  // 填字
+  if (!state.idiomFilled[idiomId]) state.idiomFilled[idiomId] = {};
+  state.idiomFilled[idiomId][slotIdx] = char;
+  slotEl.textContent = char;
+  slotEl.classList.remove("is-blank", "is-selected");
+  slotEl.classList.add("is-filled");
+
+  // 候选字池标记已用（置灰不可点）
+  state.idiomCandidates[idx] = null;
+  const tileEl = idiomPool.querySelector(`.candidate-tile[data-idx="${idx}"]`);
+  if (tileEl) {
+    tileEl.classList.add("is-used");
+    tileEl.disabled = true;
+  }
+  state.idiomSelectedSlot = null;
+
+  // TTS 读该字 + 小彩屑（青绿 hue 174）
+  playVoice(getWordVoiceKey(char), char, { replayable: false });
+  const rect = slotEl.getBoundingClientRect();
+  spawnMiniConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 174, 6);
+
+  // 检查成语是否完成
+  checkIdiomComplete(idiomId);
+}
+
+// 退字：把字放回候选字池第一个空位
+function restoreCandidateToPool(char) {
+  const idx = state.idiomCandidates.findIndex((c) => c === null);
+  if (idx >= 0) {
+    state.idiomCandidates[idx] = char;
+    const tileEl = idiomPool.querySelector(`.candidate-tile[data-idx="${idx}"]`);
+    if (tileEl) {
+      tileEl.textContent = char;
+      tileEl.classList.remove("is-used");
+      tileEl.disabled = false;
+      tileEl.setAttribute("aria-label", `候选字 ${char}`);
+    }
+  }
+}
+
+// 完成判定：所有 blanks 填满 → 标记完成 + TTS 读成语 + 自动推进
+function checkIdiomComplete(idiomId) {
+  const idiom = state.idioms.find((i) => i.id === idiomId);
+  if (!idiom) return;
+  const filled = state.idiomFilled[idiomId] || {};
+  const allFilled = idiom.selectedBlanks.every((slotIdx) => filled[slotIdx]);
+  if (!allFilled) return;
+
+  state.idiomCompleted[idiomId] = true;
+  state.idiomTotalCompleted = Object.keys(state.idiomCompleted).length;
+
+  // 更新 HUD 进度
+  const progressEl = document.querySelector("#progress");
+  if (progressEl) progressEl.textContent = `${state.idiomTotalCompleted} / ${state.idioms.length}`;
+
+  // row 完成高亮 + mascot happy + 大彩屑
+  const rowEl = idiomTrack.querySelector(`.idiom-row[data-idiom-id="${idiomId}"]`);
+  if (rowEl) rowEl.classList.add("is-complete");
+  setMascotState("happy");
+  const rect = rowEl ? rowEl.getBoundingClientRect() : null;
+  if (rect) spawnMiniConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 174, 12);
+
+  // TTS 读整个成语（延迟让填字音先播完）
+  setTimeout(() => {
+    playIdiomVoice(idiom);
+  }, 500);
+
+  // 自动推进滚筒（延迟让 TTS 播完，主人 7-04 要求：完成自动 advanceToNextIdiom）
+  setTimeout(() => {
+    advanceToNextIdiom();
+  }, 2200);
+}
+
+// TTS 读整个成语（AUDIO_MAP 无成语音频 → 浏览器 SpeechSynthesis 兜底）
+function playIdiomVoice(idiom) {
+  if (typeof speechSynthesis !== "undefined") {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(idiom.value);
+    u.lang = "zh-CN";
+    u.rate = 0.82;
+    u.pitch = 1.08;
+    speechSynthesis.speak(u);
+  }
+}
+
+// 找下一个未完成成语并切换滚筒（找不到则从头找，全完成则结束）
+function advanceToNextIdiom() {
+  const currentIdx = state.idiomCurrentIdx;
+  for (let i = currentIdx + 1; i < state.idioms.length; i++) {
+    if (!state.idiomCompleted[state.idioms[i].id]) {
+      focusIdiom(i);
+      setHint(state.idioms[i].hint);
+      return;
+    }
+  }
+  for (let i = 0; i < currentIdx; i++) {
+    if (!state.idiomCompleted[state.idioms[i].id]) {
+      focusIdiom(i);
+      setHint(state.idioms[i].hint);
+      return;
+    }
+  }
+  completeIdiomFillGame();
+}
+
+// 全部成语完成 → 完成面板（沿用 Phase 4B 奖杯 + 星星 + best record）
+function completeIdiomFillGame() {
+  stopTimer();
+  const total = state.idioms.length;
+  const completed = state.idiomTotalCompleted;
+  renderTrophiesAndStars(completed, total);
+  const elapsed = getElapsedTime();
+  if (completeTime) {
+    completeTime.textContent = `用时 ${formatTime(elapsed)} · 成功率 ${completed} / ${total}（${Math.round((completed / total) * 100)}%）`;
+  }
+  saveBestRecord(state.size, elapsed);
+  completePanel.hidden = false;
+  bestRecord.hidden = true;
+  setMascotState("celebrate");
+  spawnConfetti(24);
+  playVoiceVariant("prompt.complete", { replayable: false });
+  window.bgmController?.stop();
 }
 
 // 棋盘点击：仅 cursor 格接受点击 → 高亮 cursor（视觉反馈）
