@@ -2407,3 +2407,53 @@ h2 {
   from { transform: translateX(0); }
   to   { transform: translateX(-320px); }
 }
+
+/* Phase 7B: Voice picker BGM toggle row */
+.bgm-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+.bgm-toggle-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  opacity: 0.85;
+}
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--line);
+  border: none;
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  transition: background 200ms ease;
+  flex-shrink: 0;
+  outline: none;
+}
+.toggle-switch[aria-checked="true"] {
+  background: var(--theme-accent, var(--accent, #2f8c73));
+}
+.toggle-switch:focus-visible {
+  box-shadow: 0 0 0 3px rgba(47, 140, 115, 0.35);
+}
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 200ms ease;
+}
+.toggle-switch[aria-checked="true"] .toggle-knob {
+  transform: translateX(20px);
+}

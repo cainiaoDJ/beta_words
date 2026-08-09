@@ -501,6 +501,8 @@ function leaveGame() {
   state.stroopCursor = 0;
   state.stroopCorrectCount = 0;
   state.stroopLocked = false;
+  // Phase 7B: 离开 play 页面 — fadeOut BGM
+  window.bgmController?.stop();
 }
 
 function chooseGame(gameId) {
@@ -573,12 +575,14 @@ function startGame(size) {
   if (isQuizGame) {
     startQuizGame(size);
     showScreen("game");
+    window.bgmController?.playForGame(state.game);
     return;
   }
 
   if (state.game === GAMES.stroopTrain.id) {
     startStroopGame(size);
     showScreen("game");
+    window.bgmController?.playForGame(state.game);
     return;
   }
 
@@ -605,6 +609,8 @@ function startGame(size) {
 
   setHint(game.startHint);
   playVoiceVariant("prompt.start", { replayable: false });
+  // Phase 7B: 进 play 页面 — 启动当前游戏 BGM
+  window.bgmController?.playForGame(state.game);
 }
 
 function calcTileFont() {
@@ -1570,6 +1576,9 @@ function playVoice(key, fallbackText, options = {}) {
     state.replayText = fallbackText;
   }
 
+  // Phase 7B: TTS 触发前 duck BGM（让字音不与 BGM 互挤）
+  window.bgmController?.duck();
+
   const src = key ? AUDIO_MAP[key] : null;
   if (!src) {
     speak(fallbackText);
@@ -1583,6 +1592,8 @@ function playVoice(key, fallbackText, options = {}) {
   currentAudio.play().catch(() => {
     speak(fallbackText);
   });
+  // TTS 结束时 restore BGM（audio ended + speechSynthesis onend + bgmController 兑底 timer 三路兑底）
+  currentAudio.addEventListener("ended", () => window.bgmController?.restore(), { once: true });
 }
 
 function stopCurrentAudio() {
@@ -1780,6 +1791,9 @@ function speak(text) {
   utterance.pitch = 1.12;
   const picked = pickBestVoice();
   if (picked) utterance.voice = picked;
+  // Phase 7B: TTS 结束 restore BGM（与 bgmController 兑底 timer 一起组成三路兑底）
+  utterance.onend = () => window.bgmController?.restore();
+  utterance.onerror = () => window.bgmController?.restore();
   window.speechSynthesis.speak(utterance);
 }
 
@@ -1797,3 +1811,171 @@ function shuffle(items) {
   }
   return result;
 }
+
+// =====================================================
+// Phase 7B: BGM Controller — 6 首 BGM 生命周期管理
+// =====================================================
+// 设计要点：
+// - 进 play 自动播放对应游戏 BGM（默认音量 30%）
+// - 离 play fadeOut 300ms 后 pause + currentTime=0
+// - TTS 触发时 duck 到 10%（250ms ramp），结束恢复 30%（500ms ramp）
+// - 首次用户 click 解锁 autoplay
+// - Voice picker 加 toggle，记住 localStorage.beta_words_bgm_pref
+// - audio 元素加载/播放失败静默不影响游戏
+(function initBgmController() {
+  const audios = {
+    lobby: document.getElementById("bgm-lobby"),
+    match: document.getElementById("bgm-match"),
+    memory: document.getElementById("bgm-memory"),
+    pinyinFriend: document.getElementById("bgm-pinyinFriend"),
+    listenCard: document.getElementById("bgm-listenCard"),
+    stroopTrain: document.getElementById("bgm-stroopTrain"),
+  };
+  // 读用户偏好（默认开）
+  const pref = (() => {
+    try { return localStorage.getItem("beta_words_bgm_pref"); } catch { return null; }
+  })();
+  let enabled = pref === null ? true : pref === "on";
+  let audioUnlocked = false;
+  let currentGameId = null;
+  let volume = 0.3;
+  let ducked = false;
+  let duckTimer = null;
+  let fadeTimer = null;
+
+  function ramp(toVolume, ms, onDone) {
+    if (fadeTimer) { clearInterval(fadeTimer); fadeTimer = null; }
+    const from = volume;
+    if (!currentGameId || !audios[currentGameId]) { volume = toVolume; onDone && onDone(); return; }
+    const start = performance.now();
+    fadeTimer = setInterval(() => {
+      const elapsed = performance.now() - start;
+      const t = Math.min(1, elapsed / ms);
+      const v = from + (toVolume - from) * t;
+      if (currentGameId && audios[currentGameId]) audios[currentGameId].volume = Math.max(0, Math.min(1, v));
+      if (t >= 1) {
+        clearInterval(fadeTimer); fadeTimer = null;
+        volume = toVolume;
+        onDone && onDone();
+      }
+    }, 16);
+  }
+
+  function clearDuckTimer() {
+    if (duckTimer) { clearTimeout(duckTimer); duckTimer = null; }
+  }
+
+  function syncToggleUI() {
+    const btn = document.getElementById("bgm-toggle");
+    if (!btn) return;
+    btn.setAttribute("aria-checked", enabled ? "true" : "false");
+  }
+
+  const api = {
+    unlock() {
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      // 预热：尝试 play+pause 让浏览器标记为"用户已交互"，后续 audio.play() 不会再被拒
+      Object.values(audios).forEach((a) => {
+        if (!a) return;
+        try { a.play().then(() => a.pause()).catch(() => {}); } catch {}
+      });
+    },
+
+    playForGame(gameId) {
+      if (!enabled) return;
+      const a = audios[gameId];
+      if (!a) return;
+      if (currentGameId === gameId) return; // 已播同一首
+      // 停旧
+      if (currentGameId && audios[currentGameId] && currentGameId !== gameId) {
+        const oldA = audios[currentGameId];
+        const oldFrom = oldA.volume;
+        const start = performance.now();
+        const fadeOld = setInterval(() => {
+          const t = Math.min(1, (performance.now() - start) / 200);
+          oldA.volume = oldFrom * (1 - t);
+          if (t >= 1) {
+            clearInterval(fadeOld);
+            oldA.pause();
+            oldA.currentTime = 0;
+          }
+        }, 16);
+      }
+      currentGameId = gameId;
+      a.volume = 0;
+      a.play().catch(() => { /* autoplay 拒绝或音频加载失败，静默 */ });
+      if (audioUnlocked) {
+        ramp(0.3, 300);
+      } else {
+        // 未解锁：设个低音量等下次 unlock 后再 ramp 上去
+        volume = 0.15;
+        a.volume = 0.15;
+      }
+    },
+
+    stop() {
+      clearDuckTimer();
+      ducked = false;
+      if (currentGameId && audios[currentGameId]) {
+        const id = currentGameId;
+        ramp(0, 300, () => {
+          // 只停自己（避免 race：ramp 期间被 startForGame 切走时不要 pause 新的）
+          if (currentGameId === id && audios[id]) {
+            audios[id].pause();
+            audios[id].currentTime = 0;
+          }
+        });
+      }
+      currentGameId = null;
+    },
+
+    duck() {
+      if (!currentGameId || !audios[currentGameId] || ducked) return;
+      ducked = true;
+      ramp(0.1, 250);
+      clearDuckTimer();
+      // 兜底：8s 后强制 restore（防 speechSynthesis onend / audio ended 不触发）
+      duckTimer = setTimeout(() => api.restore(), 8000);
+    },
+
+    restore() {
+      clearDuckTimer();
+      if (!ducked) return;
+      ducked = false;
+      ramp(0.3, 500);
+    },
+
+    toggle(on) {
+      enabled = !!on;
+      try { localStorage.setItem("beta_words_bgm_pref", enabled ? "on" : "off"); } catch {}
+      syncToggleUI();
+      if (!enabled) api.stop();
+    },
+
+    isEnabled() { return enabled; },
+
+    // 兜底：如果 TTS 触发了但 audio 元素不存在，至少要 restore
+    safeRestore() { api.restore(); },
+  };
+
+  window.bgmController = api;
+
+  // 全局 click 委托：首次任意 click 解锁 autoplay
+  document.addEventListener("click", function unlockOnce() {
+    api.unlock();
+    document.removeEventListener("click", unlockOnce);
+  }, { once: true });
+
+  // voice picker 关闭后，BGM toggle 状态可能改过 — 不需要额外处理
+  // 初始化 toggle UI（读偏好后立即同步）
+  syncToggleUI();
+
+  // 绑定 toggle 按钮 click
+  const toggleBtn = document.getElementById("bgm-toggle");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      api.toggle(!api.isEnabled());
+    });
+  }
+})();

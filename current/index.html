@@ -760,6 +760,14 @@
       </div>
     </div>
 
+    <!-- Phase 7B: 6 首 BGM（lobby/match/memory/pinyinFriend/listenCard/stroopTrain），由 app.js bgmController 控制播放/暂停/duck -->
+    <audio id="bgm-lobby" src="assets/music/lobby.mp3" loop preload="auto"></audio>
+    <audio id="bgm-match" src="assets/music/match.mp3" loop preload="auto"></audio>
+    <audio id="bgm-memory" src="assets/music/memory.mp3" loop preload="auto"></audio>
+    <audio id="bgm-pinyinFriend" src="assets/music/pinyinFriend.mp3" loop preload="auto"></audio>
+    <audio id="bgm-listenCard" src="assets/music/listenCard.mp3" loop preload="auto"></audio>
+    <audio id="bgm-stroopTrain" src="assets/music/stroopTrain.mp3" loop preload="auto"></audio>
+
     <!-- Voice picker modal: body-level, position:fixed, NOT inside .stage-canvas (避免被 transform scale 压住) -->
     <div id="voice-picker" class="voice-modal" hidden role="dialog" aria-labelledby="voice-picker-title" aria-modal="true">
       <div class="voice-modal-backdrop" data-close="voice-picker"></div>
@@ -774,6 +782,13 @@
         </div>
         <p class="voice-modal-hint">点一行试听，喜欢就定了</p>
         <div id="voice-list" class="voice-list" role="list"></div>
+        <!-- Phase 7B: 背景音乐开关（独立于音色选择）-->
+        <div class="bgm-toggle-row">
+          <span class="bgm-toggle-label">🎵 背景音乐</span>
+          <button id="bgm-toggle" class="toggle-switch" type="button" role="switch" aria-checked="true" aria-label="背景音乐">
+            <span class="toggle-knob"></span>
+          </button>
+        </div>
       </div>
     </div>
 
