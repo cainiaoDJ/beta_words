@@ -2068,7 +2068,23 @@ function handleIdiomCandidateClick(idx) {
   );
   if (!slotEl) return;
 
-  // 填字
+  // ★ 答案校验（主人 2026-08-09 22:43 发现 bug）：检查 char 是不是 slot 期望的字
+  // 否则候选字池里的干扰字（已选成语未扣字）会被误接受为正确
+  const expectedChar = idiom.value[slotIdx];
+  if (char !== expectedChar) {
+    // 答错反馈：屏幕红光闪 + 候选字抖动 + TTS "再想想" + 保持 selectedSlot
+    flashError();
+    const tileEl = idiomPool.querySelector(`.candidate-tile[data-idx="${idx}"]`);
+    if (tileEl) {
+      tileEl.classList.add("is-shake");
+      setTimeout(() => tileEl.classList.remove("is-shake"), 400);
+    }
+    setHint("再想想");
+    playVoiceVariant("prompt.tryAgain", { replayable: false });
+    return; // 不填字、不动 selectedSlot，让用户重新选
+  }
+
+  // 填字（已通过答案校验）
   if (!state.idiomFilled[idiomId]) state.idiomFilled[idiomId] = {};
   state.idiomFilled[idiomId][slotIdx] = char;
   slotEl.textContent = char;
@@ -2117,13 +2133,18 @@ function restoreCandidateToPool(char) {
   }
 }
 
-// 完成判定：所有 blanks 填满 → 标记完成 + TTS 读成语 + 自动推进
+// 完成判定：所有 blanks 填满 + 填的字都正确 → 标记完成 + TTS 读成语 + 自动推进
+// ★ 主人 2026-08-09 22:43 反馈：之前只检查"填满"，不检查"正确"——加 allCorrect 保险检查
 function checkIdiomComplete(idiomId) {
   const idiom = state.idioms.find((i) => i.id === idiomId);
   if (!idiom) return;
   const filled = state.idiomFilled[idiomId] || {};
+  // 检查 1：所有 blanks 都填了
   const allFilled = idiom.selectedBlanks.every((slotIdx) => filled[slotIdx]);
   if (!allFilled) return;
+  // 检查 2：填的字都等于成语对应位置的字（保险：理论上 handleIdiomCandidateClick 已校验）
+  const allCorrect = idiom.selectedBlanks.every((slotIdx) => filled[slotIdx] === idiom.value[slotIdx]);
+  if (!allCorrect) return;
 
   state.idiomCompleted[idiomId] = true;
   state.idiomTotalCompleted = Object.keys(state.idiomCompleted).length;
