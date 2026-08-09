@@ -477,6 +477,8 @@ const stroopPalette = document.querySelector("#stroop-palette");
 const idiomHost = document.querySelector("#idiom-host");
 const idiomTrack = document.querySelector("#idiom-track");
 const idiomPool = document.querySelector("#idiom-pool");
+// 鼠标滚轮（中键滚动）切换成语 — 主人 2026-08-09 20:47 验收标准
+idiomTrack.addEventListener("wheel", handleIdiomWheel, { passive: false });
 
 const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
 
@@ -1922,11 +1924,19 @@ function focusIdiom(idx) {
 // 滚筒切换 + 指针逻辑（主人 2026-08-09 20:33 反馈）
 //   - 新成语未填完 → 自动设置指针到第一个空字（selectFirstBlank）
 //   - 新成语已填完 → 不动字框指针（保留原 selectedSlot 指向原成语）
-// 同时设置 hint 为新成语释义
-function focusIdiomAndMaybeSelect(idx) {
-  focusIdiom(idx);
+// 主人 2026-08-09 20:47 反馈：动画时长根据成语状态决定
+//   - 未填完成语 → baseDurationMs（默认 1000ms，每个成语滑动 1s）
+//   - 已填完成语 → 500ms 快速跳过（跳过 0.5s）
+function focusIdiomAndMaybeSelect(idx, baseDurationMs = 1000) {
   const idiom = state.idioms[idx];
   if (!idiom) return;
+  // 已完成成语：0.5s 快速跳过；未完成：1s 标准滑动
+  const durationMs = state.idiomCompleted[idiom.id] ? 500 : baseDurationMs;
+  const rowsContainer = idiomTrack.querySelector(".idiom-rows");
+  if (rowsContainer) {
+    rowsContainer.style.transition = `transform ${durationMs}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+  }
+  focusIdiom(idx);
   setHint(idiom.hint);
   // 已完成的成语不动指针（保留原 selectedSlot）
   if (!state.idiomCompleted[idiom.id]) {
@@ -1939,6 +1949,24 @@ function handleIdiomRowClick(idiomId) {
   const idx = state.idioms.findIndex((i) => i.id === idiomId);
   if (idx < 0 || idx === state.idiomCurrentIdx) return;
   focusIdiomAndMaybeSelect(idx);
+}
+
+// 鼠标滚轮（中键滚动）切换成语 — 主人 2026-08-09 20:47 验收标准
+// 滚下 → 下一个成语；滚上 → 上一个成语
+// 每次 1 个成语 + 1s 平滑动画（已完成成语 0.5s 快速跳过）
+// 防抖：动画期间忽略连续滚轮（避免多次触发抖动）
+let idiomWheelThrottle = false;
+function handleIdiomWheel(e) {
+  e.preventDefault();
+  if (idiomWheelThrottle) return;
+  // 用 deltaY 正负判断方向（> 0 滚下 = 下一个，< 0 滚上 = 上一个）
+  const direction = e.deltaY > 0 ? 1 : -1;
+  const newIdx = state.idiomCurrentIdx + direction;
+  if (newIdx < 0 || newIdx >= state.idioms.length) return;
+  idiomWheelThrottle = true;
+  focusIdiomAndMaybeSelect(newIdx, 1000);
+  // 1s 节流（最长动画时长），期间忽略连续滚轮
+  setTimeout(() => { idiomWheelThrottle = false; }, 1000);
 }
 
 // 自动指针：选中指定成语的第一个未填空格（主人 2026-08-09 UX 反馈：自动指向第一个空，保留两段式能力）
