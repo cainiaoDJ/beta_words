@@ -1686,8 +1686,12 @@ function renderIdiomFill() {
   // 更新 HUD 进度
   const progressEl = document.querySelector("#progress");
   if (progressEl) progressEl.textContent = `0 / ${state.idioms.length}`;
-  // 滚筒初始居中第一个成语
-  requestAnimationFrame(() => focusIdiom(0));
+  // 滚筒初始居中第一个成语 + 自动指针指向第一个空
+  requestAnimationFrame(() => {
+    focusIdiom(0);
+    setHint(state.idioms[0].hint);
+    selectFirstBlank(state.idioms[0].id);
+  });
 }
 
 // ============================================================
@@ -1716,6 +1720,28 @@ function focusIdiom(idx) {
   });
 }
 
+// 自动指针：选中指定成语的第一个未填空格（主人 2026-08-09 UX 反馈：自动指向第一个空，保留两段式能力）
+function selectFirstBlank(idiomId) {
+  const idiom = state.idioms.find((i) => i.id === idiomId);
+  if (!idiom) return;
+  // 找第一个 selectedBlanks 里还没填的位置
+  const nextSlotIdx = idiom.selectedBlanks.find((slotIdx) => !state.idiomFilled[idiomId]?.[slotIdx]);
+  if (nextSlotIdx === undefined) return; // 全部填完（checkIdiomComplete 会接管）
+  // 清除旧选中
+  if (state.idiomSelectedSlot) {
+    const prevEl = idiomTrack.querySelector(
+      `.idiom-slot[data-idiom-id="${state.idiomSelectedSlot.idiomId}"][data-slot-idx="${state.idiomSelectedSlot.slotIdx}"]`
+    );
+    if (prevEl) prevEl.classList.remove("is-selected");
+  }
+  // 设置新选中
+  state.idiomSelectedSlot = { idiomId, slotIdx: nextSlotIdx };
+  const slotEl = idiomTrack.querySelector(
+    `.idiom-slot[data-idiom-id="${idiomId}"][data-slot-idx="${nextSlotIdx}"]`
+  );
+  if (slotEl) slotEl.classList.add("is-selected");
+}
+
 // 两段式第一步：点空格（选中 / 取消 / 退字）
 function handleIdiomSlotClick(idiomId, slotIdx) {
   const idiom = state.idioms.find((i) => i.id === idiomId);
@@ -1728,7 +1754,7 @@ function handleIdiomSlotClick(idiomId, slotIdx) {
   const isBlank = idiom.selectedBlanks.includes(slotIdx);
   if (!isBlank) return; // 实字不可点
 
-  // 情况 1：已填字 → 退回候选字池
+  // 情况 1：已填字 → 退回候选字池 + 自动指向第一个未填空
   if (state.idiomFilled[idiomId] && state.idiomFilled[idiomId][slotIdx]) {
     const char = state.idiomFilled[idiomId][slotIdx];
     delete state.idiomFilled[idiomId][slotIdx];
@@ -1737,6 +1763,7 @@ function handleIdiomSlotClick(idiomId, slotIdx) {
     slotEl.classList.add("is-blank");
     restoreCandidateToPool(char);
     state.idiomSelectedSlot = null;
+    selectFirstBlank(idiomId);
     setHint("再选一个空格");
     return;
   }
@@ -1812,6 +1839,9 @@ function handleIdiomCandidateClick(idx) {
   const rect = slotEl.getBoundingClientRect();
   spawnMiniConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 174, 6);
 
+  // 自动指针：填字成功后指向下一个空（保留两段式：用户可点别处切换）
+  selectFirstBlank(idiomId);
+
   // 检查成语是否完成
   checkIdiomComplete(idiomId);
 }
@@ -1883,6 +1913,7 @@ function advanceToNextIdiom() {
     if (!state.idiomCompleted[state.idioms[i].id]) {
       focusIdiom(i);
       setHint(state.idioms[i].hint);
+      selectFirstBlank(state.idioms[i].id);
       return;
     }
   }
@@ -1890,6 +1921,7 @@ function advanceToNextIdiom() {
     if (!state.idiomCompleted[state.idioms[i].id]) {
       focusIdiom(i);
       setHint(state.idioms[i].hint);
+      selectFirstBlank(state.idioms[i].id);
       return;
     }
   }
