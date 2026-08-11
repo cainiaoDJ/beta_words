@@ -449,6 +449,33 @@ function renderTrophiesAndStars(correct, total) {
   showStars(stars);
 }
 
+// Phase victory-popup-v2: 胜利弹窗 tier-based 内容
+// - Title: per game + per tier (perfect/good/tryAgain) — 修 HTML 硬编码 "都找到了"
+// - Audio: rate >= 0.5 → prompt.complete (庆祝), rate < 0.5 → prompt.tryAgain (鼓励)
+// - 修 bug: 0% 完成不再喊 "太棒了/完美通关" 等庆祝话
+const COMPLETE_TITLES = {
+  match:        { perfect: "全部配对成功！", good: "完成啦！",     tryAgain: "再试一次" },
+  memory:       { perfect: "全部记起来啦！", good: "完成啦！",     tryAgain: "再多看几次" },
+  pinyinFriend: { perfect: "拼音全对！",     good: "完成啦！",     tryAgain: "再听一次" },
+  listenCard:   { perfect: "听得全对！",     good: "听对了不少！", tryAgain: "再听一次" },
+  stroopTrain:  { perfect: "完美读色！",     good: "颜色对了不少！", tryAgain: "颜色对应看仔细" },
+  idiomFill:    { perfect: "成语全通关！",   good: "填对不少！",   tryAgain: "再读几遍" }
+};
+
+function renderCompletePanel(gameId, correct, total) {
+  const rate = total > 0 ? correct / total : 0;
+  const tier = rate >= 1.0 ? "perfect" : rate >= 0.5 ? "good" : "tryAgain";
+  const titleText = COMPLETE_TITLES[gameId]?.[tier] || "完成啦！";
+  const titleEl = document.querySelector(".complete-title");
+  if (titleEl) {
+    titleEl.textContent = titleText;
+    titleEl.dataset.tier = tier;
+  }
+  // Audio: rate >= 0.5 → celebratory, rate < 0.5 → encouraging (修 bug: 0% 不喊太棒了)
+  const audioKey = rate >= 0.5 ? "prompt.complete" : "prompt.tryAgain";
+  playVoiceVariant(audioKey, { replayable: false });
+}
+
 
 const screens = {
   lobby: document.querySelector("#lobby"),
@@ -1151,7 +1178,7 @@ function completeQuizGame() {
     saveBestRecord(state.size, elapsedMs);
   }
   setMascotState("celebrate");  // 多邻国式 mascot 庆祝
-  playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
+  renderCompletePanel(state.game, state.matchedCount, state.totalTargets);
   // Phase 4C：pinyin / listen quiz 类 — 奖杯 + 星星
   renderTrophiesAndStars(state.matchedCount, state.totalTargets);
   window.setTimeout(() => {
@@ -1378,7 +1405,7 @@ function checkComplete() {
       saveBestRecord(state.size, elapsedMs);
     }
     setMascotState("celebrate");  // 多邻国式 mascot 庆祝
-    playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
+    renderCompletePanel(state.game, correct, total);
     // Phase 4C：stroop 推广 — 奖杯 + 星星
     renderTrophiesAndStars(correct, total);
     // 隐藏 stroop-host 避免与 complete-panel 同时出现造成 823 > 640 溢出
@@ -1408,7 +1435,7 @@ function checkComplete() {
     saveBestRecord(state.size, elapsedMs);
   }
   setMascotState("celebrate");  // 多邻国式 mascot 庆祝
-  playVoiceVariant("prompt.complete", { replayable: false });  // 随机赞美
+  renderCompletePanel(state.game, state.matchedCount, state.totalTargets);
   // Phase 4B：match / memory 通用 — 奖杯 + 星星（状态类已包含）
   renderTrophiesAndStars(state.matchedCount, state.totalTargets);
   window.setTimeout(() => {
@@ -2216,7 +2243,7 @@ function completeIdiomFillGame() {
   bestRecord.hidden = true;
   setMascotState("celebrate");
   spawnConfetti(24);
-  playVoiceVariant("prompt.complete", { replayable: false });
+  renderCompletePanel(state.game, state.idiomTotalCompleted, state.idioms.length);
   window.bgmController?.stop();
 }
 

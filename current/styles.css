@@ -857,6 +857,11 @@ h2 {
   line-height: 1.15;
 }
 
+/* Phase victory-popup-v2: tier-based title color (per game + score) */
+.complete-panel .complete-title[data-tier="perfect"] { color: #d4a72c; }
+.complete-panel .complete-title[data-tier="good"] { color: rgb(var(--color-primary-strong)); }
+.complete-panel .complete-title[data-tier="tryAgain"] { color: #6b7280; }
+
 .complete-panel .complete-time {
   margin: 0 0 6px;
   font-size: var(--fs-display);  /* 32px */
