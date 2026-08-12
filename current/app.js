@@ -99,6 +99,16 @@ const STROOP_SETTINGS = {
   7: { boardSize: 6, colorCount: 6 }
 };
 
+// Phase stroop-marquee: 跑马灯速度按 board size 渐进
+// size 3 (3x3) → 800ms 慢速 (容易读颜色)
+// size 7 (6x6) → 300ms 快速 (制造紧张)
+// 线性插值: 3→800, 4→675, 5→550, 6→425, 7→300
+function getStroopInterval(size) {
+  const minInterval = 300, maxInterval = 800;
+  const ratio = Math.max(0, Math.min(1, (size - 3) / 4));
+  return Math.round(maxInterval - ratio * (maxInterval - minInterval));
+}
+
 const MEMORY_SECONDS = {
   3: 5,
   4: 8,
@@ -1535,7 +1545,15 @@ function createStroopQuestions(total, colorCount) {
 // 渲染棋盘：n×n Stroop 错位字
 function renderStroopBoard() {
   if (!stroopBoard) return;
+  // 清理旧 marquee engine (防止重渲时遗留定时器)
+  stroopBoard.querySelectorAll(".stroop-cell").forEach((cell) => {
+    if (cell._marqueeEngine) cell._marqueeEngine.stop();
+  });
   stroopBoard.innerHTML = "";
+  // Phase stroop-marquee: 字符池 = 当前 level 可用色名 (Stroop 干扰核心)
+  const colorCount = (STROOP_SETTINGS[state.size] || STROOP_SETTINGS[3]).colorCount;
+  const charPool = STROOP_COLORS.slice(0, colorCount).map((c) => c.name);
+  const marqueeInterval = getStroopInterval(state.size);
   state.stroopQuestions.forEach((q, idx) => {
     const tile = document.createElement("button");
     tile.type = "button";
@@ -1546,8 +1564,15 @@ function renderStroopBoard() {
 
     const wordEl = document.createElement("span");
     wordEl.className = "stroop-cell-word";
-    wordEl.textContent = q.word;
     tile.appendChild(wordEl);
+
+    // 跑马灯引擎: 字符快速轮换, 颜色固定 (Stroop 增强, 逼用户读色不读字)
+    const engine = new MarqueeEngine(wordEl, {
+      characters: charPool,
+      interval: marqueeInterval,
+    });
+    engine.start();
+    tile._marqueeEngine = engine;
 
     tile.addEventListener("click", () => handleStroopCellClick(idx));
     stroopBoard.appendChild(tile);
@@ -2296,6 +2321,22 @@ function applyStroopColor(idx, colorName) {
       playVoice("sfx.wrong-buzz", "", { replayable: false });
       // Phase 5C.2：stroop 填错 — 屏幕边缘红光闪
       flashError();
+    }
+  }
+
+  // Phase stroop-marquee: 答对停 engine 锁文字, 答错暂停 800ms 提示正确答案
+  const boardCell = stroopBoard.querySelector(`[data-idx="${idx}"]`);
+  if (boardCell && boardCell._marqueeEngine) {
+    const boardWordEl = boardCell.querySelector(".stroop-cell-word");
+    if (isCorrect) {
+      boardCell._marqueeEngine.stop();
+      if (boardWordEl) boardWordEl.textContent = question.colorName;
+    } else {
+      boardCell._marqueeEngine.pause();
+      if (boardWordEl) boardWordEl.textContent = question.colorName;
+      window.setTimeout(() => {
+        if (boardCell._marqueeEngine) boardCell._marqueeEngine.resume();
+      }, 800);
     }
   }
 
