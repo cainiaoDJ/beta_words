@@ -1595,11 +1595,17 @@ function scheduleStroopNotes() {
           0,  // stroop 主题色 hue
           8
         );
+        // Plan C: hit 后 400ms 淡出 + destroy, 防止 hit zone 堆叠
+        if (note.element) note.element.classList.add("fading-out");
+        setTimeout(() => note.destroy(), 400);
       },
       onMiss: (note) => {
         setMascotState("sad");
         playVoice("sfx.wrong-buzz", "", { replayable: false });
         flashError();
+        // Plan C: miss 后 400ms 淡出 + destroy
+        if (note.element) note.element.classList.add("fading-out");
+        setTimeout(() => note.destroy(), 400);
       }
     });
     note.start();

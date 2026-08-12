@@ -1021,6 +1021,16 @@ h2 {
   opacity: 0.6;
 }
 
+/* Plan C: hit/miss 后 400ms 淡出 (避免 hit zone 堆叠) */
+.sliding-note.fading-out {
+  animation: fade-out 400ms ease-out forwards !important;
+}
+
+@keyframes fade-out {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+}
+
 .sliding-note.missed {
   opacity: 0.3;
   filter: grayscale(80%);
