@@ -109,6 +109,20 @@ function getStroopInterval(size) {
   return Math.round(maxInterval - ratio * (maxInterval - minInterval));
 }
 
+// Phase stroop-sliding Plan C: 竖向 DDR 队列 (FIFO, 5 note 同时可见)
+// duration = interval * 4 → 4-5 note 队列自然形成
+// hitZoneStart=0.7, hitZoneEnd=0.9 → 每个 note 在底部 hit zone 有 interval ms 时间
+// size 3 (3x3=9 cells): interval 2000ms, duration 8000ms, 4 note 队列
+// size 4 (4x4=16): interval 1500ms, duration 6000ms
+// size 5 (5x5=25): interval 1200ms, duration 4800ms
+// size 6 (6x6=36): interval 1000ms, duration 4000ms
+// size 7 (6x6=36): 快, interval 800ms, duration 3200ms
+function getStroopSlidingConfig(size) {
+  const intervals = { 3: 2000, 4: 1500, 5: 1200, 6: 1000, 7: 800 };
+  const interval = intervals[size] || 1500;
+  return { interval: interval, duration: interval * 4 };
+}
+
 const MEMORY_SECONDS = {
   3: 5,
   4: 8,
@@ -250,6 +264,7 @@ const state = {
   stroopCursor: 0,          // 当前待填 idx
   stroopCorrectCount: 0,    // 已判定且正确
   stroopLocked: false,      // 提交后短期锁定防双击
+  stroopNoteInstances: [],   // SlidingNote 实例数组 (Phase stroop-sliding, DDR 风格滑动音符)
   // Phase 8A — 成语填空专用 state（Phase 8B 接交互）
   idioms: [],               // 本局选的成语数组（按滚筒顺序）[{id, value, blanks, pinyin, hint, selectedBlanks: [slotIdx, ...]}, ...]
   idiomBlanks: {},          // 各成语被扣字位置 {idiomId: [slotIdx, ...]}（已选）
@@ -1497,11 +1512,8 @@ function startStroopGame(size) {
   if (stroopBoard) stroopBoard.style.setProperty("--size", boardSize);
   if (stroopSelect) stroopSelect.style.setProperty("--size", boardSize);
   renderStroopBoard();
-  calcStroopFont();
-  renderStroopSelectPanel();
   renderStroopColorBar();
-
-  setStroopActive();
+  scheduleStroopNotes();
   updateProgress();
   setHint(getCurrentGame().startHint);
   playVoiceVariant("prompt.start", { replayable: false });
@@ -1542,41 +1554,107 @@ function createStroopQuestions(total, colorCount) {
   return questions;
 }
 
-// 渲染棋盘：n×n Stroop 错位字
+// Phase stroop-sliding: 棋盘改为 DDR 风格 track (单条 lane, hit zone 在中间)
 function renderStroopBoard() {
   if (!stroopBoard) return;
-  // 清理旧 marquee engine (防止重渲时遗留定时器)
+  // 清理旧 SlidingNote instances
+  if (state.stroopNoteInstances) {
+    state.stroopNoteInstances.forEach(n => n.destroy());
+  }
+  state.stroopNoteInstances = [];
+  // 清理旧 marquee engines (保留向后兼容)
   stroopBoard.querySelectorAll(".stroop-cell").forEach((cell) => {
     if (cell._marqueeEngine) cell._marqueeEngine.stop();
   });
+  // track 模式: 单一横向 lane, hit zone 已在 CSS ::before 标记
   stroopBoard.innerHTML = "";
-  // Phase stroop-marquee: 字符池 = 当前 level 可用色名 (Stroop 干扰核心)
-  const colorCount = (STROOP_SETTINGS[state.size] || STROOP_SETTINGS[3]).colorCount;
-  const charPool = STROOP_COLORS.slice(0, colorCount).map((c) => c.name);
-  const marqueeInterval = getStroopInterval(state.size);
-  state.stroopQuestions.forEach((q, idx) => {
-    const tile = document.createElement("button");
-    tile.type = "button";
-    tile.className = "tile stroop-cell";
-    tile.dataset.idx = String(idx);
-    tile.style.setProperty("--cell-color", q.colorCss);
-    tile.setAttribute("role", "gridcell");
+  stroopBoard.className = "stroop-track";
+}
 
-    const wordEl = document.createElement("span");
-    wordEl.className = "stroop-cell-word";
-    tile.appendChild(wordEl);
+// Phase stroop-sliding: 调度所有 SlidingNote 按节奏 spawn
+function scheduleStroopNotes() {
+  if (!stroopBoard) return;
+  const config = getStroopSlidingConfig(state.size);
 
-    // 跑马灯引擎: 字符快速轮换, 颜色固定 (Stroop 增强, 逼用户读色不读字)
-    const engine = new MarqueeEngine(wordEl, {
-      characters: charPool,
-      interval: marqueeInterval,
+  state.stroopNoteInstances = state.stroopQuestions.map((q, idx) => {
+    const note = new SlidingNote({
+      question: q,
+      trackElement: stroopBoard,
+      duration: config.duration,
+      delay: idx * config.interval,
+      onHit: (note) => {
+        state.stroopCorrectCount = (state.stroopCorrectCount || 0) + 1;
+        state.matchedCount = (state.matchedCount || 0) + 1;
+        setMascotState("happy");
+        playVoice("sfx.correct-ding", "", { replayable: false });
+        // 从 note 位置 burst 8 片红色小彩屑
+        const rect = note.element.getBoundingClientRect();
+        spawnMiniConfetti(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+          0,  // stroop 主题色 hue
+          8
+        );
+      },
+      onMiss: (note) => {
+        setMascotState("sad");
+        playVoice("sfx.wrong-buzz", "", { replayable: false });
+        flashError();
+      }
     });
-    engine.start();
-    tile._marqueeEngine = engine;
-
-    tile.addEventListener("click", () => handleStroopCellClick(idx));
-    stroopBoard.appendChild(tile);
+    note.start();
+    return note;
   });
+
+  // 调度完成检查 (最后一个 note 滑出后)
+  const totalTime = (state.stroopQuestions.length - 1) * config.interval + config.duration + 500;
+  setTimeout(() => {
+    checkStroopAllDone();
+  }, totalTime);
+}
+
+// Phase stroop-sliding: 所有 note 都 done → 弹完成面板
+function checkStroopAllDone() {
+  if (!state.stroopNoteInstances || !state.stroopNoteInstances.length) return;
+
+  const allDone = state.stroopNoteInstances.every((n) =>
+    n.state === "done" || n.state === "hit" || n.state === "miss" || n.state === "missed"
+  );
+
+  if (!allDone) return;
+
+  stopTimer();
+  const total = state.stroopQuestions.length;
+  const correct = state.stroopCorrectCount || 0;
+  const elapsedMs = getElapsedTime();
+  const rate = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const best = getBestRecord(state.size);
+  const isNewRecord = !best || elapsedMs < best.elapsedMs;
+
+  updateTimerDisplay(elapsedMs);
+  if (completeTime) {
+    completeTime.textContent = `用时 ${formatTime(elapsedMs)}\n成功率 ${correct} / ${total}（${rate}%）`;
+  }
+
+  const showRecord = isNewRecord && correct > 0;
+  bestRecord.hidden = !showRecord;
+  if (showRecord) {
+    saveBestRecord(state.size, elapsedMs);
+  }
+
+  setMascotState("celebrate");
+  renderCompletePanel(state.game, correct, total);
+  renderTrophiesAndStars(correct, total);
+  if (stroopHost) stroopHost.hidden = true;
+
+  const next = nextSize(state.size);
+  const nb = document.querySelector("#next-board");
+  if (nb) nb.hidden = !next;
+  spawnConfetti(28);
+
+  setTimeout(() => {
+    completePanel.hidden = false;
+  }, 260);
 }
 
 // 渲染待选 n×n：初始完全空，底层米字格背景
@@ -2284,11 +2362,40 @@ function handleStroopCellClick(idx) {
   // 点 cursor 格不需额外状态切换，但可以闪一下反馈。
 }
 
-// 颜色条点击：在 cursor 处填色 + 判定 + 推进
+// Phase stroop-sliding: 颜色条点击 → 找 hit zone 内的 active note → selectColor
 function applyStroopColor(idx, colorName) {
   if (state.stroopLocked) return;
-  if (idx !== state.stroopCursor) return;
-  if (idx >= state.stroopQuestions.length) return;
+
+  // 找 active note (在 hit zone [0.3, 0.7] 之间)
+  const activeNote = state.stroopNoteInstances && state.stroopNoteInstances.find(
+    (n) => n.state === "active"
+  );
+
+  if (activeNote) {
+    activeNote.selectColor(colorName);
+  }
+
+  // TTS 反馈
+  if (activeNote) {
+    playStroopFeedback(
+      colorName === activeNote.question.colorName,
+      colorName,
+      activeNote.question
+    );
+  } else {
+    // 没 active note (点早了或晚了) — 仅读出色名
+    speak(colorName);
+  }
+
+  state.stroopLocked = true;
+  setTimeout(() => {
+    state.stroopLocked = false;
+  }, 100);
+  return;  // 跳过旧的 cursor-based 逻辑
+
+  // === 旧的 cursor-based 逻辑 (保留向后兼容, 实际不会执行) ===
+  if (false && idx !== state.stroopCursor) return;
+  if (false && idx >= state.stroopQuestions.length) return;
 
   const question = state.stroopQuestions[idx];
   const isCorrect = colorName === question.colorName;
@@ -2358,8 +2465,7 @@ function applyStroopColor(idx, colorName) {
       checkComplete();
       return;
     }
-    setStroopActive();
-    updateProgress();
+    // setStroopActive removed (Phase stroop-sliding 不用 cursor)
   }, 320);
 }
 

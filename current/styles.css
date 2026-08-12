@@ -923,11 +923,12 @@ h2 {
   /* 布局由 .zone-stack 接管（flex column + gap + align center + flex:1） */
 }
 
-/* Phase stroop-sliding v3: DDR 竖向 (从顶部往底部依次出字) */
+/* Phase stroop-sliding Plan C: 竖向 DDR 队列 (FIFO, 主人 2026-08-12 23:25 拍板)
+   5 个 note 上下排开, 新生顶部进入, 老的在底部接近 hit zone, 最先 hit */
 .stroop-track {
   position: relative;
   width: 100%;
-  height: 400px;  /* 竖向, 更高 */
+  height: 400px;              /* 竖向更高, 容纳 5 note 队列 */
   overflow: hidden;
   background: rgba(0, 0, 0, 0.05);
   border-radius: 8px;
@@ -936,7 +937,7 @@ h2 {
 }
 
 .stroop-track::before {
-  /* Hit zone 在底部 (70%-90%) — 玩家在 note 落到底部时点色 */
+  /* Hit zone 视觉指示: 底部 20% (70%-90%) */
   content: '';
   position: absolute;
   top: 70%;
@@ -953,8 +954,8 @@ h2 {
 .sliding-note {
   position: absolute;
   top: 0;
-  left: 50%;                    /* 居中, 竖向只一个 lane */
-  transform: translate(-50%, 0);
+  left: 50%;
+  transform: translate(-50%, -50%);   /* Y 中心对齐, 上半部分超出 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -962,18 +963,20 @@ h2 {
   padding: 8px 12px;
   font-size: 14px;
   font-weight: bold;
-  opacity: 0;
+  opacity: 0;                  /* delay 期间隐藏, 避免 z-axis 堆叠 */
   z-index: 2;
 }
 
 .sliding-note.sliding {
   animation: slide-down linear forwards;
-  opacity: 1;
+  /* opacity 由 keyframe 控制, 不要在 .sliding 直接设 1 */
 }
 
 @keyframes slide-down {
-  from { top: -10%; }              /* 从顶部上方开始 */
-  to { top: 110%; }               /* 落到下方消失 */
+  0%   { top: -60px;   opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 420px;  opacity: 0; }
 }
 
 .sliding-note-char {

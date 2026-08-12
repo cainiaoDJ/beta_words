@@ -48,10 +48,10 @@
         : 0;
       this.hitZoneStart = typeof opts.hitZoneStart === "number"
         ? opts.hitZoneStart
-        : 0.65;  // 竖向 DDR: hit zone 在底部 (70%-90% of slide progress)
+        : 0.7;   // Plan C: hit zone 在底部 (70-90% of slide)
       this.hitZoneEnd = typeof opts.hitZoneEnd === "number"
         ? opts.hitZoneEnd
-        : 0.85;
+        : 0.9;
       this.onSelect = typeof opts.onSelect === "function" ? opts.onSelect : function () {};
       this.onHit = typeof opts.onHit === "function" ? opts.onHit : function () {};
       this.onMiss = typeof opts.onMiss === "function" ? opts.onMiss : function () {};
