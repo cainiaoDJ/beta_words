@@ -985,9 +985,13 @@ h2 {
 
 .sliding-note-color {
   font-size: 14px;
-  opacity: 0.7;
+  opacity: 0;            /* 初始隐藏 — 不能让玩家读出色名 (那样 Stroop 就失效) */
   margin-top: 2px;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
+}
+
+.sliding-note-color.revealed {
+  opacity: 1;            /* 玩家点击后显示选了什么色 */
 }
 
 .sliding-note.in-hit-zone {
