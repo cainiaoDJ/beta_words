@@ -1173,8 +1173,9 @@ function completeQuizGame() {
   const isNewRecord = !best || elapsedMs < best.elapsedMs;
   updateTimerDisplay(elapsedMs);
   if (completeTime) completeTime.textContent = `本次用时 ${formatTime(elapsedMs)}`;
-  bestRecord.hidden = !isNewRecord;
-  if (isNewRecord) {
+  const showRecord = isNewRecord && state.matchedCount > 0;
+  bestRecord.hidden = !showRecord;
+  if (showRecord) {
     saveBestRecord(state.size, elapsedMs);
   }
   setMascotState("celebrate");  // 多邻国式 mascot 庆祝
@@ -1399,9 +1400,10 @@ function checkComplete() {
     const best = getBestRecord(state.size);
     const isNewRecord = !best || elapsedMs < best.elapsedMs;
     updateTimerDisplay(elapsedMs);
-    completeTime.textContent = `用时 ${formatTime(elapsedMs)} · 成功率 ${correct} / ${total}（${rate}%）`;
-    bestRecord.hidden = !isNewRecord;
-    if (isNewRecord) {
+    completeTime.textContent = `用时 ${formatTime(elapsedMs)}\n成功率 ${correct} / ${total}（${rate}%）`;
+    const showRecord = isNewRecord && correct > 0;
+    bestRecord.hidden = !showRecord;
+    if (showRecord) {
       saveBestRecord(state.size, elapsedMs);
     }
     setMascotState("celebrate");  // 多邻国式 mascot 庆祝
@@ -1430,8 +1432,9 @@ function checkComplete() {
   const isNewRecord = !best || elapsedMs < best.elapsedMs;
   updateTimerDisplay(elapsedMs);
   if (completeTime) completeTime.textContent = `本次用时 ${formatTime(elapsedMs)}`;
-  bestRecord.hidden = !isNewRecord;
-  if (isNewRecord) {
+  const showRecord = isNewRecord && state.matchedCount > 0;
+  bestRecord.hidden = !showRecord;
+  if (showRecord) {
     saveBestRecord(state.size, elapsedMs);
   }
   setMascotState("celebrate");  // 多邻国式 mascot 庆祝
@@ -2236,7 +2239,7 @@ function completeIdiomFillGame() {
   renderTrophiesAndStars(completed, total);
   const elapsed = getElapsedTime();
   if (completeTime) {
-    completeTime.textContent = `用时 ${formatTime(elapsed)} · 成功率 ${completed} / ${total}（${Math.round((completed / total) * 100)}%）`;
+    completeTime.textContent = `用时 ${formatTime(elapsed)}\n成功率 ${completed} / ${total}（${Math.round((completed / total) * 100)}%）`;
   }
   saveBestRecord(state.size, elapsed);
   completePanel.hidden = false;

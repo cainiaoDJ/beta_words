@@ -2296,6 +2296,7 @@ h2 {
   font-variant-numeric: tabular-nums;
   color: rgb(var(--color-primary-strong, 47 140 115));
   line-height: 1.1;
+  white-space: pre-line;  /* 允许 \n 换行，stats 拆成"时间"+"正确率"两行，避免“成/功”截断 */
 }
 /* 兼容旧 .complete-time（保留 fallback） */
 .complete-panel .complete-time {
