@@ -923,6 +923,102 @@ h2 {
   /* 布局由 .zone-stack 接管（flex column + gap + align center + flex:1） */
 }
 
+/* Phase stroop-sliding: DDR/歌词风格滑动音符 + hit zone */
+.stroop-track {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  margin: 0 0 12px;
+  border: 1px solid var(--line);
+}
+
+.stroop-track::before {
+  /* Hit zone 视觉指示（中间 40% 区域） */
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 30%;
+  width: 40%;
+  border-left: 2px dashed rgba(255, 215, 0, 0.6);
+  border-right: 2px dashed rgba(255, 215, 0, 0.6);
+  background: rgba(255, 215, 0, 0.08);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sliding-note {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translate(0, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: bold;
+  opacity: 0;
+  z-index: 2;
+}
+
+.sliding-note.sliding {
+  animation: slide-across linear forwards;
+  opacity: 1;
+}
+
+@keyframes slide-across {
+  from { right: -10%; }
+  to { right: 110%; }
+}
+
+.sliding-note-char {
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+  transition: text-shadow 0.2s ease;
+}
+
+.sliding-note-color {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: 2px;
+  transition: opacity 0.2s ease;
+}
+
+.sliding-note.in-hit-zone {
+  transform: translate(0, -50%) scale(1.15);
+  z-index: 3;
+}
+
+.sliding-note.in-hit-zone .sliding-note-char {
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+}
+
+.sliding-note.hit {
+  animation-play-state: paused !important;
+  z-index: 3;
+}
+
+.sliding-note.hit .sliding-note-char {
+  color: inherit;
+  text-shadow: 0 0 12px rgba(80, 200, 120, 0.8);
+}
+
+.sliding-note.miss {
+  animation-play-state: paused !important;
+  opacity: 0.6;
+}
+
+.sliding-note.missed {
+  opacity: 0.3;
+  filter: grayscale(80%);
+}
+
 .stroop-board {
   --size: 3;
   --board-gap: var(--zone-gap);
