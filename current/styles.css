@@ -998,7 +998,10 @@ h2 {
 }
 
 .sliding-note.in-hit-zone {
-  transform: translate(-50%, 0) scale(1.15);
+  /* 不用 scale (跳变元凶 — 进入 hit zone 时突然闪现) */
+  border-radius: 6px;
+  background: rgba(255, 215, 0, 0.15);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
   z-index: 3;
 }
 
