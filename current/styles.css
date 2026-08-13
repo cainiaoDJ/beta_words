@@ -959,9 +959,9 @@ h2 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 80px;
-  padding: 8px 12px;
-  font-size: 14px;
+  min-width: 110px;            /* 加大最小宽度, 7×7 也够清晰 */
+  padding: 12px 20px;          /* padding 加大, 视觉更醒目 */
+  font-size: 16px;
   font-weight: bold;
   opacity: 0;                  /* delay 期间隐藏, 避免 z-axis 堆叠 */
   z-index: 2;
@@ -980,16 +980,16 @@ h2 {
 }
 
 .sliding-note-char {
-  font-size: 28px;
+  font-size: 42px;            /* 28→42, 7×7 也清晰 */
   font-weight: 900;
   line-height: 1;
   transition: text-shadow 0.2s ease;
 }
 
 .sliding-note-color {
-  font-size: 14px;
+  font-size: 18px;            /* 14→18 */
   opacity: 0;            /* 初始隐藏 — 不能让玩家读出色名 */
-  margin-top: 2px;
+  margin-top: 4px;
   transition: opacity 0.15s ease;
 }
 
@@ -1090,7 +1090,12 @@ h2 {
   50%      { transform: scale(1.0);  outline-color: var(--sun); }
 }
 
-/* 待选 n×n：完全空，初始米字格背景作草稿纸 */
+/* 待选 n×n：Phase stroop-sliding Plan C 后不再使用 (滑动模式不需要草稿纸), 隐藏 */
+.stroop-select {
+  display: none !important;
+}
+
+/* 旧 .stroop-select 定义保留 (向后兼容, 实际不可见)
 .stroop-select {
   --size: 3;
   --board-gap: var(--zone-gap);
@@ -1102,10 +1107,9 @@ h2 {
   background: #f8f7ea;
   border: 2px dashed #c8caa0;
   border-radius: 8px;
-  /* 局部 override：stroop select 不 flex:1，由内容决定高度（与 board 紧凑匹配）*/
   flex: 0 0 auto;
-  /* width / display:grid 由 .zone-secondary 接管 */
 }
+*/
 
 .stroop-select-cell {
   aspect-ratio: 1;
