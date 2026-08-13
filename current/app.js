@@ -760,6 +760,7 @@ function startGame(size) {
     quiz.hidden = true;
     if (stroopHost) stroopHost.hidden = true;
     if (idiomHost) idiomHost.hidden = false;
+    if (compareHost) compareHost.hidden = true;
   } else {
     board.hidden = isQuizGame;
     quiz.hidden = !isQuizGame;
@@ -1967,6 +1968,8 @@ function applyCompareAnswer(value) {
 // ============================================================
 
 function startIdiomFillGame(size) {
+  // Bug 修复: 切到 idiomFill 前清掉 compare 上次游戏状态
+  if (compareHost) compareHost.hidden = true;
   const settings = IDIOM_SETTINGS[size];
   // 从 40 个成语里随机选 idiomCount 个
   const pickedIdioms = shuffle([...IDIOMS]).slice(0, settings.idiomCount);
