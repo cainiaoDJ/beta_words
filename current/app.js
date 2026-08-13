@@ -62,6 +62,15 @@ const GAMES = {
     startHint: "看字，选颜色",
     recordPrefix: "beta_words_stroop_train_best"
   },
+  // 看图比大小 (Phase 8B) — emoji 数量 + 多/少/一样
+  compare: {
+    id: "compare",
+    name: "看图比大小",
+    title: "哪边更多",
+    boardLabel: "看图比大小",
+    startHint: "看 emoji，比多少",
+    recordPrefix: "beta_words_compare_best"
+  },
   // Phase 8A — 成语填空（3 年级语文标准）
   idiomFill: {
     id: "idiomFill",
@@ -87,6 +96,16 @@ const STROOP_COLORS = [
   { name: "紫", english: "purple", css: "#8a4fd6" },
   { name: "橙", english: "orange", css: "#f08c3a" }
 ];
+
+// Phase 8B: 看图比大小
+const COMPARE_EMOJIS = ["🍎", "🐱", "🐟", "🌸", "🍇"];
+// 难度映射: size=3 → 3×3=9 题; size 3: count 1-4, no =; size 4: 1-6, = 1/3; etc.
+const COMPARE_SETTINGS = {
+  3: { maxCount: 4, minDiff: 2, equalChance: 0 },
+  4: { maxCount: 6, minDiff: 1, equalChance: 0.3 },
+  5: { maxCount: 7, minDiff: 1, equalChance: 0.25 },
+  6: { maxCount: 9, minDiff: 1, equalChance: 0.25 }
+};
 
 // 看字识颜色难度：颜色种类 + 棋盘总格数
 // 颜色种类跟着级别走（3=3 色基础 → 6=6 色全开）；
@@ -483,6 +502,7 @@ const COMPLETE_TITLES = {
   memory:       { perfect: "全部记起来啦！", good: "完成啦！",     tryAgain: "再多看几次" },
   pinyinFriend: { perfect: "拼音全对！",     good: "完成啦！",     tryAgain: "再听一次" },
   listenCard:   { perfect: "听得全对！",     good: "听对了不少！", tryAgain: "再听一次" },
+  compare:      { perfect: "比得全对！",     good: "多数对了！",   tryAgain: "再数一数" },
   stroopTrain:  { perfect: "完美读色！",     good: "颜色对了不少！", tryAgain: "颜色对应看仔细" },
   idiomFill:    { perfect: "成语全通关！",   good: "填对不少！",   tryAgain: "再读几遍" }
 };
@@ -522,6 +542,9 @@ const quiz = document.querySelector("#quiz");
 const quizMain = document.querySelector("#quiz-main");
 const optionGrid = document.querySelector("#option-grid");
 const stroopHost = document.querySelector("#stroop-host");
+const compareHost = document.querySelector("#compare-host");
+const compareQuestion = document.querySelector("#compare-question");
+const compareButtons = document.querySelector("#compare-buttons");
 const stroopBoard = document.querySelector("#stroop-board");
 const stroopSelect = document.querySelector("#stroop-select");
 const stroopPalette = document.querySelector("#stroop-palette");
@@ -539,6 +562,8 @@ document.querySelector("#open-memory").addEventListener("click", () => chooseGam
 document.querySelector("#open-pinyin-friend").addEventListener("click", () => chooseGame(GAMES.pinyinFriend.id));
 document.querySelector("#open-listen-card").addEventListener("click", () => chooseGame(GAMES.listenCard.id));
 document.querySelector("#open-stroop-train").addEventListener("click", () => chooseGame(GAMES.stroopTrain.id));
+// 看图比大小入口 (Phase 8B)
+document.querySelector("#open-compare")?.addEventListener("click", () => chooseGame(GAMES.compare.id));
 // Phase 8A — 成语填空入口
 document.querySelector("#open-idiom-fill")?.addEventListener("click", () => chooseGame(GAMES.idiomFill.id));
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
@@ -643,6 +668,10 @@ function leaveGame() {
   state.stroopCursor = 0;
   state.stroopCorrectCount = 0;
   state.stroopLocked = false;
+  state.compareQuestions = [];
+  state.compareAnswers = [];
+  state.compareCursor = 0;
+  state.compareCorrectCount = 0;
   // Phase 8A: 成语填空 state 清理
   state.idioms = [];
   state.idiomBlanks = {};
@@ -674,6 +703,7 @@ const RECOMMENDED_SIZE = {
   pinyinFriend: 4, // 4×4（setup 没有 6 题选项，取最近意思）
   listenCard: 4,   // 4×4
   stroopTrain: 3,  // 3×3 入门（颜色字少不晕）
+  compare: 3,      // 看图比大小 3×3 入门
   idiomFill: 4,    // 4 个成语，1 字/成语（入门梯度）
 };
 
@@ -711,11 +741,19 @@ function startGame(size) {
   board.classList.toggle("memory", state.game === GAMES.memory.id);
   const isQuizGame = isCurrentQuizGame();
   const isStroopGame = state.game === GAMES.stroopTrain.id;
+  const isCompareGame = state.game === GAMES.compare.id;
   if (isStroopGame) {
     board.hidden = true;
     quiz.hidden = true;
     if (stroopHost) stroopHost.hidden = false;
     if (idiomHost) idiomHost.hidden = true;
+    if (compareHost) compareHost.hidden = true;
+  } else if (isCompareGame) {
+    board.hidden = true;
+    quiz.hidden = true;
+    if (stroopHost) stroopHost.hidden = true;
+    if (idiomHost) idiomHost.hidden = true;
+    if (compareHost) compareHost.hidden = false;
   } else if (state.game === GAMES.idiomFill.id) {
     // Phase 8A: 成语填空（独立 zone-stack，不复用 board/quiz/stroopHost）
     board.hidden = true;
@@ -727,6 +765,7 @@ function startGame(size) {
     quiz.hidden = !isQuizGame;
     if (stroopHost) stroopHost.hidden = true;
     if (idiomHost) idiomHost.hidden = true;
+    if (compareHost) compareHost.hidden = true;
   }
   syncStroopHud();
   optionGrid.innerHTML = "";
@@ -741,6 +780,14 @@ function startGame(size) {
 
   if (state.game === GAMES.stroopTrain.id) {
     startStroopGame(size);
+    showScreen("game");
+    window.bgmController?.playForGame(state.game);
+    return;
+  }
+
+  // Phase 8B: 看图比大小分支
+  if (state.game === GAMES.compare.id) {
+    startCompareGame(size);
     showScreen("game");
     window.bgmController?.playForGame(state.game);
     return;
@@ -1412,6 +1459,38 @@ function setHint(text) {
 }
 
 function checkComplete() {
+  // 看图比大小：按 compareCursor / compareAnswers 判定
+  if (state.game === GAMES.compare.id) {
+    const total = state.compareQuestions.length;
+    const filledCount = state.compareAnswers.filter((c) => c !== null).length;
+    if (filledCount < total) return;
+    setHint("完成");
+    stopTimer();
+    const correct = state.compareCorrectCount;
+    const rate = total > 0 ? Math.round((correct / total) * 100) : 0;
+    const elapsedMs = getElapsedTime();
+    const best = getBestRecord(state.size);
+    const isNewRecord = !best || elapsedMs < best.elapsedMs;
+    updateTimerDisplay(elapsedMs);
+    completeTime.textContent = `用时 ${formatTime(elapsedMs)}\n成功率 ${correct} / ${total}（${rate}%）`;
+    const showRecord = isNewRecord && correct > 0;
+    bestRecord.hidden = !showRecord;
+    if (showRecord) {
+      saveBestRecord(state.size, elapsedMs);
+    }
+    setMascotState("celebrate");
+    renderCompletePanel(state.game, correct, total);
+    renderTrophiesAndStars(correct, total);
+    if (compareHost) compareHost.hidden = true;
+    window.setTimeout(() => {
+      completePanel.hidden = false;
+      const next = nextSize(state.size);
+      document.querySelector("#next-board").hidden = !next;
+      spawnConfetti(28);
+    }, 260);
+    return;
+  }
+
   // 看字识颜色：按 stroopCursor / stroopFilledColors 判定
   if (state.game === GAMES.stroopTrain.id) {
     const total = state.stroopQuestions.length;
@@ -1728,6 +1807,160 @@ function setStroopActive() {
 
 // ============================================================
 // Phase 8A — 成语填空 idiomFill（静态展示 + 候选字池 + 滚筒）
+// Phase 8B: 看图比大小
+// ============================================================
+// 看图比大小 N×N: 每题两组 emoji, 玩家点 多/少/一样
+// 难度 (per COMPARE_SETTINGS[size]):
+//   - 3×3: 数量 1-4, 差 ≥ 2 (无陷阱)
+//   - 4×4: 数量 1-6, 差 ≥ 1 (= 1/3)
+//   - 5×5: 数量 1-7, 差 ≥ 1 (= 1/4)
+//   - 6×6: 数量 1-9, 差 ≥ 1 (= 1/4, 相邻数陷阱)
+//
+// 流程:
+//   1. cursor 顺序逐题
+//   2. 点 多/少/一样 按钮 → 判定对错
+//   3. 对 → 绿闪 + 推进 cursor; 错 → 红闪 + 正确答案高亮 800ms + 推进
+
+function createCompareQuestions(total, size) {
+  const config = COMPARE_SETTINGS[size] || COMPARE_SETTINGS[3];
+  const questions = [];
+  for (let i = 0; i < total; i++) {
+    const emoji = COMPARE_EMOJIS[Math.floor(Math.random() * COMPARE_EMOJIS.length)];
+    const equalAllowed = config.equalChance > 0 && Math.random() < config.equalChance;
+    let countA, countB;
+    if (equalAllowed) {
+      countA = 1 + Math.floor(Math.random() * config.maxCount);
+      countB = countA;
+    } else {
+      countA = 1 + Math.floor(Math.random() * config.maxCount);
+      let attempts = 0;
+      do {
+        countB = 1 + Math.floor(Math.random() * config.maxCount);
+        attempts++;
+      } while (Math.abs(countA - countB) < config.minDiff && attempts < 8);
+    }
+    let answer;
+    if (countA > countB) answer = "more";
+    else if (countA < countB) answer = "less";
+    else answer = "equal";
+    questions.push({
+      id: `compare-${i}`,
+      idx: i,
+      emoji,
+      countA,
+      countB,
+      answer
+    });
+  }
+  return questions;
+}
+
+function renderCompareBoard() {
+  if (!compareQuestion || !compareButtons) return;
+  compareQuestion.innerHTML = "";
+  compareButtons.innerHTML = "";
+
+  const q = state.compareQuestions[state.compareCursor];
+  if (!q) return;
+
+  // 题目区: 左 emoji 组 + VS + 右 emoji 组
+  const area = document.createElement("div");
+  area.className = "compare-area";
+  const left = document.createElement("div");
+  left.className = "compare-group";
+  left.textContent = q.emoji.repeat(q.countA);
+  const vs = document.createElement("div");
+  vs.className = "compare-vs";
+  vs.textContent = "VS";
+  const right = document.createElement("div");
+  right.className = "compare-group";
+  right.textContent = q.emoji.repeat(q.countB);
+  area.appendChild(left);
+  area.appendChild(vs);
+  area.appendChild(right);
+  compareQuestion.appendChild(area);
+
+  // 三按钮: 多 / 少 / 一样
+  const defs = [
+    { name: "多",   value: "more",  className: "btn-more"  },
+    { name: "少",   value: "less",  className: "btn-less"  },
+    { name: "一样", value: "equal", className: "btn-equal" }
+  ];
+  defs.forEach((d) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `compare-btn ${d.className}`;
+    btn.textContent = d.name;
+    btn.dataset.value = d.value;
+    btn.addEventListener("click", () => applyCompareAnswer(d.value));
+    compareButtons.appendChild(btn);
+  });
+}
+
+function startCompareGame(size) {
+  const total = size * size;
+
+  state.size = size;
+  state.game = GAMES.compare.id;
+  state.compareQuestions = createCompareQuestions(total, size);
+  state.compareAnswers = new Array(total).fill(null);
+  state.compareCursor = 0;
+  state.compareCorrectCount = 0;
+  state.totalTargets = total;
+  state.matchedCount = 0;
+
+  renderCompareBoard();
+  updateProgress();
+  setHint(getCurrentGame().startHint);
+  playVoiceVariant("prompt.start", { replayable: false });
+  startTimer();
+}
+
+function applyCompareAnswer(value) {
+  const q = state.compareQuestions[state.compareCursor];
+  if (!q) return;
+
+  const isCorrect = value === q.answer;
+  state.compareAnswers[state.compareCursor] = value;
+
+  if (isCorrect) {
+    state.compareCorrectCount += 1;
+    state.matchedCount += 1;
+    setMascotState("happy");
+    playVoice("sfx.correct-ding", "", { replayable: false });
+    const rect = compareQuestion.getBoundingClientRect();
+    spawnMiniConfetti(
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2,
+      0,
+      8
+    );
+  } else {
+    setMascotState("sad");
+    playVoice("sfx.wrong-buzz", "", { replayable: false });
+    flashError();
+    compareButtons.querySelectorAll(".compare-btn").forEach((b) => {
+      if (b.dataset.value === q.answer) b.classList.add("correct-hint");
+    });
+    setTimeout(() => {
+      compareButtons.querySelectorAll(".compare-btn").forEach((b) => {
+        b.classList.remove("correct-hint");
+      });
+    }, 800);
+  }
+
+  state.compareCursor += 1;
+  if (state.compareCursor >= state.compareQuestions.length) {
+    checkComplete();
+    return;
+  }
+  if (isCorrect) {
+    renderCompareBoard();
+  } else {
+    setTimeout(() => renderCompareBoard(), 800);
+  }
+}
+
 // 父文档：docs/phase-plans/phase-8-idiom-fill.md
 // 数据：IDIOMS（40 个 3 年级成语）+ IDIOM_SETTINGS（5 档难度）
 // 状态机：Phase 8B 接交互（点 slot + 点候选字 + 退回）

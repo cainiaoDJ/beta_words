@@ -2898,3 +2898,96 @@ h2 {
     padding-bottom: max(4px, env(safe-area-inset-bottom));
   }
 }
+
+/* ============================================================================
+ * Phase 8B — 看图比大小 (compare)
+ * ============================================================================ */
+
+.compare-host {
+  /* 布局由 .zone-stack 接管 (flex column + gap + align center) */
+}
+
+.compare-question {
+  background: #faf6ea;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 16px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.compare-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.compare-group {
+  flex: 1;
+  background: #fffaf0;
+  border: 3px solid #f4c430;
+  border-radius: 12px;
+  padding: 16px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  min-height: 110px;
+  font-size: 32px;
+  line-height: 1.1;
+}
+
+.compare-vs {
+  font-size: 20px;
+  font-weight: 900;
+  color: #b8a87a;
+  padding: 0 4px;
+}
+
+.compare-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.compare-btn {
+  flex: 1;
+  padding: 20px 0;
+  font-size: 28px;
+  font-weight: 900;
+  border: 3px solid;
+  border-radius: 14px;
+  background: white;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+.compare-btn:active {
+  transform: scale(0.95);
+}
+
+.btn-more  { border-color: #ff6b6b; color: #ff6b6b; }
+.btn-less  { border-color: #4dabf7; color: #4dabf7; }
+.btn-equal { border-color: #51cf66; color: #51cf66; }
+
+/* 错答时正确答案高亮 */
+.compare-btn.correct-hint {
+  background: #51cf66;
+  color: white;
+  animation: correct-hint-pulse 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes correct-hint-pulse {
+  from { box-shadow: 0 0 0 0 rgba(81, 207, 102, 0.7); }
+  to   { box-shadow: 0 0 0 8px rgba(81, 207, 102, 0);   }
+}

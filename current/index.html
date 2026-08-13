@@ -694,6 +694,15 @@
               <span class="entry-copy">听一听，点拼音</span>
             </span>
           </button>
+          <button id="open-compare" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <span style="font-size:32px">🍎</span>
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">看图比大小</span>
+              <span class="entry-sub">数 emoji 比多少</span>
+            </span>
+          </button>
           <button id="open-stroop-train" class="game-entry clickable focus-ring" type="button">
             <span class="entry-icon" aria-hidden="true">
               <img src="assets/icon-stroop-train.svg" alt="" />
@@ -775,6 +784,12 @@
           <div id="stroop-board" class="stroop-board zone-primary" role="grid" aria-label="看字识颜色棋盘"></div>
           <div id="stroop-select" class="stroop-select zone-secondary" role="grid" aria-label="待选区（依次填入棋盘每格的颜色）"></div>
           <div id="stroop-palette" class="stroop-palette zone-toolbar" role="group" aria-label="颜色条（选颜色填入待选）"></div>
+        </div>
+
+        <!-- Phase 8B — 看图比大小：左右 emoji 组 + 多/少/一样 三按钮 -->
+        <div id="compare-host" class="compare-host zone-stack" hidden>
+          <div id="compare-question" class="compare-question zone-primary" aria-label="看图比大小题目区"></div>
+          <div id="compare-buttons" class="compare-buttons zone-toolbar" role="group" aria-label="多/少/一样 三选一"></div>
         </div>
 
         <!-- Phase 8A — 成语填空：滚筒 + 候选字池（zone-stack：滚筒 primary + 候选字池 secondary）-->
@@ -891,6 +906,7 @@
     <script src="assets/audio/manifest.js"></script>
     <script src="scripts/stage.js"></script>
     <script src="engine/marquee.js?v=stroop-marquee"></script>
+    <script src="engine/sliding-note.js?v=stroop-sliding-v2"></script>
     <script src="app.js" defer></script>
   </body>
 </html>
