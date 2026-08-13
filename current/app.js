@@ -1864,38 +1864,41 @@ function renderCompareBoard() {
   const q = state.compareQuestions[state.compareCursor];
   if (!q) return;
 
-  // 题目区: 左 emoji 组 + VS + 右 emoji 组
+  // 题目区: 左 emoji 组 + 中间数学符号按钮 + 右 emoji 组
+  // (主人 2026-08-14 07:44 提议: 选数学符号, 放在两堆图形中间, 不是汉字按钮)
   const area = document.createElement("div");
   area.className = "compare-area";
   const left = document.createElement("div");
   left.className = "compare-group";
   left.textContent = q.emoji.repeat(q.countA);
-  const vs = document.createElement("div");
-  vs.className = "compare-vs";
-  vs.textContent = "VS";
-  const right = document.createElement("div");
-  right.className = "compare-group";
-  right.textContent = q.emoji.repeat(q.countB);
-  area.appendChild(left);
-  area.appendChild(vs);
-  area.appendChild(right);
-  compareQuestion.appendChild(area);
 
-  // 三按钮: 多 / 少 / 一样
+  // 中间 3 个数学符号按钮 (>, <, =)
+  const symbols = document.createElement("div");
+  symbols.className = "compare-symbols";
   const defs = [
-    { name: "多",   value: "more",  className: "btn-more"  },
-    { name: "少",   value: "less",  className: "btn-less"  },
-    { name: "一样", value: "equal", className: "btn-equal" }
+    { symbol: ">",  value: "more"  },
+    { symbol: "<",  value: "less"  },
+    { symbol: "=",  value: "equal" }
   ];
   defs.forEach((d) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `compare-btn ${d.className}`;
-    btn.textContent = d.name;
+    btn.className = "compare-symbol-btn";
+    btn.textContent = d.symbol;
     btn.dataset.value = d.value;
+    btn.setAttribute("aria-label", `选 ${d.symbol}`);
     btn.addEventListener("click", () => applyCompareAnswer(d.value));
-    compareButtons.appendChild(btn);
+    symbols.appendChild(btn);
   });
+
+  const right = document.createElement("div");
+  right.className = "compare-group";
+  right.textContent = q.emoji.repeat(q.countB);
+
+  area.appendChild(left);
+  area.appendChild(symbols);
+  area.appendChild(right);
+  compareQuestion.appendChild(area);
 }
 
 function startCompareGame(size) {
@@ -1940,11 +1943,11 @@ function applyCompareAnswer(value) {
     setMascotState("sad");
     playVoice("sfx.wrong-buzz", "", { replayable: false });
     flashError();
-    compareButtons.querySelectorAll(".compare-btn").forEach((b) => {
+    compareButtons.querySelectorAll(".compare-symbol-btn").forEach((b) => {
       if (b.dataset.value === q.answer) b.classList.add("correct-hint");
     });
     setTimeout(() => {
-      compareButtons.querySelectorAll(".compare-btn").forEach((b) => {
+      compareButtons.querySelectorAll(".compare-symbol-btn").forEach((b) => {
         b.classList.remove("correct-hint");
       });
     }, 800);

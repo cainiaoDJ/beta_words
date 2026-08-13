@@ -133,6 +133,11 @@
   --theme-stroopTrain-accent-soft: rgba(233, 79, 79, 0.15);
   --theme-stroopTrain-ink: #b32f2f;
   --theme-stroopTrain-glow: rgba(233, 79, 79, 0.4);
+  --theme-compare-bg: rgba(240, 140, 58, 0.06);
+  --theme-compare-accent: #f08c3a;
+  --theme-compare-accent-soft: rgba(240, 140, 58, 0.15);
+  --theme-compare-ink: #b36420;
+  --theme-compare-glow: rgba(240, 140, 58, 0.4);
 
   /* Phase 8A — idiomFill 青绿主题色（主人 2026-08-09 反馈：紫色撞 memory，改青绿 #14b8a6）*/
   --theme-idiomFill-bg: rgba(20, 184, 166, 0.06);
@@ -215,6 +220,13 @@ button {
   --theme-accent-soft: var(--theme-stroopTrain-accent-soft);
   --theme-ink: var(--theme-stroopTrain-ink);
   --theme-glow: var(--theme-stroopTrain-glow);
+}
+[data-game="compare"] {
+  --theme-bg: var(--theme-compare-bg);
+  --theme-accent: var(--theme-compare-accent);
+  --theme-accent-soft: var(--theme-compare-accent-soft);
+  --theme-ink: var(--theme-compare-ink);
+  --theme-glow: var(--theme-compare-glow);
 }
 
 /* Phase 8A — idiomFill 青绿主题映射 */
@@ -1751,6 +1763,21 @@ h2 {
   border-color: var(--theme-ink);
   color: var(--panel);
 }
+[data-game="compare"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="compare"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="compare"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="compare"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
 [data-game="stroopTrain"] .hud-progress,
 [data-game="stroopTrain"] .hud-hint {
   color: var(--theme-ink);
@@ -2925,13 +2952,13 @@ h2 {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 8px;
+  gap: 4px;
 }
 
 .compare-group {
   flex: 1;
   background: #fffaf0;
-  border: 3px solid #f4c430;
+  border: 3px solid var(--theme-accent, #f08c3a);
   border-radius: 12px;
   padding: 16px 8px;
   display: flex;
@@ -2939,51 +2966,52 @@ h2 {
   justify-content: center;
   align-items: center;
   gap: 2px;
-  min-height: 110px;
-  font-size: 32px;
+  min-height: 130px;
+  font-size: 36px;
   line-height: 1.1;
 }
 
-.compare-vs {
-  font-size: 20px;
-  font-weight: 900;
-  color: #b8a87a;
-  padding: 0 4px;
-}
-
-.compare-buttons {
+/* 数学符号按钮组 (放在两堆图形中间, 主人 2026-08-14 07:44 提议) */
+.compare-symbols {
   display: flex;
-  gap: 10px;
-  width: 100%;
-  max-width: 480px;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: stretch;
+  justify-content: center;
 }
 
-.compare-btn {
-  flex: 1;
-  padding: 20px 0;
-  font-size: 28px;
+.compare-symbol-btn {
+  width: 48px;
+  height: 48px;
+  font-size: 30px;
   font-weight: 900;
-  border: 3px solid;
-  border-radius: 14px;
+  border: 3px solid var(--theme-accent-soft, rgba(240, 140, 58, 0.4));
+  border-radius: 10px;
   background: white;
-  color: inherit;
-  font-family: inherit;
+  color: var(--theme-ink, #b36420);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   cursor: pointer;
-  transition: transform 0.1s ease, background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
-.compare-btn:active {
-  transform: scale(0.95);
+.compare-symbol-btn:hover {
+  border-color: var(--theme-accent, #f08c3a);
+  background: var(--theme-accent-soft, rgba(240, 140, 58, 0.08));
 }
 
-.btn-more  { border-color: #ff6b6b; color: #ff6b6b; }
-.btn-less  { border-color: #4dabf7; color: #4dabf7; }
-.btn-equal { border-color: #51cf66; color: #51cf66; }
+.compare-symbol-btn:active {
+  transform: scale(0.92);
+}
 
 /* 错答时正确答案高亮 */
-.compare-btn.correct-hint {
+.compare-symbol-btn.correct-hint {
   background: #51cf66;
   color: white;
+  border-color: #51cf66;
   animation: correct-hint-pulse 0.4s ease-in-out infinite alternate;
 }
 
