@@ -474,6 +474,7 @@ h2 {
   display: grid;
   place-items: center;
   background: rgb(var(--color-primary-soft));  /* 浅绿背景 */
+  border: 2px solid var(--theme-accent, rgb(var(--color-primary)));  /* 主人 08-14: 主题色边框 */
   border-radius: var(--radius-sm);
   flex-shrink: 0;
   margin-bottom: 4px;
@@ -3007,12 +3008,52 @@ h2 {
   transform: scale(0.92);
 }
 
-/* 错答时正确答案高亮 */
+/* 主人 08-14: 选完不立即跳, 显示对错 + 停顿 1.2-1.5s */
+
+/* 答对: 绿闪 */
+.compare-symbol-btn.correct-flash {
+  background: #51cf66 !important;
+  color: white !important;
+  border-color: #51cf66 !important;
+  animation: correct-flash-pulse 0.5s ease-in-out 3 alternate;
+  pointer-events: none;
+}
+
+/* 答错: 红闪 + shake */
+.compare-symbol-btn.wrong-flash {
+  background: #ff6b6b !important;
+  color: white !important;
+  border-color: #ff6b6b !important;
+  animation: wrong-flash-shake 0.4s ease-in-out 2;
+  pointer-events: none;
+}
+
+/* 错答时正确答案高亮 (持续显示直到跳下一题) */
 .compare-symbol-btn.correct-hint {
   background: #51cf66;
   color: white;
   border-color: #51cf66;
   animation: correct-hint-pulse 0.4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* 反馈期间禁用所有按钮 */
+.compare-symbol-btn.is-locked {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+@keyframes correct-flash-pulse {
+  from { box-shadow: 0 0 0 0 rgba(81, 207, 102, 0.7); transform: scale(1.0); }
+  to   { box-shadow: 0 0 0 16px rgba(81, 207, 102, 0); transform: scale(1.15); }
+}
+
+@keyframes wrong-flash-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }
 
 @keyframes correct-hint-pulse {

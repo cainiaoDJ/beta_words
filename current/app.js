@@ -1887,7 +1887,7 @@ function renderCompareBoard() {
     btn.textContent = d.symbol;
     btn.dataset.value = d.value;
     btn.setAttribute("aria-label", `选 ${d.symbol}`);
-    btn.addEventListener("click", () => applyCompareAnswer(d.value));
+    btn.addEventListener("click", () => applyCompareAnswer(d.value, btn));
     symbols.appendChild(btn);
   });
 
@@ -1920,12 +1920,20 @@ function startCompareGame(size) {
   startTimer();
 }
 
-function applyCompareAnswer(value) {
+function applyCompareAnswer(value, btn) {
   const q = state.compareQuestions[state.compareCursor];
   if (!q) return;
 
   const isCorrect = value === q.answer;
   state.compareAnswers[state.compareCursor] = value;
+
+  // 锁定所有按钮 (反馈期间防止双击) — 按钮现在在 .compare-symbols (compare-question 子节点)
+  const allBtns = compareQuestion.querySelectorAll(".compare-symbol-btn");
+  allBtns.forEach((b) => b.classList.add("is-locked"));
+
+  const correctBtn = compareQuestion.querySelector(
+    `.compare-symbol-btn[data-value="${q.answer}"]`
+  );
 
   if (isCorrect) {
     state.compareCorrectCount += 1;
@@ -1939,30 +1947,27 @@ function applyCompareAnswer(value) {
       0,
       8
     );
+    if (btn) btn.classList.add("correct-flash");
   } else {
     setMascotState("sad");
     playVoice("sfx.wrong-buzz", "", { replayable: false });
     flashError();
-    compareButtons.querySelectorAll(".compare-symbol-btn").forEach((b) => {
-      if (b.dataset.value === q.answer) b.classList.add("correct-hint");
-    });
-    setTimeout(() => {
-      compareButtons.querySelectorAll(".compare-symbol-btn").forEach((b) => {
-        b.classList.remove("correct-hint");
-      });
-    }, 800);
+    if (btn) btn.classList.add("wrong-flash");
+    if (correctBtn) correctBtn.classList.add("correct-hint");
   }
 
-  state.compareCursor += 1;
-  if (state.compareCursor >= state.compareQuestions.length) {
-    checkComplete();
-    return;
-  }
-  if (isCorrect) {
+  // 主人 2026-08-14 07:53 反馈: 加停顿, 展示对错效果
+  // 答对: 1.2s 后跳下一题 (绿闪 3 次约 1.5s 完成)
+  // 答错: 1.5s 后跳下一题 (红闪 + 绿提示对)
+  const delay = isCorrect ? 1200 : 1500;
+  setTimeout(() => {
+    state.compareCursor += 1;
+    if (state.compareCursor >= state.compareQuestions.length) {
+      checkComplete();
+      return;
+    }
     renderCompareBoard();
-  } else {
-    setTimeout(() => renderCompareBoard(), 800);
-  }
+  }, delay);
 }
 
 // 父文档：docs/phase-plans/phase-8-idiom-fill.md
