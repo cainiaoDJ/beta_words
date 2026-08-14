@@ -1956,12 +1956,17 @@ function applyCompareAnswer(value, btn) {
     if (correctBtn) correctBtn.classList.add("correct-hint");
   }
 
+  // 主人 2026-08-14 11:56 反馈: 进度一直 0/9 不动
+  // 修: cursor += 1 后立刻刷进度 (用 matchedCount 显示当前题号)
+  state.compareCursor += 1;
+  state.matchedCount = state.compareCursor;
+  updateProgress();
+
   // 主人 2026-08-14 07:53 反馈: 加停顿, 展示对错效果
   // 答对: 1.2s 后跳下一题 (绿闪 3 次约 1.5s 完成)
   // 答错: 1.5s 后跳下一题 (红闪 + 绿提示对)
   const delay = isCorrect ? 1200 : 1500;
   setTimeout(() => {
-    state.compareCursor += 1;
     if (state.compareCursor >= state.compareQuestions.length) {
       checkComplete();
       return;

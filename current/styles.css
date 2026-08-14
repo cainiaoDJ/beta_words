@@ -461,7 +461,8 @@ h2 {
   align-items: center;
   text-align: center;
   background: var(--panel);
-  border: 0;                       /* 去 border，避免任何"黑边"感 */
+  /* 主人 08-14 11:56: 给所有 game-entry 加主题色外边框 (compare 之前没边框) */
+  border: 2px solid var(--theme-accent, rgba(0, 0, 0, 0.08));
   border-radius: var(--radius-md); /* 8px, SOP ≤8px */
   box-shadow: var(--shadow-card);
   position: relative;
@@ -474,7 +475,6 @@ h2 {
   display: grid;
   place-items: center;
   background: rgb(var(--color-primary-soft));  /* 浅绿背景 */
-  border: 2px solid var(--theme-accent, rgb(var(--color-primary)));  /* 主人 08-14: 主题色边框 */
   border-radius: var(--radius-sm);
   flex-shrink: 0;
   margin-bottom: 4px;
