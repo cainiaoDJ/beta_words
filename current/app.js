@@ -97,14 +97,22 @@ const STROOP_COLORS = [
   { name: "橙", english: "orange", css: "#f08c3a" }
 ];
 
-// Phase 8B: 看图比大小
+// Phase 8B v2: 看图比大小 (主人 2026-08-14 12:36 批准 A+B 实施)
+// 关卡制, 不再用 N×N 单纯堆题数; L4 加混合 emoji 维度升级
 const COMPARE_EMOJIS = ["🍎", "🐱", "🐟", "🌸", "🍇"];
-// 难度映射: size=3 → 3×3=9 题; size 3: count 1-4, no =; size 4: 1-6, = 1/3; etc.
-const COMPARE_SETTINGS = {
-  3: { maxCount: 4, minDiff: 2, equalChance: 0 },
-  4: { maxCount: 6, minDiff: 1, equalChance: 0.3 },
-  5: { maxCount: 7, minDiff: 1, equalChance: 0.25 },
-  6: { maxCount: 9, minDiff: 1, equalChance: 0.25 }
+const COMPARE_LEVELS = {
+  3: { name: "L1 数数入门",   questionCount: 6,  maxCount: 4, minDiff: 2, equalChance: 0,    mixedEmoji: false },  // 单 emoji, 差 ≥2
+  4: { name: "L2 大小比较",   questionCount: 8,  maxCount: 6, minDiff: 1, equalChance: 0.3,  mixedEmoji: false },  // 单 emoji, = 1/3
+  5: { name: "L3 凑数进阶",   questionCount: 10, maxCount: 7, minDiff: 1, equalChance: 0.25, mixedEmoji: false },  // 单 emoji, = 1/4, 相邻数陷阱
+  6: { name: "L4 算式混合",   questionCount: 12, maxCount: 9, minDiff: 1, equalChance: 0.25, mixedEmoji: true  }   // 混合 emoji: 同组 2 种, 数总和
+};
+// 默认 difficulty 按钮文字 (其他游戏用, 改 compare 后会还原)
+const DEFAULT_DIFFICULTY_LABELS = {
+  3: { name: "3 x 3", sub: "轻松开始" },
+  4: { name: "4 x 4", sub: "多认几个" },
+  5: { name: "5 x 5", sub: "挑战一下" },
+  6: { name: "6 x 6", sub: "越来越难" },
+  7: { name: "7 x 7", sub: "极限挑战" }
 };
 
 // 看字识颜色难度：颜色种类 + 棋盘总格数
@@ -693,7 +701,34 @@ function chooseGame(gameId) {
   syncReplayVisibility();
   syncStroopHud();
   setRecommendedDifficulty(gameId);  // Phase 2A.2：按游戏标记推荐难度
+  syncSetupForGame(gameId);  // Phase 8B v2: compare 用 L1-L4 关卡, 其他还原默认
   showScreen("setup");
+}
+
+// Phase 8B v2: compare 用 L1-L4 关卡 (难度设计 A), 其他游戏还原默认难度文字 (不动其他游戏)
+function syncSetupForGame(gameId) {
+  const isCompare = gameId === GAMES.compare.id;
+  document.querySelectorAll('#setup .difficulty').forEach((btn) => {
+    const size = parseInt(btn.dataset.size, 10);
+    const strongEl = btn.querySelector('strong');
+    const spanEl = btn.querySelector('span');
+    if (isCompare) {
+      // size 7 没在 COMPARE_LEVELS, 隐藏
+      btn.hidden = (size === 7);
+      const cfg = COMPARE_LEVELS[size];
+      if (cfg && strongEl && spanEl) {
+        strongEl.textContent = cfg.name;
+        spanEl.textContent = `${cfg.questionCount}题`;
+      }
+    } else {
+      btn.hidden = false;
+      const cfg = DEFAULT_DIFFICULTY_LABELS[size];
+      if (cfg && strongEl && spanEl) {
+        strongEl.textContent = cfg.name;
+        spanEl.textContent = cfg.sub;
+      }
+    }
+  });
 }
 
 // Phase 2A.2：每个游戏的"黄金难度"（详见 docs/phase-plans/phase-2-lobby-setup.md）
@@ -1822,8 +1857,34 @@ function setStroopActive() {
 //   2. 点 多/少/一样 按钮 → 判定对错
 //   3. 对 → 绿闪 + 推进 cursor; 错 → 红闪 + 正确答案高亮 800ms + 推进
 
+// shuffle: Fisher-Yates
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// 生成混合 emoji 组 (L4 用): 拆成 2 个不同 emoji, 随机混合顺序
+function generateMixedGroup(total) {
+  const split = 1 + Math.floor(Math.random() * (total - 1));
+  const count1 = split;
+  const count2 = total - split;
+  const emoji1 = COMPARE_EMOJIS[Math.floor(Math.random() * COMPARE_EMOJIS.length)];
+  let emoji2;
+  do {
+    emoji2 = COMPARE_EMOJIS[Math.floor(Math.random() * COMPARE_EMOJIS.length)];
+  } while (emoji2 === emoji1);
+  const arr = [];
+  for (let i = 0; i < count1; i++) arr.push(emoji1);
+  for (let i = 0; i < count2; i++) arr.push(emoji2);
+  return shuffleArray(arr).join('');
+}
+
 function createCompareQuestions(total, size) {
-  const config = COMPARE_SETTINGS[size] || COMPARE_SETTINGS[3];
+  const config = COMPARE_LEVELS[size] || COMPARE_LEVELS[3];
   const questions = [];
   for (let i = 0; i < total; i++) {
     const emoji = COMPARE_EMOJIS[Math.floor(Math.random() * COMPARE_EMOJIS.length)];
@@ -1844,13 +1905,26 @@ function createCompareQuestions(total, size) {
     if (countA > countB) answer = "more";
     else if (countA < countB) answer = "less";
     else answer = "equal";
+
+    let groupA, groupB;
+    if (config.mixedEmoji) {
+      groupA = generateMixedGroup(countA);
+      groupB = generateMixedGroup(countB);
+    } else {
+      const emoji = COMPARE_EMOJIS[Math.floor(Math.random() * COMPARE_EMOJIS.length)];
+      groupA = emoji.repeat(countA);
+      groupB = emoji.repeat(countB);
+    }
+
     questions.push({
       id: `compare-${i}`,
       idx: i,
-      emoji,
+      groupA,
+      groupB,
       countA,
       countB,
-      answer
+      answer,
+      mixed: config.mixedEmoji
     });
   }
   return questions;
@@ -1865,12 +1939,12 @@ function renderCompareBoard() {
   if (!q) return;
 
   // 题目区: 左 emoji 组 + 中间数学符号按钮 + 右 emoji 组
-  // (主人 2026-08-14 07:44 提议: 选数学符号, 放在两堆图形中间, 不是汉字按钮)
+  // L1-L3: 单 emoji.repeat; L4: groupA/groupB (混合 2 种 emoji)
   const area = document.createElement("div");
   area.className = "compare-area";
   const left = document.createElement("div");
   left.className = "compare-group";
-  left.textContent = q.emoji.repeat(q.countA);
+  left.textContent = q.groupA;
 
   // 中间 3 个数学符号按钮 (>, <, =)
   const symbols = document.createElement("div");
@@ -1893,7 +1967,7 @@ function renderCompareBoard() {
 
   const right = document.createElement("div");
   right.className = "compare-group";
-  right.textContent = q.emoji.repeat(q.countB);
+  right.textContent = q.groupB;
 
   area.appendChild(left);
   area.appendChild(symbols);
@@ -1902,7 +1976,8 @@ function renderCompareBoard() {
 }
 
 function startCompareGame(size) {
-  const total = size * size;
+  const config = COMPARE_LEVELS[size] || COMPARE_LEVELS[3];
+  const total = config.questionCount;
 
   state.size = size;
   state.game = GAMES.compare.id;
