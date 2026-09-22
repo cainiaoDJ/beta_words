@@ -3361,7 +3361,7 @@ function warmupHanziWriter(items, currentIndex, count = 3) {
   for (let i = 1; i <= count; i++) {
     const item = items[currentIndex + i];
     if (!item) continue;
-    if (item.pool === "hanzi" || item.pool === "numbers") {
+    if (item.pool === "hanzi") {
       fetchHanziWriterData(item.charKey).catch(() => {});
     }
   }
@@ -3469,8 +3469,13 @@ async function loadCurrentTraceChar(token) {
     if (window.TRACE_PINYIN && typeof window.TRACE_PINYIN.getStrokeSpec === "function") {
       state.traceStrokeSpec = window.TRACE_PINYIN.getStrokeSpec(item.charKey);
     }
-  } else if (pool === "hanzi" || pool === "numbers") {
-    // 汉字 / 数字走 hanzi-writer-data CDN
+  } else if (pool === "numbers") {
+    // 阿拉伯数字 1-10 走本地模板（同步，避免 CDN 依赖）
+    if (window.TRACE_NUMBERS && typeof window.TRACE_NUMBERS.getStrokeSpec === "function") {
+      state.traceStrokeSpec = window.TRACE_NUMBERS.getStrokeSpec(item.charKey);
+    }
+  } else if (pool === "hanzi") {
+    // 汉字走 hanzi-writer-data CDN
     try {
       state.traceStrokeSpec = await fetchHanziWriterData(item.charKey);
     } catch (err) {
