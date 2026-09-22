@@ -712,6 +712,16 @@
               <span class="entry-copy">字是什么颜色</span>
             </span>
           </button>
+          <!-- Phase trace-tian — 田字格描红（traceTian）入口 -->
+          <button id="open-trace-tian" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-trace-tian.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">田字格描红</span>
+              <span class="entry-copy">跟着灰色字描一描</span>
+            </span>
+          </button>
           <!-- Phase 8A — 成语填空（idiomFill）入口 -->
           <button id="open-idiom-fill" class="game-entry clickable focus-ring" type="button">
             <span class="entry-icon" aria-hidden="true">
@@ -799,6 +809,22 @@
           </div>
           <div id="idiom-pool" class="idiom-pool zone-secondary" aria-label="候选字池（点候选字填入成语空格）">
             <!-- 候选字池由 renderIdiomFill() 动态生成 .candidate-tile -->
+          </div>
+        </div>
+
+        <!-- Phase trace-tian — 田字格描红：米字格 + 笔顺 SVG 覆盖 + 待选列表 + toolbar -->
+        <div id="trace-host" class="trace-host zone-stack" hidden>
+          <div class="trace-stage zone-primary">
+            <canvas id="trace-canvas" class="trace-canvas" aria-label="米字格描红画布"></canvas>
+            <svg id="trace-order-svg" class="trace-order-svg" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+            <div id="trace-loading" class="trace-loading" hidden>
+              <span class="trace-loading-text">正在准备字卡…</span>
+            </div>
+          </div>
+          <div id="trace-remaining" class="trace-remaining zone-secondary" role="list" aria-label="待描的字"></div>
+          <div id="trace-toolbar" class="trace-toolbar zone-toolbar" role="group" aria-label="描红操作">
+            <button id="trace-clear" class="trace-tool-button trace-clear-button" type="button">清除笔迹</button>
+            <button id="trace-next" class="trace-tool-button trace-next-button" type="button">下一字</button>
           </div>
         </div>
 
@@ -904,6 +930,10 @@
     </div>
 
     <script src="assets/audio/manifest.js"></script>
+    <!-- Phase trace-tian — 田字格描红数据池（数字 / 拼音 / 汉字） -->
+    <script src="assets/data/trace-numbers.js"></script>
+    <script src="assets/data/trace-pinyin.js"></script>
+    <script src="assets/data/trace-hanzi.js"></script>
     <script src="scripts/stage.js"></script>
     <script src="engine/marquee.js?v=stroop-marquee"></script>
     <script src="engine/sliding-note.js?v=stroop-sliding-v2"></script>
