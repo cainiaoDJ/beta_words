@@ -3331,10 +3331,6 @@ img.compare-emoji {
   stroke: white;
   stroke-width: 5;
   stroke-linejoin: round;
-  /* trace-flip <g> 绕 Y 轴镜像，text 会被上下倒过来；这里反向转回去 */
-  transform-box: fill-box;
-  transform-origin: center;
-  transform: scale(1, -1);
 }
 
 /* 状态：笔顺演示中（禁止用户描写） */

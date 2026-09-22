@@ -3598,11 +3598,7 @@ function renderTraceOrderSvg() {
   const spec = state.traceStrokeSpec;
   if (!spec || !spec.strokes || spec.strokes.length === 0) return;
   const NS = "http://www.w3.org/2000/svg";
-  // Y-flip wrapper：所有 stroke / dot / text 都在它里面
-  const root = document.createElementNS(NS, "g");
-  root.setAttribute("transform", "scale(1, -1) translate(0, -1024)");
-  root.setAttribute("class", "trace-flip");
-  traceOrderSvg.appendChild(root);
+  // 2026-09-22: 所有池统一为 Y-down 坐标系（SVG 默认），去掉了之前的 trace-flip Y-flip wrapper
   spec.strokes.forEach((strokeObj, idx) => {
     // 兼容旧格式：string 直接当 d
     const d = typeof strokeObj === "string" ? strokeObj : strokeObj.d;
@@ -3615,9 +3611,9 @@ function renderTraceOrderSvg() {
       const g = document.createElementNS(NS, "g");
       g.setAttribute("transform", `translate(${transform.dx || 0}, ${transform.dy || 0})`);
       g.appendChild(p);
-      root.appendChild(g);
+      traceOrderSvg.appendChild(g);
     } else {
-      root.appendChild(p);
+      traceOrderSvg.appendChild(p);
     }
   });
   // 起点圆点 + 序号（默认全部隐藏；playStrokeGuide 逐笔揭示时显示）
@@ -3661,10 +3657,10 @@ function renderTraceOrderSvg() {
         g.setAttribute("transform", `translate(${transform.dx || 0}, ${transform.dy || 0})`);
         g.appendChild(dot);
         g.appendChild(txt);
-        root.appendChild(g);
+        traceOrderSvg.appendChild(g);
       } else {
-        root.appendChild(dot);
-        root.appendChild(txt);
+        traceOrderSvg.appendChild(dot);
+        traceOrderSvg.appendChild(txt);
       }
     });
   }
