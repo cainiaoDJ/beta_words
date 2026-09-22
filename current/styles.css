@@ -3381,6 +3381,7 @@ img.compare-emoji {
 
 /* === Z4 待选列表（一行横向滚动） === */
 .trace-remaining {
+  display: flex;             /* 覆写 .zone-secondary 的 grid，让待选列表横向 */
   width: 100%;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -3440,6 +3441,7 @@ img.compare-emoji {
 
 /* === Z5 Toolbar === */
 .trace-toolbar {
+  display: grid;             /* 沿用 .zone-toolbar 的 grid 即可 */
   width: 100%;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
