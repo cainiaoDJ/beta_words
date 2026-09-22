@@ -3361,7 +3361,7 @@ function warmupHanziWriter(items, currentIndex, count = 3) {
   for (let i = 1; i <= count; i++) {
     const item = items[currentIndex + i];
     if (!item) continue;
-    if (item.pool === "hanzi") {
+    if (false && item.pool === "hanzi") {
       fetchHanziWriterData(item.charKey).catch(() => {});
     }
   }
@@ -3475,13 +3475,10 @@ async function loadCurrentTraceChar(token) {
       state.traceStrokeSpec = window.TRACE_NUMBERS.getStrokeSpec(item.charKey);
     }
   } else if (pool === "hanzi") {
-    // 汉字走 hanzi-writer-data CDN
-    try {
-      state.traceStrokeSpec = await fetchHanziWriterData(item.charKey);
-    } catch (err) {
-      console.warn("[traceTian] 笔顺数据加载失败", item.charKey, err);
-      state.traceStrokeSpec = { strokes: [], medians: [] };
-      setHint("笔顺数据暂不可用，可以直接描");
+    // "汉字"池实际是 0-9 阿拉伯数字（setup 文字覆写为"汉字"，内容是数字）
+    // 走本地模板，不再走 hanzi-writer-data CDN
+    if (window.TRACE_HANZI && typeof window.TRACE_HANZI.getStrokeSpec === "function") {
+      state.traceStrokeSpec = window.TRACE_HANZI.getStrokeSpec(item.charKey);
     }
   }
   if (token !== state.traceLoadToken) return;
@@ -3729,15 +3726,20 @@ function onTracePointerDown(e) {
   e.preventDefault();
   const cssSize = getTraceStageSize();
   if (!cssSize) return;
-  const rect = traceStage.getBoundingClientRect();
-  const x = (e.clientX - rect.left - (rect.width - cssSize) / 2) / cssSize;
-  const y = (e.clientY - rect.top - (rect.height - cssSize) / 2) / cssSize;
+  // stage 是 aspect-ratio 1:1 正方形，绘画区是 border 内的内容区
+  // clientWidth = 总宽（含 2px border 左右），绘画区 = clientWidth - 4
+  // 绘画区相对 stage 左上角的偏移：border 2px
+  const stageRect = traceStage.getBoundingClientRect();
+  // 计算绘画区左上去 stage 左上的偏移（可能被 aspect-ratio 居中拉伸）
+  const contentOffsetX = (stageRect.width - cssSize) / 2;
+  const contentOffsetY = (stageRect.height - cssSize) / 2;
+  const x = (e.clientX - stageRect.left - contentOffsetX) / cssSize;
+  const y = (e.clientY - stageRect.top - contentOffsetY) / cssSize;
   state.traceIsDrawing = true;
   state.traceActivePointer = e.pointerId;
   state.traceStrokes.push({ points: [[x, y]] });
   traceStage.classList.add("is-drawing");
   try { traceStage.setPointerCapture(e.pointerId); } catch {}
-  // 增量绘制（单点）
   drawUserStrokes();
 }
 function onTracePointerMove(e) {
@@ -3745,9 +3747,11 @@ function onTracePointerMove(e) {
   if (state.traceActivePointer !== e.pointerId) return;
   const cssSize = getTraceStageSize();
   if (!cssSize) return;
-  const rect = traceStage.getBoundingClientRect();
-  const x = (e.clientX - rect.left - (rect.width - cssSize) / 2) / cssSize;
-  const y = (e.clientY - rect.top - (rect.height - cssSize) / 2) / cssSize;
+  const stageRect = traceStage.getBoundingClientRect();
+  const contentOffsetX = (stageRect.width - cssSize) / 2;
+  const contentOffsetY = (stageRect.height - cssSize) / 2;
+  const x = (e.clientX - stageRect.left - contentOffsetX) / cssSize;
+  const y = (e.clientY - stageRect.top - contentOffsetY) / cssSize;
   const stroke = state.traceStrokes[state.traceStrokes.length - 1];
   if (!stroke) return;
   const last = stroke.points[stroke.points.length - 1];
@@ -3758,7 +3762,6 @@ function onTracePointerMove(e) {
     if (dx * dx + dy * dy < 0.00005) return;  // ~0.7% 边长
   }
   stroke.points.push([x, y]);
-  // 增量画线（从上一笔终点到现在）
   drawUserStrokeSegment(stroke, stroke.points.length - 2);
 }
 function drawUserStrokeSegment(stroke, fromIdx) {
@@ -3794,7 +3797,9 @@ function onTraceClear() {
   drawTraceStage();
 }
 function onTraceNext() {
-  const hasInk = state.traceStrokes.some(s => s.points && s.points.length >= 2);
+  // 判定：有笔迹即可推进。单 tap / 鼠标点一下但 pointermove 未触发时，points.length 可能为 1。
+  // 只要有任意一条非空 stroke（points >= 1）就允许推进，避免孩子描了半天还是灰按钮。
+  const hasInk = state.traceStrokes.some(s => s.points && s.points.length >= 1);
   if (!hasInk) {
     // 无笔迹 → shake 提示
     if (traceNextBtn) {
