@@ -6,11 +6,19 @@
 // 表》手写体示范图或人教版课本 pinyin 单元示范页逐字对比验证**。
 // codex review 已识别：a / g / q 等字母与手写体规范不符；q 在 letters 表里缺失。
 //
-// 推荐的权威源（待抓取并人工转 SVG）：
-//   1. 教育部《汉语拼音字母表》手写体示范图
-//   2. 人教版《语文》一年级上册汉语拼音单元课本 pinyin 示范页
-//   3. 上海外国语大学附属学校官网《汉字和汉语拼音书写规范》（已抓到部分）
+// 权威源（已下载 /tmp/yw1s.pdf 10.9MB）：
+//   - 人教版《语文》一年级上册（教育部统编版，2024 人教版沿用）
+//     ISBN：人教版官方教材（具体版次以纸质书为准）
+//     pinyin 单元：p13-58（13 课 + 语文园地二/三/四）
+//     13 课顺序：aoe / iuü / bpmf / dtnl / gkh / jqx / zcs / zhchshr / yw / 
+//                aieiu / aoouiu / ieüeer / anen/ angengingong
+//     整体认读音节 16 个：zhi chi shi ri / zi ci si / yi wu yu / ye yue yuan / yin yun ying
+//     下载源：https://lx-public.oss-cn-beijing.aliyuncs.com/www/lewen/pdf/小学语文课本/语文一年级上册.pdf
+//   - 上海外国语大学附属学校官网《汉字和汉语拼音书写规范》
+//     https://qp.shwfl.edu.cn/2021/1101/c1975a7899/page.htm
+//   - 教育部《汉语拼音字母表》（手写体 vs 印刷体差异）
 //
+// 待办：抓取课本 p13-58 内的字母田字格示范图，转 SVG path 逐字母校对。
 // 坐标系：viewBox 0 0 1024 1024，居中字符盒 720x720（左 152，上 152）
 // 单字母 letters[base] 的 path/medians 在该字符盒内书写（左上 152,152）
 // 渲染层按 spec.yAxis = "down" 不翻转（与 hanzi Y-up 区分）
