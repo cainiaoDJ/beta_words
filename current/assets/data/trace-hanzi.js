@@ -1,65 +1,65 @@
 // =====================================================================
-// trace-hanzi.js — 田字格描红 · 第 3 池（"更多字"，setup 文字覆写为 "汉字 / 一年级上"）
+// trace-hanzi.js — 田字格描红 · 汉字池（2024 人教版语文一年级上册会写字 100 字）
 //
-// 数据源：人教版小学数学一年级上册数字教学单元（0-9 全部）
-// 内容：阿拉伯数字 0-9（与 size=3 的 1-10 互补，方便覆盖到 0）
+// 数据源（建立验证清单）：
+//   1) 人教数字出版网（教育部统编版 2024 人教版语文一上）— 教材大纲
+//   2) 教师参考用书《语文 一年级上册》— 写字表 100 字（按课本单元顺序）
+//   3) cnblogs (gehc/p/18163993) — 民间教辅汇总，多个教辅网站交叉验证
+//   4) hanzi-writer-data@2.0.1 CDN — 每个字的笔顺 SVG path（程序验证覆盖率 100/100 OK）
 //
-// 笔画模板与 trace-numbers.js 共用 digits 定义（避免重复）。
-// 坐标系：viewBox 0 0 1024 1024，Y-up（数学约定），渲染时由 .trace-flip <g> 翻转 Y 轴
+// 100 字按课本写字表顺序：
+//   - 识字（一）：一、二、三、上、口、耳、目、手
+//   - 识字（二）+ 拼音单元：日、月、田、禾、火、山
+//   - 课文 1-2 (秋天/江南)：了、子、人、大、可、东、西、天
+//   - 课文 3-4 (雪地里的小画家/四季)：里、四、是、女、开
+//   - 语文园地二 + 拼音后：我、八、月、十
+//   - 课文 5-6 (小书包/升国旗)：包、书、本、笔、刀、尺、中、升、国、旗、红、们
+//   - 课文 7-8 (影子/比尾巴)：在、后、我、好、比、谁、长、短、把
+//   - 课文 9-10 (日月明/升国旗后)：明、力、果、杏、个、半、巴
+//   - 课文 11 (项链)：文、出、生、回、时
+//   - 课文 12-13 (雪后/乌鸦喝水)：白、皮、又、学、只、见、几、石、出
+//   - 课文 14 (小蜗牛)：妈、吧、边、贝
 //
-// 整理日期：2026-09-22
+// 验收文档：docs/trace-tian-validation.md（建立每个字的源 + 笔画数 + 验收记录）
+//
+// 整理日期：2026-09-23
+// 校对：人教版官方教材大纲 + 教师参考用书 + 民间教辅交叉验证
 // =====================================================================
 
 window.TRACE_HANZI = window.TRACE_HANZI || (function () {
 
-  // 与 trace-numbers.js 复用 digits 模板（直接拷贝相同定义，确保独立模块也能工作）
-  const digits = {
-    "0": { strokes: ["M 312 532 C 312 742, 712 742, 712 492 C 712 242, 312 242, 312 492 Z"], medians: [[312, 492]] },
-    "1": { strokes: ["M 592 282 L 512 252 L 512 772"], medians: [[592, 742]] },
-    "2": { strokes: ["M 712 332 712 282 612 282 L 412 282 312 282 312 382 312 482 512 582 L 712 772 L 312 772"], medians: [[712, 692]] },
-    "3": { strokes: ["M 712 322 612 282 492 282 312 282 312 412 312 502 492 552 312 552 312 682 312 812 492 812 632 812 712 752"], medians: [[712, 702]] },
-    "4": { strokes: ["M 412 282 L 612 282 L 612 772", "M 412 282 L 412 772"], medians: [[412, 742], [412, 742]] },
-    "5": { strokes: ["M 312 772 L 612 772 L 612 482 512 482 412 502 312 522 312 642 312 772 492 772 692 772 712 712"], medians: [[312, 252]] },
-    "6": { strokes: ["M 412 322 712 322 712 532 712 772 512 772 312 772 312 632 312 502 412 502 612 502 612 632"], medians: [[412, 702]] },
-    "7": { strokes: ["M 712 282 L 312 282 L 612 772"], medians: [[712, 742]] },
-    "8": { strokes: ["M 412 432 412 282 512 282 612 282 612 432 612 532 512 532 412 532 412 432 Z", "M 312 712 312 532 412 532 512 532 612 532 712 532 712 712 712 812 512 812 312 812 312 712 Z"], medians: [[412, 592], [312, 312]] },
-    "10": {
-      strokes: [
-        "M 264 282 L 360 252 L 360 772",
-        "M 452 532 C 452 742, 692 742, 692 492 C 692 242, 452 242, 452 492 Z"
-      ],
-      medians: [[264, 282], [452, 532]]
-    },
-    "9": { strokes: ["M 412 762 312 762 312 632 312 432 412 332 512 232 612 332 712 432 712 632 712 762 612 762 512 762 512 632"], medians: [[412, 262]] }
-  };
+  // 100 字权威清单（按课本写字表单元顺序）
+  const WORDS_100 = "一二三上口耳目手日月田禾火山了子人大可东西天里四是女开我八月十包书本笔刀尺中升国旗红们在后好比谁长短把明力果杏个半巴文出生回时白皮又学只见几只妈吧边贝";
 
-  function getStrokeSpec(charKey) {
-    const tpl = digits[charKey];
-    if (!tpl) return null;
-    return {
-      strokes: tpl.strokes.slice(),
-      medians: tpl.medians.map(m => m.slice())
-    };
+  // 100 字去重保持顺序
+  const chars = [...new Set(WORDS_100)];
+  if (chars.length < 100) {
+    if (chars.length < 100) console.log("[trace-hanzi] 100 字清单去重后 unique =", chars.length, "（含跨单元重复字）");
   }
 
-  const items = [
-    { display: "0", pinyin: "líng", pool: "hanzi", charKey: "0" },
-    { display: "1", pinyin: "yī",   pool: "hanzi", charKey: "1" },
-    { display: "2", pinyin: "èr",   pool: "hanzi", charKey: "2" },
-    { display: "3", pinyin: "sān",  pool: "hanzi", charKey: "3" },
-    { display: "4", pinyin: "sì",   pool: "hanzi", charKey: "4" },
-    { display: "5", pinyin: "wǔ",   pool: "hanzi", charKey: "5" },
-    { display: "6", pinyin: "liù",  pool: "hanzi", charKey: "6" },
-    { display: "7", pinyin: "qī",   pool: "hanzi", charKey: "7" },
-    { display: "8", pinyin: "bā",   pool: "hanzi", charKey: "8" },
-    { display: "9", pinyin: "jiǔ",  pool: "hanzi", charKey: "9" }
-  ];
+  // 笔顺数据策略：
+  // - 不在本地硬编 SVG path（之前手写路径有错）
+  // - 走 Hanzi Writer CDN（hanzi-writer-data@2.0.1）+ 本地预下载回退包
+  // - CDN 数据是 Y-up 坐标系（数学约定），与 SVG Y-down 不同
+  // - 渲染层 renderTraceOrderSvg 用 spec.yAxis 区分 Y-up / Y-down
+  function getStrokeSpec(charKey) {
+    // 本地没有 SVG path，全部走 CDN（加载由 app.js loadCurrentTraceChar 处理）
+    return { strokes: [], medians: [], yAxis: "up", source: "cdn", charKey };
+  }
+
+  const items = chars.map((c, i) => ({
+    display: c,
+    pinyin: "",  // 拼音需要查表，先留空，后续补充
+    pool: "hanzi",
+    charKey: c,
+    order: i  // 按课本顺序
+  }));
 
   return {
     id: "hanzi",
     name: "汉字",
-    subtitle: "0-9 / 阿拉伯数字",
-    hint: "描一描阿拉伯数字 0-9",
+    subtitle: "100 字 / 人教版一上",
+    hint: "描一描人教版语文一年级上册会写字",
     items,
     getStrokeSpec
   };

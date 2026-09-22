@@ -3337,21 +3337,28 @@ const hwrCache = Object.create(null);
 
 async function fetchHanziWriterData(char) {
   if (char in hwrCache) return hwrCache[char];
-  const p = fetch(`${HWR_CDN}/${encodeURIComponent(char)}.json`)
-    .then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
-    })
-    .then(data => {
-      // 上游字段名是 medians，不是 mediars
-      const strokes = data.strokes || [];
-      const medians = data.medians || [];
-      return { strokes, medians };
-    })
-    .catch(err => {
-      hwrCache[char] = null;  // 失败标记为 null，下次不重试（避免无限重试）
-      throw err;
-    });
+  const p = (async () => {
+    // 优先走本地预下载回退包（assets/data/hanzi-cache/{char}.json）
+    // 本地无则降级到 CDN；CDN 失败则 throw
+    let data = null;
+    try {
+      const localUrl = `assets/data/hanzi-cache/${encodeURIComponent(char)}.json`;
+      const r = await fetch(localUrl);
+      if (r.ok) {
+        data = await r.json();
+        // console.debug(`[traceTian] ${char} 本地命中`);
+      }
+    } catch (_) { /* 本地查不到是常态，忽略 */ }
+    if (!data) {
+      const r = await fetch(`${HWR_CDN}/${encodeURIComponent(char)}.json`);
+      if (!r.ok) throw new Error(`HTTP ${r.status} (CDN)`);
+      data = await r.json();
+    }
+    const strokes = data.strokes || [];
+    const medians = data.medians || [];
+    return { strokes, medians, yAxis: "up" };
+  })();
+  p.catch(() => { hwrCache[char] = null; });  // 失败标记，下次不重试
   hwrCache[char] = p;
   return p;
 }
@@ -3476,10 +3483,16 @@ async function loadCurrentTraceChar(token) {
       state.traceStrokeSpec = window.TRACE_NUMBERS.getStrokeSpec(item.charKey);
     }
   } else if (pool === "hanzi") {
-    // "汉字"池实际是 0-9 阿拉伯数字（setup 文字覆写为"汉字"，内容是数字）
-    // 走本地模板，不再走 hanzi-writer-data CDN
-    if (window.TRACE_HANZI && typeof window.TRACE_HANZI.getStrokeSpec === "function") {
-      state.traceStrokeSpec = window.TRACE_HANZI.getStrokeSpec(item.charKey);
+    // 汉字池走 Hanzi Writer CDN（人教版一上 100 字）
+    // CDN 数据 Y-up，需要 spec.yAxis = "up" 标记；渲染层会包 .trace-flip <g>
+    // 100 字已预下载到 assets/data/hanzi-cache/ 做回退（见 fetchHanziWriterData）
+    try {
+      const spec = await fetchHanziWriterData(item.charKey);
+      state.traceStrokeSpec = { ...spec, yAxis: "up" };
+    } catch (err) {
+      console.warn("[traceTian] 笔顺数据加载失败", item.charKey, err);
+      state.traceStrokeSpec = { strokes: [], medians: [], yAxis: "up" };
+      setHint("笔顺数据暂不可用，可以直接描");
     }
   }
   if (token !== state.traceLoadToken) return;
@@ -3587,18 +3600,27 @@ function drawUserStrokes() {
 }
 
 // ====== Z3 笔顺 SVG 渲染（蓝色笔顺 + 起点圆点 + 序号）======
-// spec 格式：{ strokes: [{d, transform?}], medians: [{x, y, transform?}] }
-// transform 用 <g> 包裹避免直接修改 path d（防止 A 命令 flag 参数被误改）
-// 坐标系：hanzi-writer-data / 拼音笔画模板都用 Y-up（数学坐标），与 SVG 默认的 Y-down 相反。
-// 整个内容包一层 <g transform="scale(1,-1) translate(0,-1024)"> 翻 Y 轴，
-// 这样 stroke 起笔点和动画方向才是肉眼直觉的"从上到下、从左到右"。
+// spec 格式：{ strokes: [{d, transform?}], medians: [...], yAxis?: "up"|"down" }
+// 坐标系：
+//   - 本地模板（pinyin / numbers）: Y-down（SVG 默认）= 视觉上从顶到底
+//   - hanzi-writer-data CDN: Y-up（数学约定）= 需要 scale(1,-1) translate(0,-1024) 翻转
+// 渲染层根据 spec.yAxis 决定是否包 .trace-flip <g>
 function renderTraceOrderSvg() {
   if (!traceOrderSvg) return;
   traceOrderSvg.innerHTML = "";
   const spec = state.traceStrokeSpec;
   if (!spec || !spec.strokes || spec.strokes.length === 0) return;
   const NS = "http://www.w3.org/2000/svg";
-  // 2026-09-22: 所有池统一为 Y-down 坐标系（SVG 默认），去掉了之前的 trace-flip Y-flip wrapper
+  // Y-up 数据需要 .trace-flip <g> 翻转；Y-down 不需要
+  const yAxis = spec.yAxis || "down";
+  let root = traceOrderSvg;
+  if (yAxis === "up") {
+    const g = document.createElementNS(NS, "g");
+    g.setAttribute("transform", "scale(1, -1) translate(0, -1024)");
+    g.setAttribute("class", "trace-flip");
+    traceOrderSvg.appendChild(g);
+    root = g;
+  }
   spec.strokes.forEach((strokeObj, idx) => {
     // 兼容旧格式：string 直接当 d
     const d = typeof strokeObj === "string" ? strokeObj : strokeObj.d;
@@ -3608,12 +3630,12 @@ function renderTraceOrderSvg() {
     p.setAttribute("class", "trace-stroke-path");
     p.dataset.idx = String(idx);
     if (transform) {
-      const g = document.createElementNS(NS, "g");
-      g.setAttribute("transform", `translate(${transform.dx || 0}, ${transform.dy || 0})`);
-      g.appendChild(p);
-      traceOrderSvg.appendChild(g);
+      const g2 = document.createElementNS(NS, "g");
+      g2.setAttribute("transform", `translate(${transform.dx || 0}, ${transform.dy || 0})`);
+      g2.appendChild(p);
+      root.appendChild(g2);
     } else {
-      traceOrderSvg.appendChild(p);
+      root.appendChild(p);
     }
   });
   // 起点圆点 + 序号（默认全部隐藏；playStrokeGuide 逐笔揭示时显示）
@@ -3657,10 +3679,10 @@ function renderTraceOrderSvg() {
         g.setAttribute("transform", `translate(${transform.dx || 0}, ${transform.dy || 0})`);
         g.appendChild(dot);
         g.appendChild(txt);
-        traceOrderSvg.appendChild(g);
+        root.appendChild(g);
       } else {
-        traceOrderSvg.appendChild(dot);
-        traceOrderSvg.appendChild(txt);
+        root.appendChild(dot);
+        root.appendChild(txt);
       }
     });
   }
