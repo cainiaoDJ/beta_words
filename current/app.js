@@ -3586,12 +3586,20 @@ function drawUserStrokes() {
 // ====== Z3 笔顺 SVG 渲染（蓝色笔顺 + 起点圆点 + 序号）======
 // spec 格式：{ strokes: [{d, transform?}], medians: [{x, y, transform?}] }
 // transform 用 <g> 包裹避免直接修改 path d（防止 A 命令 flag 参数被误改）
+// 坐标系：hanzi-writer-data / 拼音笔画模板都用 Y-up（数学坐标），与 SVG 默认的 Y-down 相反。
+// 整个内容包一层 <g transform="scale(1,-1) translate(0,-1024)"> 翻 Y 轴，
+// 这样 stroke 起笔点和动画方向才是肉眼直觉的"从上到下、从左到右"。
 function renderTraceOrderSvg() {
   if (!traceOrderSvg) return;
   traceOrderSvg.innerHTML = "";
   const spec = state.traceStrokeSpec;
   if (!spec || !spec.strokes || spec.strokes.length === 0) return;
   const NS = "http://www.w3.org/2000/svg";
+  // Y-flip wrapper：所有 stroke / dot / text 都在它里面
+  const root = document.createElementNS(NS, "g");
+  root.setAttribute("transform", "scale(1, -1) translate(0, -1024)");
+  root.setAttribute("class", "trace-flip");
+  traceOrderSvg.appendChild(root);
   spec.strokes.forEach((strokeObj, idx) => {
     // 兼容旧格式：string 直接当 d
     const d = typeof strokeObj === "string" ? strokeObj : strokeObj.d;
@@ -3604,9 +3612,9 @@ function renderTraceOrderSvg() {
       const g = document.createElementNS(NS, "g");
       g.setAttribute("transform", `translate(${transform.dx || 0}, ${transform.dy || 0})`);
       g.appendChild(p);
-      traceOrderSvg.appendChild(g);
+      root.appendChild(g);
     } else {
-      traceOrderSvg.appendChild(p);
+      root.appendChild(p);
     }
   });
   // 起点圆点 + 序号（默认全部隐藏；playStrokeGuide 逐笔揭示时显示）
@@ -3650,10 +3658,10 @@ function renderTraceOrderSvg() {
         g.setAttribute("transform", `translate(${transform.dx || 0}, ${transform.dy || 0})`);
         g.appendChild(dot);
         g.appendChild(txt);
-        traceOrderSvg.appendChild(g);
+        root.appendChild(g);
       } else {
-        traceOrderSvg.appendChild(dot);
-        traceOrderSvg.appendChild(txt);
+        root.appendChild(dot);
+        root.appendChild(txt);
       }
     });
   }

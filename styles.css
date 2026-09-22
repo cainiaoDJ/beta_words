@@ -1,0 +1,3503 @@
+/* ============================================================================
+ * Game Stage Engine — design canvas 360×640，等比缩放到 viewport
+ * 锁比例、距离边框 20px、内部所有布局用 design px，由 transform: scale 缩放
+ * ============================================================================ */
+
+:root {
+  color-scheme: light;
+
+  --bg: #f5f7f3;
+  --stage-bg: #1d221d;          /* letterbox 色（保留黑色） */
+  --panel: #ffffff;
+  --ink: #222222;
+  --muted: #62695f;
+  --line: #d8ded3;
+  --accent: #2f8c73;
+  --accent-strong: #1f6f59;
+  --sun: #f7d75c;
+  --good: #dff3ea;
+  --tile: #fffef8;
+  --tile-selected: #fff0a6;
+  --tile-matched: #e8f2ec;
+  --shadow: 0 6px 14px rgba(31, 44, 36, 0.14);
+
+  /* ===== Zone Framework（2026-07-29 立，架构级改动 feat/unified-game-zones） =====
+   * Zone 定义：Z1 title / Z2 status-hud / Z3 primary（统一 300×300）/ Z4 secondary / Z5 toolbar
+   * 试点游戏：match。推广顺序：match → memory → pinyin-friend → listen-card → stroop-train
+   * 本次仅定义 token + .zone-* 共享类，不动任何具体业务。 */
+  --zone-gap: 8px;            /* zone 之间的间距（统一） */
+  --primary-size: 300px;      /* Z3 主元素最大尺寸（match/memory 棋盘、quiz 题目卡统一） */
+  --primary-font: 36px;       /* Z3 主元素字号 */
+  --secondary-w: 300px;       /* Z4 辅助区宽度（选项网格、待选区） */
+  --toolbar-w: 240px;         /* Z5 工具栏宽度（颜色条） */
+
+  /* ===== Design System v2（feat/design-system-v2 Phase A，2026-07-31） =====
+   * 跨游戏视觉/动效基础设施。不动具体业务页面（lobby / match / memory / pinyin / listen / stroop）。
+   * 设计目标：现代化 + 适合小朋友（参考多邻国交互语言，简化适配幼小衔接）。
+   * 试点从 Phase B 开始，本阶段新类/keyframes 不被任何现有 HTML 引用，纯基础设施。
+   * 详见 AGENTS.md《迭代开发方法论》feat/design-system-v2。 */
+
+  /* === 字体系统（4 级 + 数字专用）=== */
+  --font-display: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-heading: var(--font-display);
+  --font-body: var(--font-display);
+  --font-numeric: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* === 字号阶梯（design px，5 级）=== */
+  --fs-display: 32px;
+  --fs-h1: 26px;
+  --fs-h2: 18px;
+  --fs-h3: 16px;
+  --fs-body: 14px;
+  --fs-caption: 12px;
+  --fs-tiny: 11px;
+
+  /* === 字重（仅 700 / 900，简洁）=== */
+  --fw-bold: 700;
+  --fw-black: 900;
+
+  /* === 圆角 3 档（SOP 第 11 条 ≤8px；故意不引入 lg）=== */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+
+  /* === 阴影 3 层 === */
+  --shadow-subtle: 0 2px 4px rgba(31, 44, 36, 0.08);
+  --shadow-card: 0 6px 14px rgba(31, 44, 36, 0.14);  /* 等价旧 --shadow */
+  --shadow-overlay: 0 16px 32px rgba(31, 44, 36, 0.18);
+
+  /* === 动效 4 档时长 === */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-celebrate: 480ms;
+
+  /* === 缓动 4 档（Material 3 inspired）=== */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
+  --ease-decel: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accel: cubic-bezier(0.4, 0, 1, 1);
+
+  /* === 色彩 tonal palette（RGB 三元组，便于 hsl()/rgba() 拼接）=== */
+  --color-primary: 47 140 115;
+  --color-primary-strong: 31 111 89;
+  --color-primary-soft: 223 243 234;
+  --color-primary-hover: 38 158 130;
+  --color-primary-active: 25 90 73;
+
+  --color-warning: 247 215 92;
+  --color-warning-strong: 214 174 29;
+  --color-warning-soft: 255 248 214;
+
+  --color-danger: 216 109 76;
+  --color-danger-strong: 179 74 42;
+  --color-danger-soft: 255 231 221;
+
+  /* === 间距 5 档 === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  /* ===== Per-game 主题色 token（Phase 1A 基础设施，2026-08-01 立）=====
+   * 5 游戏 + lobby 各自一套主题色。业务代码使用中间变量 --theme-bg /
+   * --theme-accent 等（见下方 [data-game] 块），不直接引用本组具体游戏变量。
+   * 详见 docs/phase-plans/phase-1-theme-tokens.md */
+  --theme-match-bg: rgba(240, 140, 58, 0.06);
+  --theme-match-accent: #f08c3a;
+  --theme-match-accent-soft: rgba(240, 140, 58, 0.15);
+  --theme-match-ink: #b3591f;
+  --theme-match-glow: rgba(240, 140, 58, 0.4);
+
+  --theme-memory-bg: rgba(138, 79, 214, 0.06);
+  --theme-memory-accent: #8a4fd6;
+  --theme-memory-accent-soft: rgba(138, 79, 214, 0.15);
+  --theme-memory-ink: #5d2fa0;
+  --theme-memory-glow: rgba(138, 79, 214, 0.4);
+
+  --theme-pinyinFriend-bg: rgba(47, 128, 233, 0.06);
+  --theme-pinyinFriend-accent: #2f80e9;
+  --theme-pinyinFriend-accent-soft: rgba(47, 128, 233, 0.15);
+  --theme-pinyinFriend-ink: #1a5fb4;
+  --theme-pinyinFriend-glow: rgba(47, 128, 233, 0.4);
+
+  --theme-listenCard-bg: rgba(47, 168, 79, 0.06);
+  --theme-listenCard-accent: #2fa84f;
+  --theme-listenCard-accent-soft: rgba(47, 168, 79, 0.15);
+  --theme-listenCard-ink: #1a7035;
+  --theme-listenCard-glow: rgba(47, 168, 79, 0.4);
+
+  --theme-stroopTrain-bg: rgba(233, 79, 79, 0.06);
+  --theme-stroopTrain-accent: #e94f4f;
+  --theme-stroopTrain-accent-soft: rgba(233, 79, 79, 0.15);
+  --theme-stroopTrain-ink: #b32f2f;
+  --theme-stroopTrain-glow: rgba(233, 79, 79, 0.4);
+  --theme-compare-bg: rgba(240, 140, 58, 0.06);
+  --theme-compare-accent: #f08c3a;
+  --theme-compare-accent-soft: rgba(240, 140, 58, 0.15);
+  --theme-compare-ink: #b36420;
+  --theme-compare-glow: rgba(240, 140, 58, 0.4);
+
+  /* Phase 8A — idiomFill 青绿主题色（主人 2026-08-09 反馈：紫色撞 memory，改青绿 #14b8a6）*/
+  --theme-idiomFill-bg: rgba(20, 184, 166, 0.06);
+  --theme-idiomFill-accent: #14b8a6;
+  --theme-idiomFill-accent-soft: rgba(20, 184, 166, 0.15);
+  --theme-idiomFill-ink: #0d9488;
+  --theme-idiomFill-glow: rgba(20, 184, 166, 0.4);
+
+  --theme-lobby-bg: rgba(247, 215, 92, 0.04);
+  --theme-lobby-accent: #f5cd2f;
+  --theme-lobby-accent-soft: rgba(247, 215, 92, 0.12);
+  --theme-lobby-ink: #b5941f;
+  --theme-lobby-glow: rgba(247, 215, 92, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--stage-bg);
+  color: var(--ink);
+  font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button {
+  font: inherit;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ===== [data-game] 主题色中间变量 hook（Phase 1A，2026-08-01 立）=====
+ * body[data-game="match"] 时，--theme-accent 等中间变量映射到 match 主题；
+ * 默认 lobby。业务代码只用中间变量，不用具体游戏变量。 */
+[data-game="match"] {
+  --theme-bg: var(--theme-match-bg);
+  --theme-accent: var(--theme-match-accent);
+  --theme-accent-soft: var(--theme-match-accent-soft);
+  --theme-ink: var(--theme-match-ink);
+  --theme-glow: var(--theme-match-glow);
+}
+
+[data-game="memory"] {
+  --theme-bg: var(--theme-memory-bg);
+  --theme-accent: var(--theme-memory-accent);
+  --theme-accent-soft: var(--theme-memory-accent-soft);
+  --theme-ink: var(--theme-memory-ink);
+  --theme-glow: var(--theme-memory-glow);
+}
+
+[data-game="pinyinFriend"] {
+  --theme-bg: var(--theme-pinyinFriend-bg);
+  --theme-accent: var(--theme-pinyinFriend-accent);
+  --theme-accent-soft: var(--theme-pinyinFriend-accent-soft);
+  --theme-ink: var(--theme-pinyinFriend-ink);
+  --theme-glow: var(--theme-pinyinFriend-glow);
+}
+
+[data-game="listenCard"] {
+  --theme-bg: var(--theme-listenCard-bg);
+  --theme-accent: var(--theme-listenCard-accent);
+  --theme-accent-soft: var(--theme-listenCard-accent-soft);
+  --theme-ink: var(--theme-listenCard-ink);
+  --theme-glow: var(--theme-listenCard-glow);
+}
+
+[data-game="stroopTrain"] {
+  --theme-bg: var(--theme-stroopTrain-bg);
+  --theme-accent: var(--theme-stroopTrain-accent);
+  --theme-accent-soft: var(--theme-stroopTrain-accent-soft);
+  --theme-ink: var(--theme-stroopTrain-ink);
+  --theme-glow: var(--theme-stroopTrain-glow);
+}
+[data-game="compare"] {
+  --theme-bg: var(--theme-compare-bg);
+  --theme-accent: var(--theme-compare-accent);
+  --theme-accent-soft: var(--theme-compare-accent-soft);
+  --theme-ink: var(--theme-compare-ink);
+  --theme-glow: var(--theme-compare-glow);
+}
+
+/* Phase 8A — idiomFill 青绿主题映射 */
+[data-game="idiomFill"] {
+  --theme-bg: var(--theme-idiomFill-bg);
+  --theme-accent: var(--theme-idiomFill-accent);
+  --theme-accent-soft: var(--theme-idiomFill-accent-soft);
+  --theme-ink: var(--theme-idiomFill-ink);
+  --theme-glow: var(--theme-idiomFill-glow);
+}
+
+[data-game="lobby"] {
+  --theme-bg: var(--theme-lobby-bg);
+  --theme-accent: var(--theme-lobby-accent);
+  --theme-accent-soft: var(--theme-lobby-accent-soft);
+  --theme-ink: var(--theme-lobby-ink);
+  --theme-glow: var(--theme-lobby-glow);
+}
+
+/* 默认（lobby）— 第一个出现时 --theme-* 还没设上，body 未设 data-game 时 fallback */
+body:not([data-game]) {
+  --theme-bg: var(--theme-lobby-bg);
+  --theme-accent: var(--theme-lobby-accent);
+  --theme-accent-soft: var(--theme-lobby-accent-soft);
+  --theme-ink: var(--theme-lobby-ink);
+  --theme-glow: var(--theme-lobby-glow);
+}
+
+/* ============================================================================
+ * Stage wrapper (由 scripts/stage.js 控制缩放)
+ * ============================================================================ */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--stage-bg);
+}
+
+.stage-canvas {
+  /* 设计画布：草稿纸/书本的米黄色 var(--bg)。宽度撑满屏幕时圆角/阴影会露出黑角，去掉 */
+  background: var(--bg);
+  box-shadow: none;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+/* ============================================================================
+ * App（design canvas 内部布局，360×640，所有 px 都是设计坐标）
+ * ============================================================================ */
+
+.app {
+  width: 100%;
+  height: 100%;
+  padding: 14px;
+  padding-left: calc(14px + env(safe-area-inset-left));
+  padding-right: calc(14px + env(safe-area-inset-right));
+  display: flex;
+  flex-direction: column;
+}
+
+.screen {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  position: relative; /* Phase 2A：让 .mascot-companion 这种 absolute 子元素定位到 screen 内 */
+}
+
+.screen.active {
+  display: flex;
+  animation: screen-in 180ms ease-out;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+ * Topbar（design y=14, h=44）
+ * ============================================================================ */
+
+.topbar,
+.game-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.topbar-right,
+.game-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+/* Game 区 mascot：48px 比大厅 64px 小一档，避免挤掉"听"按钮 */
+.mascot-host.game-mascot {
+  width: 48px;
+  height: 48px;
+}
+
+/* === 圆形图标按钮（齿轮 / 关闭 / 听音等）=== */
+.icon-button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: rgb(var(--color-primary-soft));
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: rgb(var(--color-primary-strong));
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.icon-button:hover {
+  background: rgb(var(--color-primary-hover));
+  border-color: var(--accent);
+  color: var(--panel);
+}
+
+.icon-button:active {
+  transform: scale(0.94);
+}
+
+.icon-button-sm {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.icon-button-sm:hover {
+  background: var(--bg);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.topbar.compact {
+  justify-content: flex-start;
+}
+
+.eyebrow {
+  margin: 0 0 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+h1,
+h2 {
+  margin: 0;
+  line-height: 1.1;
+}
+
+h1 {
+  font-size: 26px;
+}
+
+h2 {
+  font-size: 18px;
+}
+
+.mascot {
+  width: 44px;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+}
+
+/* ============================================================================
+ * 通用按钮样式
+ * ============================================================================ */
+
+.game-entry,
+.difficulty,
+.primary-button,
+.secondary-button,
+.text-button,
+.round-button {
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, opacity 140ms ease;
+}
+
+.game-entry:hover,
+.difficulty:hover,
+.primary-button:hover,
+.secondary-button:hover,
+.text-button:hover,
+.round-button:hover {
+  transform: translateY(-1px);
+}
+
+/* ============================================================================
+ * Lobby（5 张游戏卡 2 列，design y=86, 3 行）
+ * Phase B：game-entry 重设计 + icon 容器 + hover 微浮起 + mascot wave
+ * 详见 AGENTS.md《迭代开发方法论》feat/design-system-v2。
+ * ============================================================================ */
+
+.game-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+  align-content: start;
+}
+
+/* 纵向布局：图标在上、标题在中、副标题在下 */
+.game-entry {
+  min-height: 104px;
+  padding: 10px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--panel);
+  /* 主人 08-14 11:56: 给所有 game-entry 加主题色外边框 (compare 之前没边框) */
+  border: 2px solid var(--theme-accent, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-md); /* 8px, SOP ≤8px */
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-entry .entry-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: rgb(var(--color-primary-soft));  /* 浅绿背景 */
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+.game-entry .entry-icon img {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+
+.game-entry .entry-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.game-entry .entry-title {
+  font-size: 16px;                 /* 恢复原始字号，对比度强 */
+  font-weight: var(--fw-black);    /* 900 黑体：粗、强、清晰 */
+  color: var(--ink);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-entry .entry-copy {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-overlay);
+  border-color: var(--accent);
+}
+
+.game-entry:active {
+  transform: scale(0.96);
+}
+
+/* Lobby Mascot 接入（扩展 Phase A .mascot-host）：welcome bounce + hover bounce
+ * SVG 用 viewBox="0 0 64 64" + 移除内部 width/height，让 CSS 控制 size 自动 scale */
+.mascot-host {
+  width: 64px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;        /* 画布自适应：保持正方形，SVG 内部按 viewBox 自动 scale */
+  flex: 0 0 auto;
+  animation: mascot-welcome var(--motion-celebrate) var(--ease-emphasized) 0.5s 1;
+}
+
+.mascot-host:hover {
+  animation: mascot-bounce var(--motion-celebrate) var(--ease-emphasized) 1;
+}
+
+@keyframes mascot-welcome {
+  0%   { transform: translateY(20px) scale(0.8); opacity: 0; }
+  60%  { transform: translateY(-6px) scale(1.08); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ============================================================================
+ * Setup（难度选择 2 列紧凑）
+ * ============================================================================ */
+
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+  align-content: start;
+}
+
+.difficulty {
+  min-height: 86px;
+  padding: 12px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.difficulty strong,
+.difficulty span {
+  display: block;
+}
+
+.difficulty strong {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.difficulty span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* ============================================================================
+ * 按钮
+ * ============================================================================ */
+
+.text-button {
+  min-width: 56px;
+  min-height: 36px;
+  padding: 6px 10px;
+  background: #e8ede3;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.round-button {
+  width: 40px;
+  height: 40px;
+  background: var(--sun);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 14px;
+}
+
+/* ============================================================================
+ * HUD（design y=66, h=36）
+ * ============================================================================ */
+
+.game-hud {
+  display: grid;
+  grid-template-columns: minmax(70px, 1fr) auto minmax(70px, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.hud-progress,
+.hud-hint {
+  min-width: 0;
+  line-height: 1.2;
+  font-size: 12px;
+}
+
+.hud-progress {
+  justify-self: start;
+}
+
+.hud-hint {
+  justify-self: end;
+  max-width: 100%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.hud-timer {
+  justify-self: center;
+  min-width: 90px;
+  min-height: 36px;
+  padding: 4px 12px;
+  display: grid;
+  place-items: center;
+  background: var(--sun);
+  color: #222222;
+  border: 2px solid #d6ae1d;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(46, 58, 49, 0.12);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+ * 棋盘（match / memory 共享 #board）
+ * 尺寸/对齐由 .zone-primary 接管（统一 300×300 居中），本类只保留棋盘内部 grid 逻辑。
+ * 详见 AGENTS.md《迭代开发方法论》feat/unified-game-zones。
+ * ============================================================================ */
+
+.board {
+  --size: 3;
+  --board-gap: 6px;
+  grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+  gap: var(--board-gap);
+}
+
+.tile {
+  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  line-height: 1;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--tile);
+  color: var(--ink);
+  box-shadow: 0 6px 14px rgba(46, 58, 49, 0.1);
+  font-size: var(--tile-font, 36px);
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  transform-origin: center;
+  user-select: none;
+  transition: transform 160ms ease, opacity 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.tile.selected {
+  background: var(--tile-selected);
+  border-color: #d6ae1d;
+  transform: scale(0.96);
+}
+
+.tile.matched {
+  pointer-events: none;
+  animation: tile-fade-out 280ms ease-out forwards;
+}
+
+@keyframes tile-fade-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.74); }
+}
+
+.board.memory .tile.matched,
+.board.memory .tile.memory-matched {
+  pointer-events: none;
+  opacity: 1;
+  transform: scale(1);
+  background: var(--tile-matched);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.board.memory .tile.hidden-face {
+  background: #e8ede3;
+  color: var(--muted);
+  border-color: var(--line);
+  box-shadow: inset 0 0 0 2px rgba(47, 140, 115, 0.08), 0 6px 14px rgba(46, 58, 49, 0.1);
+}
+
+.board.memory .tile.hidden-face:hover {
+  background: #dfe8da;
+}
+
+.tile.bonus {
+  background: var(--good);
+  color: var(--accent-strong);
+  font-size: var(--tile-font, 36px);
+}
+
+/* ============================================================================
+ * Quiz（pinyin-friend / listen-card）
+ * 布局由 .zone-stack（容器）+ .zone-primary（题目卡）+ .zone-secondary（选项网格）接管。
+ * 本节只保留题目卡/选项按钮的具体样式。
+ * 详见 AGENTS.md《迭代开发方法论》feat/unified-game-zones。
+ * ============================================================================ */
+
+/* 题目卡 280×280 正方形（在 300×300 zone-primary 内居中）*/
+.quiz-word {
+  width: min(100%, 280px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: var(--tile);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-size: 96px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.listen-prompt {
+  width: min(100%, 280px);
+  aspect-ratio: 1;
+  padding: 14px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  background: var(--tile);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+
+.listen-mark {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  background: var(--sun);
+  border: 2px solid #d6ae1d;
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.listen-copy {
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.option-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--zone-gap);
+  /* flex:1 / min-height:0 / display:grid 由 .zone-secondary 接管 */
+}
+
+.option-button {
+  min-height: 50px;
+  padding: 8px 12px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 6px 14px rgba(46, 58, 49, 0.1);
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.option-button:hover {
+  transform: translateY(-1px);
+}
+
+.option-button.correct {
+  background: var(--good);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.option-button.wrong {
+  background: #ffe7dd;
+  border-color: #d86d4c;
+}
+
+/* ============================================================================
+ * Complete Panel D11 多邻国化（feat/design-system-v2 Phase C，2026-07-31）
+ * 大字标题 + tabular 数字 + 主按钮巨型 + scale-in 动画
+ * 注: 旧 .complete-panel 样式被本节替换（升级为多邻国风）
+ * ============================================================================ */
+
+.complete-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92%, 320px);
+  margin: 0;
+  padding: 22px 18px 18px;
+  text-align: center;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 0 0 9999px rgba(31, 44, 36, 0.32),
+    var(--shadow-overlay);
+  z-index: 100;
+  animation: complete-panel-in 320ms var(--ease-decel);
+}
+
+@keyframes complete-panel-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.complete-panel .complete-title {
+  margin: 0 0 8px;
+  font-size: var(--fs-h1);  /* 26px */
+  font-weight: var(--fw-black);
+  line-height: 1.15;
+}
+
+/* Phase victory-popup-v2: tier-based title color (per game + score) */
+.complete-panel .complete-title[data-tier="perfect"] { color: #d4a72c; }
+.complete-panel .complete-title[data-tier="good"] { color: rgb(var(--color-primary-strong)); }
+.complete-panel .complete-title[data-tier="tryAgain"] { color: #6b7280; }
+
+.complete-panel .complete-time {
+  margin: 0 0 6px;
+  font-size: var(--fs-display);  /* 32px */
+  font-weight: var(--fw-black);
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--color-primary-strong));
+  line-height: 1.1;
+}
+
+.complete-panel .complete-record {
+  margin: 0 0 14px;
+  font-size: var(--fs-h3);  /* 16px */
+  font-weight: var(--fw-black);
+  color: rgb(var(--color-warning-strong));
+}
+
+.complete-panel .actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.complete-panel .primary-button {
+  min-height: 56px;  /* 主按钮巨型 */
+  padding: 10px 16px;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-black);
+  background: var(--accent);
+  color: var(--panel);
+}
+
+.complete-panel .primary-button:hover {
+  background: rgb(var(--color-primary-hover));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-overlay);
+}
+
+.complete-panel .secondary-button {
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  background: var(--panel);
+  border: 2px solid var(--line);
+  color: var(--ink);
+}
+
+.complete-panel .secondary-button:hover {
+  border-color: var(--accent);
+  color: rgb(var(--color-primary-strong));
+}
+
+/* ============================================================================
+ * Stroop Train（看字识颜色，3 块：board + select + palette，design 200+200+80）
+ * ============================================================================ */
+
+.stroop-host {
+  /* 布局由 .zone-stack 接管（flex column + gap + align center + flex:1） */
+}
+
+/* Phase stroop-sliding Plan C: 竖向 DDR 队列 (FIFO, 主人 2026-08-12 23:25 拍板)
+   5 个 note 上下排开, 新生顶部进入, 老的在底部接近 hit zone, 最先 hit */
+.stroop-track {
+  position: relative;
+  width: 100%;
+  height: 400px;              /* 竖向更高, 容纳 5 note 队列 */
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  margin: 0 0 12px;
+  border: 1px solid var(--line);
+}
+
+.stroop-track::before {
+  /* Hit zone 视觉指示: 底部 20% (70%-90%) */
+  content: '';
+  position: absolute;
+  top: 70%;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-top: 2px dashed rgba(255, 215, 0, 0.6);
+  border-bottom: 2px dashed rgba(255, 215, 0, 0.6);
+  background: rgba(255, 215, 0, 0.08);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sliding-note {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);   /* Y 中心对齐, 上半部分超出 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 110px;            /* 加大最小宽度, 7×7 也够清晰 */
+  padding: 12px 20px;          /* padding 加大, 视觉更醒目 */
+  font-size: 16px;
+  font-weight: bold;
+  opacity: 0;                  /* delay 期间隐藏, 避免 z-axis 堆叠 */
+  z-index: 2;
+}
+
+.sliding-note.sliding {
+  animation: slide-down linear forwards;
+  /* opacity 由 keyframe 控制, 不要在 .sliding 直接设 1 */
+}
+
+@keyframes slide-down {
+  0%   { top: -60px;   opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 420px;  opacity: 0; }
+}
+
+.sliding-note-char {
+  font-size: 42px;            /* 28→42, 7×7 也清晰 */
+  font-weight: 900;
+  line-height: 1;
+  transition: text-shadow 0.2s ease;
+}
+
+.sliding-note-color {
+  font-size: 18px;            /* 14→18 */
+  opacity: 0;            /* 初始隐藏 — 不能让玩家读出色名 */
+  margin-top: 4px;
+  transition: opacity 0.15s ease;
+}
+
+.sliding-note-color.revealed {
+  opacity: 1;            /* 玩家点击后显示选了什么色 */
+}
+
+.sliding-note.in-hit-zone {
+  /* 不用 scale (跳变元凶 — 进入 hit zone 时突然闪现) */
+  border-radius: 6px;
+  background: rgba(255, 215, 0, 0.15);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+  z-index: 3;
+}
+
+.sliding-note.in-hit-zone .sliding-note-char {
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+}
+
+.sliding-note.hit {
+  animation-play-state: paused !important;
+  z-index: 3;
+}
+
+.sliding-note.hit .sliding-note-char {
+  color: inherit;
+  text-shadow: 0 0 12px rgba(80, 200, 120, 0.8);
+}
+
+.sliding-note.miss {
+  animation-play-state: paused !important;
+  opacity: 0.6;
+}
+
+/* Plan C: hit/miss 后 400ms 淡出 (避免 hit zone 堆叠) */
+.sliding-note.fading-out {
+  animation: fade-out 400ms ease-out forwards !important;
+}
+
+@keyframes fade-out {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+}
+
+.sliding-note.missed {
+  opacity: 0.3;
+  filter: grayscale(80%);
+}
+
+.stroop-board {
+  --size: 3;
+  --board-gap: var(--zone-gap);
+  --stroop-cell-font: 22px;   /* 默认 fallback，calcStroopFont() 会重算 */
+  grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--size), minmax(0, 1fr));   /* 锁等高：内容不能撑开 row */
+  gap: var(--board-gap);
+  /* 局部 override：stroop 有 3 个 n×n 元素挤 640 设计画布，board 不能 300×300
+   * 详 AGENTS.md《迭代开发方法论》 stroop 已知设计冲突记录 */
+  width: min(100%, 200px);
+  aspect-ratio: 1;
+}
+
+.stroop-cell {
+  font-size: var(--stroop-cell-font, 28px);
+  color: var(--cell-color, var(--ink));
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.18);
+  paint-order: stroke fill;
+  cursor: pointer;
+  position: relative;
+  background: var(--tile);
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  min-height: 0;          /* 防止内容撑高 cell */
+  min-width: 0;
+  overflow: hidden;        /* 内容过大裁切不撑开 cell */
+  aspect-ratio: 1;        /* 单独锁定正方形，双保险 */
+  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+}
+
+.stroop-cell.active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgba(47, 140, 115, 0.22);
+  transform: scale(1.04);
+  animation: stroop-pulse 1.1s ease-in-out infinite;
+}
+
+.stroop-cell.disabled {
+  pointer-events: none;
+  filter: grayscale(0.55);
+  opacity: 0.55;
+}
+
+@keyframes stroop-pulse {
+  0%, 100% { transform: scale(1.04); outline-color: var(--accent); }
+  50%      { transform: scale(1.0);  outline-color: var(--sun); }
+}
+
+/* 待选 n×n：Phase stroop-sliding Plan C 后不再使用 (滑动模式不需要草稿纸), 隐藏 */
+.stroop-select {
+  display: none !important;
+}
+
+/* 旧 .stroop-select 定义保留 (向后兼容, 实际不可见)
+.stroop-select {
+  --size: 3;
+  --board-gap: var(--zone-gap);
+  grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--size), minmax(0, 1fr));   /* 锁等高 */
+  gap: var(--board-gap);
+  margin: 0;
+  padding: 6px;
+  background: #f8f7ea;
+  border: 2px dashed #c8caa0;
+  border-radius: 8px;
+  flex: 0 0 auto;
+}
+*/
+
+.stroop-select-cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: var(--stroop-cell-font, 28px);
+  font-weight: 900;
+  color: var(--cell-color, #c8caa0);
+  background-color: #fafaf2;
+  min-height: 0;          /* 防 grid row 被内容撑高 */
+  min-width: 0;
+  overflow: hidden;        /* 防字撑开 cell */
+  background-image:
+    linear-gradient(to right, transparent calc(50% - 1px), rgba(120, 110, 70, 0.32) 50%, transparent calc(50% + 1px)),
+    linear-gradient(to bottom, transparent calc(50% - 1px), rgba(120, 110, 70, 0.32) 50%, transparent calc(50% + 1px)),
+    linear-gradient(45deg, transparent calc(50% - 1px), rgba(120, 110, 70, 0.18) 50%, transparent calc(50% + 1px)),
+    linear-gradient(-45deg, transparent calc(50% - 1px), rgba(120, 110, 70, 0.18) 50%, transparent calc(50% + 1px));
+  border: 1px solid rgba(120, 110, 70, 0.18);
+  border-radius: 4px;
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.14);
+  paint-order: stroke fill;
+  transition: background-color 200ms ease, color 200ms ease, transform 220ms ease;
+}
+
+.stroop-select-cell.active {
+  background-color: #fff8d6;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 140, 115, 0.22);
+}
+
+.stroop-select-cell.disabled {
+  pointer-events: none;
+  filter: grayscale(0.4);
+  opacity: 0.7;
+}
+
+.stroop-select-cell.correct {
+  background-color: var(--good);
+  color: var(--accent-strong);
+  border-color: var(--accent);
+  transform: scale(1.04);
+}
+
+.stroop-select-cell.wrong {
+  background-color: #ffe7dd;
+  color: #b34a2a;
+  border-color: #d86d4c;
+  transform: scale(0.96);
+}
+
+/* 颜色条 */
+.stroop-palette {
+  /* 强制单行 + 等分：保证 n=7 时 palette 不会折 2 行导致高度 158px 溢出 */
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  /* width / flex-shrink 由 .zone-toolbar 接管（240 宽） */
+}
+
+.stroop-color-btn {
+  aspect-ratio: 1;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-radius: 6px;
+  background: var(--btn-color, #888);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.32);
+  paint-order: stroke fill;
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.stroop-color-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+.stroop-color-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+/* ============================================================================
+ * Zone Framework — 共享类（Phase A，2026-07-29）
+ * 仅定义 token + .zone-* 共享类，不动任何具体业务。试点 match 见下个 commit。
+ * ============================================================================ */
+
+/* Zone stack：垂直堆放多个 zone，gap 统一 */
+.zone-stack {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--zone-gap);
+}
+
+/* Primary zone（Z3）：主交互区，统一 300×300 居中 */
+.zone-primary {
+  flex-shrink: 0;
+  width: min(100%, var(--primary-size));
+  aspect-ratio: 1;
+  display: grid;
+  align-self: center;  /* 在父 column flex 里垂直+水平居中 */
+  margin: 0 auto;      /* fallback 水平居中 */
+  /* 内部 grid 由具体游戏决定（棋盘 grid-template-columns） */
+}
+
+/* Secondary zone（Z4）：辅助交互区，宽度统一 300，占父 stack 剩余高度 */
+.zone-secondary {
+  flex: 1;
+  min-height: 0;
+  width: min(100%, var(--secondary-w));
+  display: grid;
+  /* 子属性（grid-template-columns、gap）由具体游戏决定 */
+}
+
+/* Toolbar zone（Z5）：工具栏（一行），宽度 240，默认 grid（grid-template-columns 由调用方决定）*/
+.zone-toolbar {
+  flex-shrink: 0;
+  width: min(100%, var(--toolbar-w));
+  display: grid;
+}
+
+/* ============================================================================
+ * Unified State Classes — Design System v2 Phase C（feat/design-system-v2，2026-07-31）
+ * .is-* 语义状态类，跨游戏统一命名（替换散乱的 .tile.selected / .option-button.correct 等）。
+ * 旧 class 保留作为 alias，Phase C5 后清理。
+ * ============================================================================ */
+
+/* === 通用交互态 === */
+.tile.is-selected,
+.option-button.is-selected {
+  background: var(--tile-selected);
+  border-color: rgb(var(--color-warning-strong));
+  transform: scale(0.96);
+}
+
+.tile.is-correct,
+.option-button.is-correct,
+.stroop-select-cell.is-correct {
+  background: rgb(var(--color-primary-soft));
+  border-color: var(--accent);
+  color: rgb(var(--color-primary-strong));
+  animation: tile-correct-spring var(--motion-celebrate) var(--ease-emphasized);
+  will-change: transform;
+}
+
+.tile.is-wrong,
+.option-button.is-wrong,
+.stroop-select-cell.is-wrong {
+  background: rgb(var(--color-danger-soft));
+  border-color: rgb(var(--color-danger));
+  color: rgb(var(--color-danger-strong));
+  animation: tile-wrong-shake 320ms var(--ease-standard);
+}
+
+.tile.is-bonus {
+  background: rgb(var(--color-primary-soft));
+  color: rgb(var(--color-primary-strong));
+}
+
+.tile.is-hidden {
+  background: #e8ede3;
+  color: var(--muted);
+  border-color: var(--line);
+  box-shadow: inset 0 0 0 2px rgba(47, 140, 115, 0.08), 0 6px 14px rgba(46, 58, 49, 0.1);
+}
+
+.stroop-cell.is-active,
+.stroop-select-cell.is-active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgba(47, 140, 115, 0.22);
+  transform: scale(1.04);
+  animation: stroop-pulse 1.1s ease-in-out infinite;
+}
+
+.stroop-cell.is-disabled,
+.stroop-select-cell.is-disabled {
+  pointer-events: none;
+  filter: grayscale(0.55);
+  opacity: 0.55;
+}
+
+/* ============================================================================
+ * Stroop-train 局部 override（2026-07-29）
+ * 详见 AGENTS.md《迭代开发方法论》stroop 已知设计冲突记录：
+ *   stroop 有 3 个 n×n zone（board + select + palette），3 个 300×300 在 640 设计画布里不可能 fit。
+ *   本节用 token 级联 + specificity boost 局部压缩到 200×200 + 紧凑 select/palette，
+ *   不破坏其他游戏的 zone framework 约束。
+ * ============================================================================ */
+
+.stroop-host {
+  /* token 级联覆盖：stroop 紧凑布局 */
+  --primary-size: 200px;
+  --secondary-w: 200px;
+  --toolbar-w: 220px;
+}
+
+.stroop-host .stroop-select {
+  /* specificity boost：stroop select 不要 flex:1，由内容决定高度 */
+  flex: 0 0 auto;
+}
+
+/* ============================================================================
+ * Design System v2 — 共享类（feat/design-system-v2 Phase A，2026-07-31）
+ * 不依赖任何具体业务游戏，可被 lobby / match / memory / pinyin / listen / stroop 复用。
+ * 试点从 Phase B 开始。本阶段 HTML 未引用，渲染 0 影响（252/252 必过）。
+ * 详见 AGENTS.md《迭代开发方法论》feat/design-system-v2。
+ * ============================================================================ */
+
+/* === 通用触控反馈（所有可点击元素统一加 .clickable 即可）=== */
+.clickable {
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.clickable:active {
+  transform: scale(0.96);
+}
+
+/* === 焦点环（键盘 / 老人 / 残障 / Switch 玩家）=== */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(47, 140, 115, 0.22);
+}
+
+/* === 答对弹簧放大（Phase B/C 用于字牌/选项加 .tile-correct）=== */
+.tile-correct {
+  animation: tile-correct-spring var(--motion-celebrate) var(--ease-emphasized);
+}
+
+@keyframes tile-correct-spring {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.2); }
+  70%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+/* === 答错 shake（小朋友不害怕，3-4px 限制）=== */
+.tile-wrong {
+  animation: tile-wrong-shake 320ms var(--ease-standard);
+}
+
+@keyframes tile-wrong-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(2px); }
+}
+
+/* === 水波纹（从触点扩散，Phase B 用于大厅/按钮）=== */
+.ripple-host {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  animation: ripple-expand 480ms var(--ease-standard);
+  pointer-events: none;
+}
+
+@keyframes ripple-expand {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* === Confetti 粒子（完成时使用，Phase B/C 接入）=== */
+.confetti-host {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  border-radius: var(--radius-xs);
+  opacity: 0.92;
+  animation: confetti-fall 1200ms var(--ease-accel) forwards;
+}
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(-20px) rotate(0); opacity: 0.92; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* === Mascot 4 状态装饰（Phase B/C 通过 src 切换 SVG）=== */
+.mascot-host {
+  display: inline-block;
+  transition: transform var(--motion-base) var(--ease-emphasized);
+}
+
+.mascot-host.bounce {
+  animation: mascot-bounce var(--motion-celebrate) var(--ease-emphasized);
+}
+
+@keyframes mascot-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35%      { transform: translateY(-12px) scale(1.08); }
+  60%      { transform: translateY(0) scale(0.96); }
+  80%      { transform: translateY(-4px) scale(1.02); }
+}
+
+/* ============================================================================
+ * Voice picker modal（body-level, position: fixed，不被 .stage-canvas transform: scale 影响）
+ * ============================================================================ */
+
+.voice-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  animation: voice-modal-in 200ms var(--ease-emphasized);
+}
+
+@keyframes voice-modal-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.voice-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(46, 58, 49, 0.55);
+}
+
+.voice-modal-panel {
+  position: relative;
+  background: var(--panel);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+  width: min(320px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.voice-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--line);
+  gap: 8px;
+}
+
+.voice-modal-head h2 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.voice-modal-hint {
+  margin: 0;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.voice-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.voice-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.voice-section:first-child {
+  padding-top: 2px;
+}
+
+.voice-section + .voice-section {
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+}
+
+.voice-section-title {
+  margin: 0;
+  padding: 6px 4px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.voice-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 8px 36px 8px 12px;
+  background: var(--bg);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.voice-option:hover {
+  background: rgb(var(--color-primary-soft));
+  border-color: var(--accent);
+}
+
+.voice-option:active {
+  transform: scale(0.98);
+}
+
+.voice-option.is-selected {
+  border-color: var(--accent);
+  background: rgb(var(--color-primary-soft));
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.voice-option.is-selected::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  color: rgb(var(--color-primary-strong));
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.voice-name {
+  font-weight: 800;            /* 强调：标题加粗 800 */
+  font-size: 15px;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.voice-sub {
+  font-weight: 400;            /* 非强调：副标题正常字重 */
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1B match 试点，2026-08-01 立)
+ * 业务代码用 [data-game="..."] 选择器应用主题色，不动现有 .tile / .hud-timer
+ * 等基础规则。本节只覆盖需要的视觉属性，theme-bg/accent/ink/glow 来自 Phase 1A
+ * 中间变量。其他 4 游戏（memory / pinyinFriend / listenCard / stroopTrain）在
+ * Phase 1C 各自独立 commit，**不能**在本文件批量加其他游戏主题。
+ *
+ * 详见 docs/phase-plans/phase-1-theme-tokens.md §Phase 1B
+ * ============================================================================ */
+
+/* 顶栏：setup 进入时 h2 显示游戏名（"识字消消乐 · 选择难度"），加主题色 */
+[data-game="match"] #setup-title {
+  color: var(--theme-ink);
+}
+
+/* 难度按钮：边框用主题色，hover 加深 */
+[data-game="match"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="match"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+
+/* HUD 计时器：用主题色（match 是橙色，替换原 sun 黄） */
+[data-game="match"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+
+/* HUD 进度 / hint：muted 变 theme-ink（柔和但有色彩感） */
+[data-game="match"] .hud-progress,
+[data-game="match"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 棋盘：底色用主题色极浅版（6% 不透明，不抢 cream 画布戏） */
+[data-game="match"] .board {
+  background: var(--theme-bg);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+/* 字卡：默认用主题色浅描边，hover / 选中加主题色 */
+[data-game="match"] .tile {
+  border-color: var(--theme-accent-soft);
+  box-shadow: 0 4px 12px var(--theme-glow);
+}
+[data-game="match"] .tile:hover {
+  border-color: var(--theme-accent);
+  box-shadow: 0 6px 16px var(--theme-glow);
+}
+[data-game="match"] .tile.selected {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+  /* 保留 scale(0.96) 来自基础 .tile.selected */
+}
+
+/* 完成面板：主按钮用主题色（其他游戏继续用 sun 黄） */
+[data-game="match"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="match"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.3 listenCard 绿 #2fa84f，2026-08-02)
+ * listen-card 题型：听音提示卡 .listen-prompt + .listen-mark（喇叭图标）
+ * ============================================================================ */
+
+[data-game="listenCard"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="listenCard"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="listenCard"] .hud-progress,
+[data-game="listenCard"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 听音提示卡：绿色主题（替换原 var(--tile) 白 + var(--line) 灰） */
+[data-game="listenCard"] .listen-prompt {
+  border-color: var(--theme-accent-soft);
+  box-shadow: 0 6px 14px var(--theme-glow);
+}
+
+/* 喇叭图标：绿色背景（替换原 var(--sun) 黄） */
+[data-game="listenCard"] .listen-mark {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+
+/* 选项按钮 */
+[data-game="listenCard"] .option-button {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .option-button:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="listenCard"] .option-button.correct {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="listenCard"] .option-button.wrong {
+  background: #ffe7dd;
+  border-color: #d86d4c;
+}
+
+/* 完成面板主按钮 */
+[data-game="listenCard"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="listenCard"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.4 stroopTrain 红 #e94f4f，2026-08-02)
+ * stroop 的 active outline / pulse 替换为红色系；选色板 .stroop-color-btn
+ * 保持原样（游戏机制色）；待选区 .stroop-select 底色主题化
+ * ============================================================================ */
+
+[data-game="stroopTrain"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="stroopTrain"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="stroopTrain"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="stroopTrain"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="compare"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="compare"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="compare"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="compare"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="stroopTrain"] .hud-progress,
+[data-game="stroopTrain"] .hud-hint {
+  color: var(--theme-ink);
+}
+
+/* 选中格：红色描边 + 红色 glow（替换原 green accent） */
+[data-game="stroopTrain"] .stroop-cell.is-active,
+[data-game="stroopTrain"] .stroop-select-cell.is-active {
+  outline: 2px solid var(--theme-accent) !important;
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px var(--theme-glow) !important;
+}
+
+/* stroop pulse 动画：红色系（覆盖默认 green→sun 动画） */
+@keyframes stroop-pulse-red {
+  0%, 100% { transform: scale(1.04); outline-color: var(--theme-accent); }
+  50%      { transform: scale(1.0);  outline-color: var(--theme-accent-soft); }
+}
+[data-game="stroopTrain"] .stroop-cell.is-active,
+[data-game="stroopTrain"] .stroop-select-cell.is-active {
+  animation: stroop-pulse-red 1.1s ease-in-out infinite;
+}
+
+/* 待选区底色：主题极浅（替换原 #f8f7ea 米黄） */
+[data-game="stroopTrain"] .stroop-select {
+  background: var(--theme-bg);
+}
+
+/* 完成面板主按钮 */
+[data-game="stroopTrain"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="stroopTrain"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.5 lobby 黄 #f5cd2f，2026-08-02)
+ * 大厅主场：所有游戏入口图标统一用 lobby 黄；吉祥物 mascot-host 加黄 glow
+ * ============================================================================ */
+
+/* 游戏入口图标：统一 lobby 黄（替换原 rgb(var(--color-primary-soft)) 浅绿） */
+[data-game="lobby"] .entry-icon {
+  background: var(--theme-accent-soft);
+}
+[data-game="lobby"] .game-entry:hover {
+  border-color: var(--theme-accent);
+}
+
+/* 吉祥物在 lobby 时加暖黄光晕（出场动画更活泼） */
+[data-game="lobby"] .mascot-host {
+  filter: drop-shadow(0 0 8px var(--theme-glow));
+  animation: mascot-welcome var(--motion-celebrate) var(--ease-emphasized) 0.5s 1,
+             lobby-glow 3s ease-in-out 0.5s infinite;
+}
+@keyframes lobby-glow {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--theme-glow)); }
+  50%       { filter: drop-shadow(0 0 14px var(--theme-accent)); }
+}
+
+/* 大厅标题：主题色 */
+[data-game="lobby"] #lobby-title {
+  color: var(--theme-ink);
+}
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.1 memory 紫 #8a4fd6，从 commit b4b1069 恢复)
+ * ============================================================================ */
+
+[data-game="memory"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="memory"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="memory"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="memory"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="memory"] .hud-progress,
+[data-game="memory"] .hud-hint {
+  color: var(--theme-ink);
+}
+[data-game="memory"] .board {
+  background: var(--theme-bg);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+[data-game="memory"] .tile {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="memory"] .tile:hover {
+  border-color: var(--theme-accent);
+}
+[data-game="memory"] .board.memory .tile.hidden-face {
+  background: var(--theme-bg);
+  border-color: var(--theme-accent-soft);
+  box-shadow: inset 0 0 0 2px var(--theme-accent-soft), 0 6px 14px var(--theme-glow);
+}
+[data-game="memory"] .board.memory .tile.hidden-face:hover {
+  background: var(--theme-accent-soft);
+}
+[data-game="memory"] .board.memory .tile.matched,
+[data-game="memory"] .board.memory .tile.memory-matched {
+  background: var(--theme-accent-soft);
+  border-color: var(--theme-accent);
+  color: var(--theme-ink);
+}
+[data-game="memory"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="memory"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
+
+/* ============================================================================
+ * Per-game 主题色 override (Phase 1C.2 pinyinFriend 蓝 #2f80e9，从 commit 970bceb 恢复)
+ * ============================================================================ */
+
+[data-game="pinyinFriend"] #setup-title {
+  color: var(--theme-ink);
+}
+[data-game="pinyinFriend"] .difficulty {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="pinyinFriend"] .difficulty:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="pinyinFriend"] .hud-timer {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="pinyinFriend"] .hud-progress,
+[data-game="pinyinFriend"] .hud-hint {
+  color: var(--theme-ink);
+}
+[data-game="pinyinFriend"] .quiz-word {
+  border-color: var(--theme-accent-soft);
+  box-shadow: 0 6px 14px var(--theme-glow);
+}
+[data-game="pinyinFriend"] .option-button {
+  border-color: var(--theme-accent-soft);
+}
+[data-game="pinyinFriend"] .option-button:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+[data-game="pinyinFriend"] .option-button.correct {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="pinyinFriend"] .option-button.wrong {
+  background: #ffe7dd;
+  border-color: #d86d4c;
+}
+[data-game="pinyinFriend"] .complete-panel .primary-button {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="pinyinFriend"] .complete-panel .primary-button:hover {
+  background: var(--theme-ink);
+  border-color: var(--theme-accent);
+}
+
+/* ============================================================================
+ * Phase 2A.1 — Lobby「1+2+2 错落 + 主题色化 + 吉祥物右下角」
+ * 父文档：docs/phase-plans/phase-2-lobby-setup.md
+ * 依赖：Phase 1 主题色 token（--theme-{id}-{bg/accent/accent-soft/glow}）
+ * ============================================================================
+ */
+
+/* ---- 1+2+2 错落网格：match 卡跨两列主推 ---- */
+.game-entry[id="open-match"] {
+  grid-column: 1 / -1;
+  min-height: 112px;
+  flex-direction: row;
+  text-align: left;
+  padding: 12px 16px;
+}
+.game-entry[id="open-match"] .entry-icon {
+  margin-right: 14px;
+  margin-bottom: 0;
+  width: 60px;
+  height: 60px;
+}
+.game-entry[id="open-match"] .entry-icon img {
+  width: 44px;
+  height: 44px;
+}
+.game-entry[id="open-match"] .entry-text {
+  flex: 1;
+  align-self: center;
+}
+.game-entry[id="open-match"] .entry-title {
+  font-size: 20px;
+}
+
+/* ---- 5 张卡主题色化（背景 + 边框 + icon 容器背景） ---- */
+.game-entry[id="open-match"] {
+  background: var(--theme-match-bg);
+  border: 2px solid var(--theme-match-accent);
+}
+.game-entry[id="open-match"] .entry-icon {
+  background: var(--theme-match-accent-soft);
+}
+.game-entry[id="open-match"]:hover {
+  box-shadow: 0 4px 16px var(--theme-match-glow);
+}
+
+.game-entry[id="open-memory"] {
+  background: var(--theme-memory-bg);
+  border: 2px solid var(--theme-memory-accent);
+}
+.game-entry[id="open-memory"] .entry-icon {
+  background: var(--theme-memory-accent-soft);
+}
+.game-entry[id="open-memory"]:hover {
+  box-shadow: 0 4px 16px var(--theme-memory-glow);
+}
+
+.game-entry[id="open-pinyin-friend"] {
+  background: var(--theme-pinyinFriend-bg);
+  border: 2px solid var(--theme-pinyinFriend-accent);
+}
+.game-entry[id="open-pinyin-friend"] .entry-icon {
+  background: var(--theme-pinyinFriend-accent-soft);
+}
+.game-entry[id="open-pinyin-friend"]:hover {
+  box-shadow: 0 4px 16px var(--theme-pinyinFriend-glow);
+}
+
+.game-entry[id="open-listen-card"] {
+  background: var(--theme-listenCard-bg);
+  border: 2px solid var(--theme-listenCard-accent);
+}
+.game-entry[id="open-listen-card"] .entry-icon {
+  background: var(--theme-listenCard-accent-soft);
+}
+.game-entry[id="open-listen-card"]:hover {
+  box-shadow: 0 4px 16px var(--theme-listenCard-glow);
+}
+
+.game-entry[id="open-stroop-train"] {
+  background: var(--theme-stroopTrain-bg);
+  border: 2px solid var(--theme-stroopTrain-accent);
+}
+.game-entry[id="open-stroop-train"] .entry-icon {
+  background: var(--theme-stroopTrain-accent-soft);
+}
+.game-entry[id="open-stroop-train"]:hover {
+  box-shadow: 0 4px 16px var(--theme-stroopTrain-glow);
+}
+
+/* Phase 8A — 成语填空 entry（第 6 个，青绿主题边框，对齐其他 5 个游戏） */
+.game-entry[id="open-idiom-fill"] {
+  background: var(--theme-idiomFill-bg);
+  border: 2px solid var(--theme-idiomFill-accent);
+}
+.game-entry[id="open-idiom-fill"] .entry-icon {
+  background: var(--theme-idiomFill-accent-soft);
+}
+.game-entry[id="open-idiom-fill"]:hover {
+  box-shadow: 0 4px 16px var(--theme-idiomFill-glow);
+}
+
+/* ---- 隐藏 lobby 顶栏 mascot（已移到右下角） ---- */
+#lobby .mascot-host {
+  display: none;
+}
+
+/* ---- 吉祥物右下角浮动（lobby 主体内） ---- */
+.mascot-companion {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  z-index: 2;
+  animation: mascot-float 4s ease-in-out infinite;
+}
+@keyframes mascot-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* 主推 hover 用 scale 取代微浮（match 横排卡，低干扰） */
+.game-entry[id="open-match"]:hover {
+  transform: scale(1.01);
+}
+
+/* ============================================================================
+ * Phase 2A.2 — Setup 顶栏主题色 + 难度按钮主题色 + 推荐章
+ * 父文档：docs/phase-plans/phase-2-lobby-setup.md
+ * 依赖：Phase 2A.1 + [data-game="..."] 主题色中间变量
+ * ============================================================================
+ */
+
+/* ---- Setup 顶栏底部 2px 主题色条带（视觉轻，不破 cream 画布） ---- */
+#setup .topbar.compact {
+  border-bottom: 2px solid var(--theme-accent);
+}
+
+/* ---- 难度按钮主题色化（5 个游戏共用） ---- */
+.difficulty {
+  background: var(--theme-bg);
+  border: 2px solid var(--theme-accent);
+}
+.difficulty:hover {
+  background: var(--theme-accent-soft);
+  border-color: var(--theme-ink);
+}
+.difficulty strong {
+  color: var(--theme-ink);
+}
+
+/* ---- 推荐难度章：在 .difficulty[data-recommended="true"] 元素角落加 ⭐ 徽章 ---- */
+.difficulty {
+  position: relative;
+}
+.difficulty[data-recommended="true"] {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  box-shadow: 0 2px 8px var(--theme-glow);
+}
+.difficulty[data-recommended="true"] strong,
+.difficulty[data-recommended="true"] span {
+  color: var(--panel);
+}
+.difficulty[data-recommended="true"]::after {
+  content: "⭐ 推荐";
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #f7d75c;
+  color: #5a4500;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+/* ---- Setup 返回按钮主题色 ---- */
+#setup .text-button[data-action="back-lobby"] {
+  color: var(--theme-accent);
+}
+#setup .text-button[data-action="back-lobby"]:hover {
+  color: var(--theme-ink);
+}
+
+/* ============================================================================
+ * Phase 3A — 棋盘/字卡通用装饰（hover 凸起 + 选中脉动 + active 反馈）
+ * 父文档：docs/phase-plans/phase-3-board-decoration.md
+ * 依赖：Phase 1 主题色 token + Phase 3 整体规划
+ * ============================================================================
+ *
+ * 策略：追加新规则到末尾，不动基础 .tile 规则，避免影响 per-game override
+ * [data-game] 块。per-game 主题色 box-shadow（如 match .tile:hover）继承叠加。
+ */
+
+/* R-3A.1: 字卡 hover 凸起（追加 transform，per-game box-shadow 已存在） */
+.tile:hover {
+  transform: scale(1.05) translateY(-2px);
+  z-index: 1;
+}
+.tile:not(.selected):not(.matched):not(.hidden-face) {
+  transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease, border-color 200ms ease;
+}
+
+/* R-3A.2: 选中态主题色脉动（保留 scale(0.96) 选中视觉，加 box-shadow 波纹） */
+.tile.selected,
+.stroop-cell.active {
+  animation: tile-pulse 1.1s ease-in-out infinite;
+}
+@keyframes tile-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--theme-glow, rgba(0,0,0,0.1)); }
+  50%      { box-shadow: 0 0 0 6px transparent; }
+}
+
+/* R-3A.4: 短促点击缩放反馈（不动 selected/matched 的 transform） */
+.tile:active,
+.option-button:active,
+.stroop-color-btn:active {
+  transform: scale(0.94);
+  transition: transform 80ms ease;
+}
+/* 选中/已配对时点击不缩放（避免冲突） */
+.tile.selected:active,
+.tile.matched:active,
+.option-button:disabled:active,
+.stroop-cell.active:active {
+  transform: scale(1);
+}
+
+/* ============================================================================
+ * Phase 3B — match 试点 + 配对 flash
+ * 父文档：docs/phase-plans/phase-3-board-decoration.md
+ * 依赖：Phase 3A + 现有 .is-correct / .is-wrong class（app.js 触发）
+ * ============================================================================
+ *
+ * 现状：app.js 在 match 配对时：
+ *   1. markTile(id, "is-correct") 临时加（触发 tile-correct-spring）
+ *   2. ~800ms 后清掉
+ *   3. markTile(id, "matched") 永久（触发 fade-out 280ms）
+ *
+ * 错配时：
+ *   1. markTile(id, "is-wrong") 临时加（触发 tile-wrong-shake 320ms）
+ *   2. ~400ms 后清掉
+ *
+ * Phase 3B 改动：match 专属 .is-correct 用主题色（橙）替代默认 primary-soft（绿），
+ * 并加双格同色 box-shadow 波纹（match-flash 700ms）。
+ */
+
+/* match 配对成功：用主题色替代默认 primary-soft */
+[data-game="match"] .tile.is-correct {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+  animation: match-flash 700ms ease-out forwards;
+  box-shadow: 0 0 0 0 var(--theme-glow);
+}
+@keyframes match-flash {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 var(--theme-glow); }
+  40%  { transform: scale(1.12); box-shadow: 0 0 0 12px transparent; }
+  100% { transform: scale(1.08); box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ============================================================================
+ * Phase 3C — 推广 4 游戏 + 专属装饰（无决策依赖部分）
+ * 父文档：docs/phase-plans/phase-3-board-decoration.md
+ * 依赖：Phase 3A + 3B
+ *
+ * 本节先做不依赖决策 1/2 的部分：
+ *   - 4 游戏通用 .is-correct / .is-wrong 主题色化
+ *   - stroop 专属：待选区虚线换主题色 + 颜色条按钮 4px 主题色描边
+ *
+ * 决策 1 (memory 3D 翻牌) / 决策 2 (pinyin/listen 小耳朵) 等主人拍板再做。
+ * ============================================================================
+ */
+
+/* ---- 4 游戏通用 .is-correct 主题色化 ---- */
+[data-game="memory"] .tile.is-correct,
+[data-game="pinyinFriend"] .option-button.is-correct,
+[data-game="listenCard"] .option-button.is-correct {
+  background: var(--theme-accent);
+  border-color: var(--theme-ink);
+  color: var(--panel);
+}
+[data-game="memory"] .tile.is-correct {
+  animation: match-flash 700ms ease-out forwards;
+}
+[data-game="pinyinFriend"] .option-button.is-correct,
+[data-game="listenCard"] .option-button.is-correct {
+  animation: option-correct-spring 600ms ease-out forwards;
+}
+@keyframes option-correct-spring {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* ---- stroop 待选区外框虚线换主题色 ---- */
+[data-game="stroopTrain"] .stroop-select {
+  border: 2px dashed var(--theme-accent);
+}
+/* ---- 颜色条按钮 4px 主题色描边（区分已选） ---- */
+[data-game="stroopTrain"] .stroop-color-btn {
+  border: 4px solid transparent;
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+[data-game="stroopTrain"] .stroop-color-btn.is-active,
+[data-game="stroopTrain"] .stroop-color-btn:active {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px var(--theme-glow);
+}
+
+/* ---- 通用题目卡（listen-prompt / quiz-word）主题色加粗 + 0.4° 微动（主人反馈 1° 太歪）---- */
+[data-game="listenCard"] .listen-prompt {
+  border: 3px solid var(--theme-accent);
+  transform: rotate(-0.4deg);
+}
+[data-game="pinyinFriend"] .quiz-word {
+  border: 3px solid var(--theme-accent);
+  transform: rotate(0.4deg);
+}
+
+/* ============================================================================
+ * Phase 3D — 决策 1 + 决策 2 落地
+ * 父文档：docs/phase-plans/phase-3-board-decoration.md
+ * 决策 1: Memory 3D 翻牌（A — 完整做）
+ * 决策 2: Pinyin/Listen 小耳朵图标（A — 完整做）
+ * ============================================================================
+ */
+
+/* ---- 决策 2: pinyin/listen option-button 右上角小耳朵 ---- */
+.option-button {
+  position: relative;
+  padding-right: 36px !important;  /* 给耳朵留位（覆盖基础 padding: 8px 12px） */
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start;
+}
+.option-button .option-text {
+  flex: 1;
+  text-align: left;
+}
+.option-button .option-ear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--theme-accent);
+  opacity: 0.55;
+  flex-shrink: 0;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.option-button:hover .option-ear {
+  opacity: 1;
+  animation: ear-wiggle 0.5s ease-in-out;
+}
+@keyframes ear-wiggle {
+  0%, 100% { transform: translateY(-50%) rotate(0deg); }
+  25%      { transform: translateY(-50%) rotate(-6deg); }
+  75%      { transform: translateY(-50%) rotate(6deg); }
+}
+/* 已选状态：耳朵保持显眼 */
+.option-button.is-correct .option-ear,
+.option-button.is-wrong .option-ear {
+  opacity: 1;
+  color: var(--panel);  /* 实心背景上用白色 */
+}
+
+/* ---- 决策 1: memory 3D 翻牌 ---- */
+.board.memory .tile {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* 内层 .tile-face 覆盖原 background，避免两层冲突 */
+  background: transparent;
+}
+.board.memory .tile .tile-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 2px solid var(--line);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  font-size: var(--tile-font, 32px);
+  font-weight: 900;
+  color: var(--ink);
+  user-select: none;
+}
+.board.memory .tile .tile-back {
+  background: #e8ede3;
+  border-color: var(--line);
+  color: var(--muted);
+  box-shadow: inset 0 0 0 2px rgba(47, 140, 115, 0.08), 0 6px 14px rgba(46, 58, 49, 0.1);
+  transform: rotateY(0deg);
+}
+.board.memory .tile .tile-front {
+  background: var(--tile);
+  transform: rotateY(180deg);
+}
+.board.memory .tile.flipped {
+  transform: rotateY(180deg);
+}
+/* 主题色 hover 光晕应用到 .tile-back（玩家看到的是背面） */
+.board.memory .tile .tile-back:hover {
+  background: var(--theme-accent-soft);
+}
+/* 已配对的 tile：正面留主题色背景 */
+.board.memory .tile.flipped.memory-matched .tile-front {
+  background: var(--theme-accent-soft);
+  border-color: var(--theme-accent);
+  color: var(--theme-ink);
+}
+
+/* ============================================================================
+ * Phase 4A — 结算页基础（奖杯 + 星星 + 撒花）
+ * 父文档：docs/phase-plans/phase-4-complete-panel.md
+ * 决策：决策 1/2/3 选 A A A（简单档位 / 都显示 / 随机彩色撒花）
+ * ============================================================================
+ */
+
+/* ---- R-4A.1: 奖杯行 ---- */
+.complete-panel .trophy-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 64px;
+  margin: 0 0 8px;
+}
+.complete-panel .trophy {
+  display: inline-block;
+  animation: trophy-rise 600ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.complete-panel .trophy-svg {
+  width: 56px;
+  height: 56px;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+@keyframes trophy-rise {
+  from { transform: translateY(24px) scale(0.6); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ---- R-4A.1: 星星行 ---- */
+.complete-panel .star-row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 0 0 12px;
+  font-size: 28px;
+  line-height: 1;
+}
+.complete-panel .star {
+  width: 28px;
+  height: 28px;
+  color: rgba(0, 0, 0, 0.12);  /* 未点亮：浅灰 */
+  transition: color 0ms;
+  animation: star-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.complete-panel .star.is-earned {
+  color: #f7d75c;  /* 已点亮：金黄 */
+  filter: drop-shadow(0 0 4px rgba(247, 215, 92, 0.6));
+}
+.complete-panel .star:nth-child(1) { animation-delay: 200ms; }
+.complete-panel .star:nth-child(2) { animation-delay: 400ms; }
+.complete-panel .star:nth-child(3) { animation-delay: 600ms; }
+@keyframes star-pop {
+  0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+  60%  { transform: scale(1.4) rotate(20deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* ---- R-4A.1: 统计文案（替代旧 .complete-time） ---- */
+.complete-panel .complete-stats {
+  margin: 0 0 4px;
+  font-size: var(--fs-display, 24px);
+  font-weight: var(--fw-black, 900);
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--color-primary-strong, 47 140 115));
+  line-height: 1.1;
+  white-space: pre-line;  /* 允许 \n 换行，stats 拆成"时间"+"正确率"两行，避免“成/功”截断 */
+}
+/* 兼容旧 .complete-time（保留 fallback） */
+.complete-panel .complete-time {
+  display: none;  /* 旧 class 隐藏，统一用 .complete-stats */
+}
+
+/* ---- R-4A.5: 撒花 confetti ---- */
+.confetti {
+  position: fixed;
+  top: -20px;
+  width: 10px;
+  height: 16px;
+  z-index: 200;
+  pointer-events: none;
+  border-radius: 2px;
+  animation: confetti-fall 1.6s ease-in forwards;
+  will-change: transform, opacity;
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotateZ(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotateZ(720deg); opacity: 0; }
+}
+
+/* ============================================================================
+ * Phase 5A — 反馈动效基础设施（小彩屑 + 红光闪 + 计时器阈值）
+ * 父文档：docs/phase-plans/phase-5-feedback-animations.md
+ * 决策：决策 1/2/3 选 A A A（每次答对彩屑 / 屏幕红光闪 / mascot 不动）
+ * ============================================================================
+ */
+
+/* ---- R-5A.1: 答对小彩屑 ---- */
+.confetti-mini-piece {
+  position: fixed;
+  width: 12px;
+  height: 18px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 150;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  animation: confetti-burst 700ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes confetti-burst {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+/* ---- R-5A.2: 屏幕边缘红光闪 ---- */
+.error-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  box-shadow: inset 0 0 0 0 rgba(220, 50, 47, 0);
+  transition: box-shadow 350ms ease-out;
+}
+.error-flash.is-active {
+  box-shadow: inset 0 0 80px 20px rgba(220, 50, 47, 0.5);
+}
+
+/* ---- R-5A.3: 计时器阈值变橙/红 ---- */
+.hud-timer.warning {
+  background: #e89858;
+  border-color: #cd7f32;
+  color: #fff;
+}
+.hud-timer.danger {
+  background: #e94f4f;
+  border-color: #b32f2f;
+  color: #fff;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+@keyframes timer-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+/* ============================================================================
+ * Phase 5C.1 — Stroop 待选格填色滑入动画
+ * 父文档：docs/phase-plans/phase-5-feedback-animations.md
+ * ============================================================================
+ */
+
+.stroop-select-cell.is-correct,
+.stroop-select-cell.is-wrong {
+  animation: stroop-fill-slide 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes stroop-fill-slide {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1.04); opacity: 1; }
+}
+
+/* ============================================================================
+ * Phase 6A — Letterbox 背景基础设施
+ * 父文档：docs/phase-plans/phase-6-letterbox-svg.md
+ * 决策：1/2/3 选 A A A（fade 400ms / 同方向漂 / 手绘 SVG）
+ * ============================================================================
+ *
+ * letterbox 区域（黑色上下）由 .letterbox-bg 容器 + 3 层 SVG 填充
+ * 3 层 parallax：远景 60s / 中景 30s / 近景 15s 全部向左漂
+ */
+
+.letterbox-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;  /* 低于 .stage-canvas (z-index 1) */
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.letterbox-bg.is-active {
+  opacity: 1;
+}
+
+/* Phase 6A 修复：layer width 100% + slice 自然裁切填满 letterbox
+ * 漂移用 viewBox 内元素的 x 坐标实现（不同 layer 不同 x range）
+ * 当前 6A 简化：去掉漂移动画，先让 letterbox 可见（漂移留到 6B） */
+/* Phase 6A 修复：拉宽 200% + drift 动画
+ * viewBox 320x800 + width 200% = 640，translateX(-320px) 回到原位
+ * 漂移速度：远 60s / 中 30s / 近 15s（plan 决策 2 A 同方向漂）*/
+.bg-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  pointer-events: none;
+}
+.bg-layer-1 { opacity: 0.25; animation: bg-drift-slow 60s linear infinite; }
+.bg-layer-2 { opacity: 0.35; animation: bg-drift-medium 30s linear infinite; }
+.bg-layer-3 { opacity: 0.40; animation: bg-drift-fast 15s linear infinite; }
+@keyframes bg-drift-slow {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-320px); }
+}
+@keyframes bg-drift-medium {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-320px); }
+}
+@keyframes bg-drift-fast {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-320px); }
+}
+
+/* Phase 7B: Voice picker BGM toggle row */
+.bgm-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+.bgm-toggle-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  opacity: 0.85;
+}
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--line);
+  border: none;
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  transition: background 200ms ease;
+  flex-shrink: 0;
+  outline: none;
+}
+.toggle-switch[aria-checked="true"] {
+  background: var(--theme-accent, var(--accent, #2f8c73));
+}
+.toggle-switch:focus-visible {
+  box-shadow: 0 0 0 3px rgba(47, 140, 115, 0.35);
+}
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 200ms ease;
+}
+.toggle-switch[aria-checked="true"] .toggle-knob {
+  transform: translateX(20px);
+}
+
+/* ============================================================
+ * Phase 8A — 成语填空 idiomFill 样式
+ * 父文档：docs/phase-plans/phase-8-idiom-fill.md
+ * 设计：滚筒 slot-machine（240px 高）+ 候选字池
+ * zone-stack：滚筒 .zone-primary + 候选字池 .zone-secondary
+ * ============================================================ */
+
+#idiom-host {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 4px 8px;
+}
+
+/* 滚筒（slot-machine）3D 旋转木马 — 密码锁效果
+ * 主人 2026-08-09 20:17 反馈：放弃 translateY 高斯模糊方向，改用 CSS 3D rotateX
+ * 主人 2026-08-09 20:33 反馈：row 不能撑满棋盘框，缩小 max-width + 缩 slot
+ */
+.idiom-track {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0;
+  perspective: 700px; /* 3D 透视深度（缩小：让 rotateX 不那么"凸"，主人 2026-08-09 20:33） */
+  perspective-origin: 50% 50%;
+}
+
+/* 滚筒内部：所有 idiom-row 在 3D 空间绕 X 轴排列，focusIdiom 用 rotateX 平滑切换 */
+.idiom-rows {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d; /* 让 row 在 3D 空间渲染 */
+  transition: transform var(--motion-celebrate, 600ms) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* 每个 idiom-row：密码锁旋转木马的一格（3D rotateX 定位，4 字整体旋转） */
+.idiom-row {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80%;
+  max-width: 240px; /* 缩小：避免撑满棋盘框（主人 2026-08-09 20:33 反馈） */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  gap: 6px;
+  transform-style: preserve-3d;
+  backface-visibility: hidden; /* 背面隐藏（密码锁效果：旋转到后面就消失） */
+  transform-origin: center center;
+  /* transform: translate(-50%, -50%) rotateX(var(--angle)) translateZ(var(--radius)) — JS 设置 */
+  cursor: grab;
+  /* 移动端关键：阻止浏览器默认手势（滚动/缩放/双击放大）+ 防止文字被选中 */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: opacity 400ms ease, filter 400ms ease;
+}
+.idiom-row:active {
+  cursor: grabbing;
+}
+
+/* 当前 focus 的成语（最清晰、最大、可见） */
+.idiom-row.is-current {
+  opacity: 1;
+  filter: none;
+  z-index: 3;
+}
+
+/* 拖拽中（Pointer Events）：fixed 定位 + 视觉跟随手指/鼠标 + 阴影 + 高 z-index
+ * 注意：不强制 transform — 拖拽时用 inline style 的 position/left/top + 清空 transform（避开 3D 旋转） */
+.idiom-row.is-dragging {
+  opacity: 0.92;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  cursor: grabbing;
+  z-index: 1000;
+  filter: none !important;
+  background: white;
+  border-radius: 8px;
+}
+
+/* drop target 指示线（Pointer Events 用 before/after 区分上下） */
+.idiom-row.is-drop-target-before {
+  border-top: 3px solid var(--theme-accent, #14b8a6);
+  border-radius: 8px 8px 0 0;
+}
+.idiom-row.is-drop-target-after {
+  border-bottom: 3px solid var(--theme-accent, #14b8a6);
+  border-radius: 0 0 8px 8px;
+}
+
+/* 上一个 / 下一个（在 3D 空间中自然渐隐 + 轻微模糊 + 变暗 — 密码锁效果） */
+.idiom-row.is-passed,
+.idiom-row.is-next {
+  opacity: 0.35;
+  filter: blur(1.5px) brightness(0.7);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 4 个槽位横向排列（idiom-row 内部横排容器） */
+.idiom-slots {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 4 个槽位（成语 4 字） — 缩小避免撑满棋盘框（主人 2026-08-09 20:33） */
+.idiom-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 52px;
+  margin: 0 3px;
+  font-size: 26px;
+  font-weight: 900;
+  font-family: var(--font-display, system-ui);
+  border-radius: 6px;
+  border: 2px solid var(--line, #d8d8d8);
+  background: white;
+  color: var(--ink, #2c2c2c);
+  cursor: pointer;
+  transition: transform var(--motion-fast, 120ms) var(--ease-standard, ease),
+              box-shadow var(--motion-base, 200ms) var(--ease-standard, ease),
+              border-color var(--motion-base, 200ms) var(--ease-standard, ease);
+}
+
+/* 实字（不扣的位置） — 不可点，纯展示 */
+.idiom-slot.is-fixed {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: transparent;
+  color: var(--ink, #2c2c2c);
+  cursor: default;
+}
+
+/* 空格（被扣字位置）— 可点 */
+.idiom-slot.is-blank {
+  border-style: dashed;
+  border-color: var(--theme-accent, #6e3eb8);
+  background: var(--theme-accent-soft, rgba(110, 62, 184, 0.15));
+  color: var(--theme-ink, #4d2789);
+  opacity: 0.9;
+}
+
+/* 选中（黄色脉冲 — Phase 8B） */
+.idiom-slot.is-selected {
+  border-color: #f5cd2f;
+  border-style: solid;
+  box-shadow: 0 0 0 3px rgba(247, 215, 92, 0.4);
+  animation: idiom-slot-pulse 1.2s ease-in-out infinite;
+}
+
+/* 已填字（绿色脉冲 — Phase 8B） */
+.idiom-slot.is-filled {
+  background: var(--color-primary-soft, #dff3ea);
+  border-color: var(--color-primary, #2f8c73);
+  border-style: solid;
+  color: var(--color-primary-strong, #1f6f59);
+  animation: idiom-slot-fill var(--motion-celebrate, 480ms) var(--ease-emphasized, ease);
+}
+
+@keyframes idiom-slot-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(247, 215, 92, 0.4); }
+  50%      { box-shadow: 0 0 0 6px rgba(247, 215, 92, 0.15); }
+}
+
+@keyframes idiom-slot-fill {
+  0%   { transform: scale(1); }
+  60%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* 释义 */
+.idiom-hint {
+  font-size: 11px;
+  color: var(--muted, #6b6b6b);
+  text-align: center;
+  max-width: 280px;
+  line-height: 1.4;
+}
+
+/* 候选字池（zone-secondary） */
+.idiom-pool {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(36px, 1fr));  /* 自适应列数：3-4 字 1 行，10-16 字 2 行 */
+  gap: 6px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--line, #d8d8d8);
+  border-radius: 8px;
+}
+
+/* 候选字按钮 */
+.candidate-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-height: 36px;
+  font-size: 20px;
+  font-weight: 900;
+  font-family: var(--font-display, system-ui);
+  border-radius: 6px;
+  border: 2px solid var(--theme-accent, #6e3eb8);
+  background: white;
+  color: var(--theme-ink, #4d2789);
+  cursor: pointer;
+  transition: transform var(--motion-fast, 120ms) var(--ease-standard, ease),
+              background var(--motion-fast, 120ms) var(--ease-standard, ease);
+}
+
+.candidate-tile:hover {
+  background: var(--theme-accent-soft, rgba(110, 62, 184, 0.15));
+  transform: scale(1.05);
+}
+
+.candidate-tile:active {
+  transform: scale(0.96);
+}
+
+/* Phase 8B 占位：候选字"先点空格"抖动（无 slot 选中时点击候选字） */
+.candidate-tile.is-shake {
+  animation: candidate-tile-shake var(--motion-slow, 320ms) var(--ease-standard, ease);
+}
+
+/* Phase 8B：候选字已用（置灰不可点） */
+.candidate-tile.is-used {
+  opacity: 0.25;
+  pointer-events: none;
+  filter: grayscale(1);
+  transform: scale(0.9);
+}
+
+/* Phase 8B：完成成语行高亮（绿脉冲边框） */
+.idiom-row.is-complete {
+  animation: idiom-row-complete 800ms var(--ease-emphasized, ease);
+}
+.idiom-row.is-complete .idiom-slot.is-filled {
+  border-color: var(--color-primary, #2f8c73);
+  background: var(--color-primary-soft, #dff3ea);
+  color: var(--color-primary-strong, #1f6f59);
+}
+
+@keyframes idiom-row-complete {
+  0%   { box-shadow: inset 0 0 0 0 rgba(47, 140, 115, 0); }
+  40%  { box-shadow: inset 0 0 0 4px rgba(47, 140, 115, 0.5); }
+  100% { box-shadow: inset 0 0 0 0 rgba(47, 140, 115, 0); }
+}
+
+@keyframes candidate-tile-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(2px); }
+}
+
+/* 小屏适配：@media (max-height: 720px) 进一步压缩滚筒（主人 7-04 22:36 设计要求） */
+@media (max-height: 720px) {
+  .idiom-track { height: 200px; }
+  .idiom-slot { width: 48px; height: 56px; font-size: 28px; margin: 0 3px; }
+  .idiom-hint { font-size: 10px; }
+  .candidate-tile { min-height: 36px; font-size: 20px; }
+  #idiom-host { padding: 4px 6px; }
+}
+
+/* iPhone 刘海屏 */
+@supports (padding: max(0px)) {
+  #idiom-host {
+    padding-top: max(4px, env(safe-area-inset-top));
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+  }
+}
+
+/* ============================================================================
+ * Phase 8B — 看图比大小 (compare)
+ * ============================================================================ */
+
+.compare-host {
+  /* 布局由 .zone-stack 接管 (flex column + gap + align center) */
+}
+
+.compare-question {
+  background: #faf6ea;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 16px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.compare-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+}
+
+.compare-group {
+  flex: 1;
+  background: #fffaf0;
+  border: 3px solid var(--theme-accent, #f08c3a);
+  border-radius: 12px;
+  padding: 16px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  min-height: 130px;
+  font-size: 36px;
+  line-height: 1.1;
+}
+
+/* 数学符号按钮组 (放在两堆图形中间, 主人 2026-08-14 07:44 提议) */
+.compare-symbols {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: stretch;
+  justify-content: center;
+}
+
+.compare-symbol-btn {
+  width: 48px;
+  height: 48px;
+  font-size: 30px;
+  font-weight: 900;
+  border: 3px solid var(--theme-accent-soft, rgba(240, 140, 58, 0.4));
+  border-radius: 10px;
+  background: white;
+  color: var(--theme-ink, #b36420);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.compare-symbol-btn:hover {
+  border-color: var(--theme-accent, #f08c3a);
+  background: var(--theme-accent-soft, rgba(240, 140, 58, 0.08));
+}
+
+.compare-symbol-btn:active {
+  transform: scale(0.92);
+}
+
+/* 主人 08-14: 选完不立即跳, 显示对错 + 停顿 1.2-1.5s */
+
+/* 答对: 绿闪 */
+.compare-symbol-btn.correct-flash {
+  background: #51cf66 !important;
+  color: white !important;
+  border-color: #51cf66 !important;
+  animation: correct-flash-pulse 0.5s ease-in-out 3 alternate;
+  pointer-events: none;
+}
+
+/* 答错: 红闪 + shake */
+.compare-symbol-btn.wrong-flash {
+  background: #ff6b6b !important;
+  color: white !important;
+  border-color: #ff6b6b !important;
+  animation: wrong-flash-shake 0.4s ease-in-out 2;
+  pointer-events: none;
+}
+
+/* 错答时正确答案高亮 (持续显示直到跳下一题) */
+.compare-symbol-btn.correct-hint {
+  background: #51cf66;
+  color: white;
+  border-color: #51cf66;
+  animation: correct-hint-pulse 0.4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* 反馈期间禁用所有按钮 */
+.compare-symbol-btn.is-locked {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+@keyframes correct-flash-pulse {
+  from { box-shadow: 0 0 0 0 rgba(81, 207, 102, 0.7); transform: scale(1.0); }
+  to   { box-shadow: 0 0 0 16px rgba(81, 207, 102, 0); transform: scale(1.15); }
+}
+
+@keyframes wrong-flash-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@keyframes correct-hint-pulse {
+  from { box-shadow: 0 0 0 0 rgba(81, 207, 102, 0.7); }
+  to   { box-shadow: 0 0 0 8px rgba(81, 207, 102, 0);   }
+}
+
+/* ============================================================
+ * 比大小 v2: 拆 span + 小尺寸紧密排列，让小孩必须真数
+ * 主人 2026-08-16 20:45 反馈：原来 emoji 大一眼看出，改小后必须数
+ * 主人 2026-08-16 23:11 反馈: 数字框要放图形框下面（垂直栈布局）
+ * ============================================================ */
+.compare-emoji {
+  display: inline-block;
+  font-size: 22px;
+  line-height: 1;
+  margin: 0 0.5px;
+  /* 主人 2026-08-16 23:10 反馈: Android 手机 emoji 渲染成 ? 黑框 */
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", "EmojiOne Color", "Android Emoji", sans-serif;
+  font-variant-emoji: emoji;
+  text-rendering: optimizeLegibility;
+}
+
+/* Twemoji 兑底后变成 <img class="emoji">，保持与 span 一致尺寸 */
+.compare-emoji.emoji,
+.compare-emoji img.emoji,
+img.compare-emoji {
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+}
+
+/* 重写主区域为垂直栈（emoji → 数字 → 符号） */
+.compare-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.compare-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Row 1: emoji 左右各占一半 */
+.compare-row-emojis {
+  justify-content: space-between;
+}
+.compare-row-emojis .compare-group {
+  flex: 1;
+  min-width: 0;  /* 允许 flex 子项收缩到内容以下 */
+}
+
+/* Row 2: 数字输入框对齐 emoji（各居自己那一侧） */
+.compare-row-inputs {
+  justify-content: space-around;
+}
+
+/* Row 3: 符号按钮居中 */
+.compare-row-symbols {
+  justify-content: center;
+}
+
+/* 符号按钮组本身：水平排列（3 个并排）*/
+.compare-symbols {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* 中间列样式（保留旧 class 兼容，未来还能复用） */
+.compare-middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 110px;
+}
+
+.compare-num-input {
+  width: 88px;
+  height: 48px;
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+  border: 3px solid var(--theme-accent, #f08c3a);
+  border-radius: 10px;
+  background: #fffaf0;
+  color: var(--theme-ink, #b36420);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  -moz-appearance: textfield;  /* Firefox */
+}
+.compare-num-input::-webkit-outer-spin-button,
+.compare-num-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.compare-num-input:focus {
+  outline: none;
+  border-color: var(--theme-accent, #f08c3a);
+  box-shadow: 0 0 0 3px rgba(240, 140, 58, 0.3);
+}
+.compare-num-input.is-wrong {
+  border-color: #ff6b6b !important;
+  background: #ffe3e3 !important;
+  animation: wrong-input-shake 0.4s ease-in-out 2;
+}
+.compare-num-input.is-locked {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+@keyframes wrong-input-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* 符号按钮选中态 */
+.compare-symbol-btn.is-selected {
+  background: var(--theme-accent, #f08c3a) !important;
+  color: white !important;
+  border-color: var(--theme-accent, #f08c3a) !important;
+}
+.compare-symbol-btn.is-wrong {
+  background: #ff6b6b !important;
+  color: white !important;
+  border-color: #ff6b6b !important;
+  animation: wrong-flash-shake 0.4s ease-in-out 2;
+}
+
+/* 提交按钮 */
+.compare-submit {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 10px 32px;
+  border: 3px solid var(--theme-accent, #f08c3a);
+  border-radius: 12px;
+  background: var(--theme-accent, #f08c3a);
+  color: white;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+.compare-submit:hover:not(:disabled) {
+  background: #d97a2e;
+}
+.compare-submit:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.compare-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 移动端：emoji 再小一点（主人反馈小孩在手机上玩） */
+@media (max-width: 480px) {
+  .compare-emoji { font-size: 18px; margin: 0; }
+  .compare-emoji.emoji,
+  .compare-emoji img.emoji,
+  img.compare-emoji { width: 18px; height: 18px; }
+  .compare-num-input { width: 70px; height: 42px; font-size: 18px; }
+  .compare-symbol-btn { width: 44px; height: 44px; font-size: 26px; }
+  .compare-symbols { gap: 8px; }
+  .compare-area { gap: 10px; }
+  .compare-row { gap: 8px; }
+}
+
+/* ============================================================================
+ * Phase trace-tian — 田字格描红 (feat/trace-tian, 2026-09-22)
+ * 数据源：人教版一年级上册（数字 / 拼音 / 汉字 三池）
+ * 字库：assets/data/trace-{numbers,pinyin,hanzi}.js
+ * 字体：LXGW WenKai（@font-face 注册；降级到楷体/系统字体）
+ * ============================================================================ */
+
+/* === 字体加载 === */
+@font-face {
+  font-family: "LXGW Wenkai Trace";
+  src: local("LXGW WenKai TC"), local("LXGW WenKai"), local("霞鹜文楷"),
+       local("KaiTi"), local("STKaiti"), local("楷体"),
+       local("PingFang SC"), local("Microsoft YaHei"), local("微软雅黑"),
+       local("sans-serif");
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+0020-007F, U+00C0-00FF, U+0100-017F, U+0250-02AF, U+0300-036F, U+1E00-1EFF;
+}
+
+/* trace-host 顶层容器：沿用 zone-stack 布局（不加新 flex） */
+.trace-host {
+  /* zone-stack 已定义：flex column + gap + align center + flex:1 */
+  /* 加一条专用宽度约束，避免主区在桌面端无限拉大 */
+  width: min(100%, 480px);
+}
+
+/* === Z3 米字格主交互区 === */
+.trace-stage {
+  position: relative;
+  display: block;          /* 覆写 .zone-primary 的 grid，子元素走绝对定位 */
+  flex-shrink: 0;
+  width: min(100%, 480px);
+  aspect-ratio: 1;
+  align-self: center;
+  border: 2px solid var(--accent, #2F8C73);
+  border-radius: 8px;
+  background: #fffaf0;
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0,0,0,0.06));
+  overflow: hidden;
+  touch-action: none;       /* 防止手指描写时页面滚动 */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.trace-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.trace-order-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* 笔顺 SVG 内部元素 */
+.trace-stroke-path {
+  fill: none;
+  stroke: rgb(91, 156, 207);    /* 浅蓝 */
+  stroke-width: 22;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.trace-stroke-path.is-revealed {
+  opacity: 0.85;
+}
+
+.trace-stroke-point {
+  fill: rgb(31, 78, 121);       /* 深蓝起点圆点 */
+  stroke: white;
+  stroke-width: 4;
+}
+
+.trace-stroke-num {
+  font-family: var(--font-numeric, system-ui);
+  font-feature-settings: "tnum" 1;
+  font-size: 44px;
+  font-weight: 800;
+  fill: rgb(31, 78, 121);
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 5;
+  stroke-linejoin: round;
+  /* trace-flip <g> 绕 Y 轴镜像，text 会被上下倒过来；这里反向转回去 */
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1, -1);
+}
+
+/* 状态：笔顺演示中（禁止用户描写） */
+.trace-stage.is-locked {
+  pointer-events: none;
+}
+
+.trace-stage.is-locked .trace-canvas {
+  cursor: not-allowed;
+}
+
+/* 状态：用户描写中 */
+.trace-stage.is-drawing {
+  border-color: rgb(var(--color-primary-strong, 31 111 89));
+  box-shadow: 0 0 0 3px rgba(47, 140, 115, 0.2);
+}
+
+/* 状态：完成当前字（绿色脉冲） */
+.trace-stage.is-completed {
+  border-color: rgb(var(--color-primary-strong, 31 111 89));
+  animation: trace-pulse 480ms ease-out;
+}
+
+@keyframes trace-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(47, 140, 115, 0.6); }
+  100% { box-shadow: 0 0 0 12px rgba(47, 140, 115, 0); }
+}
+
+/* === Loading 遮罩 === */
+.trace-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 250, 240, 0.85);
+  z-index: 2;
+}
+
+.trace-loading-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgb(var(--color-primary-strong, 31 111 89));
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgb(var(--color-warning-soft, 255 248 214));
+}
+
+/* === Z4 待选列表（一行横向滚动） === */
+.trace-remaining {
+  width: 100%;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 8px;
+  padding: 8px 4px;
+  scrollbar-width: thin;
+}
+
+.trace-remaining-card {
+  flex-shrink: 0;
+  min-width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--line, #d8e2dc);
+  border-radius: 6px;
+  background: white;
+  font-family: "LXGW Wenkai Trace", "KaiTi", "STKaiti", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: rgb(var(--color-primary-strong, 31 111 89));
+  cursor: default;
+  transition: transform var(--motion-fast, 120ms) ease, background var(--motion-base, 200ms) ease, border-color var(--motion-base, 200ms) ease;
+  user-select: none;
+}
+
+.trace-remaining-card.is-current {
+  background: rgb(var(--color-warning-soft, 255 248 214));
+  border-color: rgb(var(--color-warning-strong, 215 167 28));
+  transform: scale(1.06);
+}
+
+.trace-remaining-card.is-done {
+  background: rgb(var(--color-primary-soft, 223 243 234));
+  border-color: rgb(var(--color-primary, 47 140 115));
+  color: rgb(var(--color-primary, 47 140 115));
+  position: relative;
+}
+
+.trace-remaining-card.is-done::after {
+  content: "✓";
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgb(var(--color-primary, 47 140 115));
+  color: white;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* === Z5 Toolbar === */
+.trace-toolbar {
+  width: 100%;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.trace-tool-button {
+  height: 48px;
+  border-radius: 8px;
+  border: 2px solid var(--line, #d8e2dc);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--motion-fast, 120ms) ease, background var(--motion-base, 200ms) ease, border-color var(--motion-base, 200ms) ease;
+}
+
+.trace-clear-button {
+  background: white;
+  color: rgb(110, 110, 110);
+  border-color: var(--line, #d8e2dc);
+}
+
+.trace-clear-button:hover:not(:disabled) {
+  border-color: rgb(140, 140, 140);
+  background: #fafafa;
+}
+
+.trace-clear-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.trace-next-button {
+  background: rgb(var(--color-primary, 47 140 115));
+  color: white;
+  border-color: rgb(var(--color-primary-strong, 31 111 89));
+}
+
+.trace-next-button:hover:not(:disabled) {
+  background: rgb(var(--color-primary-hover, 38 158 130));
+}
+
+.trace-next-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.trace-next-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.trace-next-button.is-shake {
+  animation: tile-wrong-shake 320ms var(--ease-standard, ease-out);
+}
+
+/* === body[data-game="traceTian"] 主题色覆写（与其他游戏风格一致） === */
+body[data-game="traceTian"] {
+  --theme-accent: #2F8C73;
+  --theme-accent-strong: #1F6F59;
+}
+
+/* 移动端：稍小一点让单屏可见 */
+@media (max-width: 480px) {
+  .trace-stage { width: min(100%, 360px); }
+  .trace-remaining-card { min-width: 48px; height: 48px; font-size: 24px; }
+  .trace-tool-button { height: 44px; font-size: 14px; }
+}
