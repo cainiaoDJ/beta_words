@@ -3421,6 +3421,7 @@ async function startTraceTianGame(size) {
   playStrokeGuide(() => {
     if (token !== state.traceLoadToken) return;
     if (traceStage) traceStage.classList.remove("is-locked");
+    if (traceNextBtn) traceNextBtn.disabled = false;  // 解锁「下一字」（startTraceTianGame 初始化时禁用）
     setHint("跟着笔顺，动手描一描");
   });
 
@@ -3821,6 +3822,7 @@ function onTraceNext() {
   renderTraceRemaining();
   if (traceStage) traceStage.classList.add("is-locked");
   if (traceLoading) traceLoading.hidden = false;
+  if (traceNextBtn) traceNextBtn.disabled = true;  // 锁住等下一个字笔顺动画播放
   const token = state.traceLoadToken;
   loadCurrentTraceChar(token).then(() => {
     if (token !== state.traceLoadToken) return;
@@ -3829,6 +3831,7 @@ function onTraceNext() {
     playStrokeGuide(() => {
       if (token !== state.traceLoadToken) return;
       if (traceStage) traceStage.classList.remove("is-locked");
+      if (traceNextBtn) traceNextBtn.disabled = false;  // 解锁「下一字」
       setHint("跟着笔顺，动手描一描");
     });
   });
