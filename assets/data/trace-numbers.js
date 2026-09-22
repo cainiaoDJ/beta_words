@@ -72,7 +72,6 @@ window.TRACE_NUMBERS = window.TRACE_NUMBERS || (function () {
       ],
       medians: [[512, 332], [512, 492]]
     },
-    },
     "9": {
       // 一笔：上圆 + 下竖（从顶部起笔，顺时针画圆后下竖）
       strokes: ["M 512 332 Q 412 332 412 632 Q 612 632 612 332 L 612 772"],
