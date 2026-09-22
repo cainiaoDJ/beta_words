@@ -3610,13 +3610,25 @@ function renderTraceOrderSvg() {
     }
   });
   // 起点圆点 + 序号（默认全部隐藏；playStrokeGuide 逐笔揭示时显示）
+  // hanzi-writer-data medians 格式：[[[x,y],[x,y],...], ...]（每个笔画是一组点）
+  // 取每笔第一个点当起点
   if (spec.medians) {
     spec.medians.forEach((median, idx) => {
       if (!median) return;
-      // 兼容旧格式：[x,y] 或 {x, y}
-      const cx = Array.isArray(median) ? median[0] : median.x;
-      const cy = Array.isArray(median) ? median[1] : median.y;
-      const transform = Array.isArray(median) ? null : median.transform;
+      let cx, cy, transform = null;
+      if (Array.isArray(median)) {
+        // 数组形态：可能是 [[x,y], ...]（hanzi-writer-data，每笔多点）
+        // 或 [x, y]（旧格式，单点）
+        if (median.length > 0 && Array.isArray(median[0])) {
+          const p = median[0];
+          cx = p[0]; cy = p[1];
+        } else {
+          cx = median[0]; cy = median[1];
+        }
+      } else {
+        cx = median.x; cy = median.y;
+        transform = median.transform;
+      }
       const dot = document.createElementNS(NS, "circle");
       dot.setAttribute("cx", cx);
       dot.setAttribute("cy", cy);
