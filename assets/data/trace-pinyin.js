@@ -44,8 +44,8 @@ window.TRACE_PINYIN = window.TRACE_PINYIN || (function () {
 
   const letters = {
     a: {
-      strokes: ["M 352 552 A 200 180 0 1 0 712 552 A 200 180 0 1 0 352 552 Z"],
-      medians: [[352, 552]]
+      strokes: ["M 412 412 A 200 180 0 1 0 612 412 A 200 180 0 1 0 412 412 Z", "M 612 412 L 612 772"],
+      medians: [[412, 412], [612, 412]]
     },
     o: {
       strokes: ["M 312 512 A 240 240 0 1 0 712 512 A 240 240 0 1 0 312 512 Z"],
@@ -96,6 +96,15 @@ window.TRACE_PINYIN = window.TRACE_PINYIN || (function () {
         "M 352 512 A 180 180 0 1 0 692 512"
       ],
       medians: [[352, 252], [352, 512]]
+    },
+    q: {
+      // 手写体 q：两个笔画 — 椭圆 + 右下竖
+      // 教育部《汉语拼音字母表》手写体规范
+      strokes: [
+        "M 692 412 A 200 180 0 1 1 412 412 A 200 180 0 1 1 692 412 Z",
+        "M 692 412 L 692 772 L 832 772"
+      ],
+      medians: [[692, 412], [692, 412]]
     },
     m: {
       strokes: [
