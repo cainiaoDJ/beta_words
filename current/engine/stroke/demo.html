@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>笔画 Zone 框架验证</title>
+<link rel="stylesheet" href="stroke.css" />
+<style>
+  body { margin: 0; padding: 16px; background: #f5f2e9;
+         font-family: system-ui, -apple-system, "PingFang SC", sans-serif; }
+  h1 { font-size: 16px; margin: 0 0 12px; color: #2f6f59; }
+  .wrap { max-width: 420px; margin: 0 auto; }
+  .stroke-zone { margin-bottom: 12px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .bar button { flex: 1; min-width: 84px; padding: 10px 8px; font-size: 14px;
+                border-radius: 10px; border: 2px solid #2f6f59; background: #fff;
+                color: #2f6f59; font-weight: 600; }
+  .bar button:active { background: #2f6f59; color: #fff; }
+  #status { margin-top: 10px; padding: 10px; border-radius: 8px; font-size: 13px;
+            background: #fff; border: 1px solid #ddd; min-height: 40px; white-space: pre-wrap; }
+  #status.ok { border-color: #2f8c73; background: #eef9f4; }
+  #status.bad { border-color: #d86d4c; background: #fdf0eb; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>笔画 Zone 框架验证 · 学（8 笔）</h1>
+  <div id="zone" class="stroke-zone"></div>
+  <div class="bar">
+    <button id="btn-reveal">重播笔顺</button>
+    <button id="btn-clear">清除笔迹</button>
+    <button id="btn-next">下一笔</button>
+  </div>
+  <div id="status">等待起笔…（起笔必须在当前笔的起笔区域内）</div>
+</div>
+
+<script src="regions.js"></script>
+<script src="stroke.js"></script>
+<script src="pen-path.js"></script>
+<script src="zone-stroke.js"></script>
+<script src="pen-tool.js"></script>
+<script>
+(async function () {
+  var zone = new ZoneStroke(document.getElementById("zone"), {
+    viewBox: 1024, padding: 0.08, grid: "mi",
+    showGhost: true, showGuide: true, showNumbers: true
+  });
+
+  // 载入"学"的笔顺数据（本地 hanzi-cache）
+  var spec = await fetch("../assets/data/hanzi-cache/学.json").then(function (r) { return r.json(); });
+  // hanzi-writer 数据是 Y-up（数学坐标），入口处一次翻成屏幕坐标（Y-down）
+  var strokes = Stroke.fromHanziWriter(spec, { flipY: 1024, deriveRegions: true });
+  zone.setStrokes(strokes);
+  zone.reveal({ interval: 420 });
+
+  var statusEl = document.getElementById("status");
+  var curIdx = 0;
+
+  var pen = new PenTool(zone, {
+    strokeIndex: 0,
+    edgeMargin: 0.08,
+    requireRegion: true,
+    onStart: function (pt) {
+      statusEl.className = "";
+      statusEl.textContent = "起笔 OK · 第 " + (curIdx + 1) + " 笔\n落点必须在[" +
+        (zone.strokes[curIdx].endRegion || "?") + "]区内";
+    },
+    onEnd: function (p, result) {
+      if (result.ok) {
+        zone.addInk(p);
+        statusEl.className = "ok";
+        statusEl.textContent = "✓ 第 " + (curIdx + 1) + " 笔通过\n起[" +
+          result.gotStart + "] 落[" + result.gotEnd + "]";
+        curIdx = Math.min(curIdx + 1, zone.strokes.length - 1);
+        pen.setStrokeIndex(curIdx);
+      }
+    },
+    onReject: function (result) {
+      statusEl.className = "bad";
+      var msg = result.phase === "start" ? "起笔被拒" : "落笔被拒";
+      msg += " · 原因: " + result.reason;
+      if (result.got) msg += "\n你的区域: [" + result.got + "]";
+      if (result.expect) msg += "  需要: [" + result.expect + "]";
+      if (result.gotStart) msg += "\n起[" + result.gotStart + "] 落[" + result.gotEnd + "]";
+      if (result.expectStart) msg += "\n需要 起[" + result.expectStart + "] 落[" + result.expectEnd + "]";
+      statusEl.textContent = msg;
+      zone.container.classList.add("is-reject");
+      setTimeout(function () { zone.container.classList.remove("is-reject"); }, 340);
+    }
+  });
+
+  document.getElementById("btn-reveal").addEventListener("click", function () {
+    zone.render(); zone.reveal({ interval: 420 });
+  });
+  document.getElementById("btn-clear").addEventListener("click", function () {
+    zone.clearInk(); curIdx = 0; pen.setStrokeIndex(0);
+    statusEl.className = ""; statusEl.textContent = "已清除，从第 1 笔重新开始";
+  });
+  document.getElementById("btn-next").addEventListener("click", function () {
+    curIdx = Math.min(curIdx + 1, zone.strokes.length - 1);
+    pen.setStrokeIndex(curIdx);
+    statusEl.className = "";
+    statusEl.textContent = "跳到第 " + (curIdx + 1) + " 笔 · 起笔区[" +
+      (zone.strokes[curIdx].startRegion || "?") + "]";
+  });
+
+  // 暴露给自动化测试
+  window.__demo = { zone: zone, pen: pen, getIdx: function () { return curIdx; } };
+  window.__ready = true;
+})();
+</script>
+</body>
+</html>

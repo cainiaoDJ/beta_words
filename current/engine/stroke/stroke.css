@@ -1,0 +1,101 @@
+/* ============================================================================
+ * engine/stroke/stroke.css — 笔画 Zone 框架样式
+ * 2026-09-23 立（feat/stroke-zone）
+ *
+ * 三层渲染：ghost（灰底稿） / ink（用户墨迹） / guide（蓝笔顺引导）
+ * 样式用 CSS 变量，方便主题切换。逻辑尺寸走 SVG，视觉粗细走 CSS。
+ * ========================================================================== */
+
+.stroke-zone {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #fdfbf5;
+  border: 2px solid rgb(31 111 89);
+  border-radius: 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.stroke-zone-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* ---- 灰底稿：粗灰线，作为"阴影字"让小朋友有字形参照 ---- */
+.stroke-ghost {
+  fill: none;
+  stroke: #d8d2c4;
+  opacity: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- 蓝笔顺引导：默认隐藏，逐笔 revealed ---- */
+.stroke-guide {
+  fill: none;
+  stroke: rgb(91, 156, 207);
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.stroke-guide.is-revealed {
+  opacity: 0.85;
+}
+
+/* ---- 起点圆点 + 序号 ---- */
+.stroke-start-dot {
+  fill: rgb(31, 78, 121);
+  stroke: #fff;
+  stroke-width: 6;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+.stroke-start-dot.is-revealed {
+  opacity: 1;
+}
+
+.stroke-start-num {
+  fill: #fff;
+  font-weight: 800;
+  font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+  pointer-events: none;
+}
+.stroke-start-num.is-revealed {
+  opacity: 1;
+}
+
+/* ---- 用户墨迹：红色笔迹 ---- */
+.stroke-ink {
+  fill: none;
+  stroke: #d86d4c;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.92;
+}
+
+/* ---- 校验反馈 ---- */
+.stroke-zone.is-reject {
+  animation: stroke-shake 320ms ease-out;
+}
+@keyframes stroke-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* 起笔提示点（可选：显示当前笔允许起笔的区域） */
+.stroke-zone-hint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
