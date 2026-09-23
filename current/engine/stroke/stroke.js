@@ -103,6 +103,53 @@
     return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
   }
 
+  // 平移整条 path（只改绝对坐标；初始相对 M 以原点为基准也需要平移）。
+  // A 命令的 rx/ry/rotation/flags 不动。
+  function translatePath(d, dx, dy) {
+    if (!dx && !dy) return d;
+    var tokens = String(d).match(/[MmLlHhVvCcSsQqTtAaZz]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) || [];
+    var out = [];
+    var i = 0;
+    var cmd = null;
+    var tx = dx || 0, ty = dy || 0;
+    var sawMove = false;
+    function num() { return parseFloat(tokens[i++]); }
+    while (i < tokens.length) {
+      var t = tokens[i];
+      if (/[A-Za-z]/.test(t)) { cmd = t; out.push(t); i++; continue; }
+      var up = cmd.toUpperCase();
+      // Relative coordinates are deltas, so translating them would distort the
+      // path. The first relative moveto is the sole exception: SVG resolves it
+      // from the initial origin and it establishes the translated start point.
+      var rel = cmd === cmd.toLowerCase();
+      var moveOffset = !rel || (cmd === "m" && !sawMove);
+      var ox = moveOffset ? tx : 0;
+      var oy = moveOffset ? ty : 0;
+      switch (up) {
+        case "M": case "L": case "T":
+          out.push(num() + ox); out.push(num() + oy);
+          if (up === "M") sawMove = true;
+          break;
+        case "H": out.push(num() + ox); break;
+        case "V": out.push(num() + oy); break;
+        case "C":
+          out.push(num() + ox); out.push(num() + oy);
+          out.push(num() + ox); out.push(num() + oy);
+          out.push(num() + ox); out.push(num() + oy); break;
+        case "S": case "Q":
+          out.push(num() + ox); out.push(num() + oy);
+          out.push(num() + ox); out.push(num() + oy); break;
+        case "A":
+          out.push(num()); out.push(num()); out.push(num());
+          out.push(tokens[i++]); out.push(tokens[i++]);
+          out.push(num() + ox); out.push(num() + oy); break;
+        case "Z": break;
+        default: out.push(t); break;
+      }
+    }
+    return out.join(" ");
+  }
+
   // 取 path 的首个绝对起点
   function pathStart(d) {
     var m = String(d).match(/[Mm]\s*(-?\d*\.?\d+)[\s,]+(-?\d*\.?\d+)/);
@@ -136,6 +183,16 @@
     // 因为它比 path 的首/末坐标更能代表「用户应该从哪里下笔」。
     this.medianStart = opts.medianStart || null;
     this.medianEnd = opts.medianEnd || null;
+    // 可选平移 {dx, dy}：给「同一份笔画模板多次复用」的场景用（如拼音声调符号锚点在原点）。
+    // 构造时直接烘焙进 path 和 median，下游全部无感。
+    this.transform = opts.transform || null;
+    if (this.transform) {
+      var tdx = this.transform.dx || 0;
+      var tdy = this.transform.dy || 0;
+      this.path = translatePath(this.path, tdx, tdy);
+      if (this.medianStart) this.medianStart = [this.medianStart[0] + tdx, this.medianStart[1] + tdy];
+      if (this.medianEnd) this.medianEnd = [this.medianEnd[0] + tdx, this.medianEnd[1] + tdy];
+    }
     // 起笔 / 落笔区域约束（数组 = 允许集合；null = 不限制）
     this.startRegion = opts.startRegion || null;
     this.endRegion = opts.endRegion || null;
