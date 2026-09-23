@@ -79,15 +79,6 @@ const GAMES = {
     boardLabel: "成语填空区",
     startHint: "先点一个空格，再选字",
     recordPrefix: "beta_words_idiom_fill_best"
-  },
-  // Phase trace-tian — 田字格描红（feat/trace-tian，2026-09-22）
-  traceTian: {
-    id: "traceTian",
-    name: "田字格描红",
-    title: "跟着灰色字描一描",
-    boardLabel: "田字格描红区",
-    startHint: "先看笔顺，再动手描",
-    recordPrefix: "beta_words_trace_tian_best"
   }
 };
 
@@ -309,19 +300,7 @@ const state = {
   idiomCandidates: [],      // 候选字池（被扣字 + 干扰字打乱）
   idiomCurrentIdx: 0,       // 滚筒当前 focus 的成语 idx
   idiomSelectedSlot: null,  // 两段式第一步选中的空格 {idiomId, slotIdx} | null
-  idiomTotalCompleted: 0,   // 已完成成语数
-  // Phase trace-tian — 田字格描红专用 state
-  tracePool: null,          // "numbers" | "pinyin" | "hanzi"
-  traceItems: [],           // 本局随机抽取的项 [{display, pinyin, charKey, pool}, ...]
-  traceIndex: 0,            // 当前字在 traceItems 中的索引
-  traceStrokes: [],         // 用户笔迹 [{points: [[x01y], ...], normalized: bool}, ...]
-  traceStrokeSpec: null,    // 当前字笔画 spec {strokes: [SVG path], medians: [[x,y]]}
-  traceIsDrawing: false,    // 指针按住中
-  traceActivePointer: null, // 当前 pointerId
-  traceFontReady: false,    // 字体加载完成
-  traceLoadToken: 0,        // 防竞态 token（切池 / 快速返回 setup）
-  traceGuideRevealedCount: 0, // 已揭示的笔顺序号
-  traceGuideTimer: null     // 笔顺演示 setTimeout 链
+  idiomTotalCompleted: 0    // 已完成成语数
 };
 
 const AUDIO_MAP = window.BETA_WORDS_AUDIO || {};
@@ -533,8 +512,7 @@ const COMPLETE_TITLES = {
   listenCard:   { perfect: "听得全对！",     good: "听对了不少！", tryAgain: "再听一次" },
   compare:      { perfect: "比得全对！",     good: "多数对了！",   tryAgain: "再数一数" },
   stroopTrain:  { perfect: "完美读色！",     good: "颜色对了不少！", tryAgain: "颜色对应看仔细" },
-  idiomFill:    { perfect: "成语全通关！",   good: "填对不少！",   tryAgain: "再读几遍" },
-  traceTian:    { perfect: "全部描完啦！",   good: "描了不少字！", tryAgain: "再描一描" }
+  idiomFill:    { perfect: "成语全通关！",   good: "填对不少！",   tryAgain: "再读几遍" }
 };
 
 function renderCompletePanel(gameId, correct, total) {
@@ -584,16 +562,6 @@ const idiomTrack = document.querySelector("#idiom-track");
 const idiomPool = document.querySelector("#idiom-pool");
 // 鼠标滚轮（中键滚动）切换成语 — 主人 2026-08-09 20:47 验收标准
 idiomTrack.addEventListener("wheel", handleIdiomWheel, { passive: false });
-// Phase trace-tian — 田字格描红专用 DOM
-const traceHost = document.querySelector("#trace-host");
-const traceStage = traceHost?.querySelector(".trace-stage");
-const traceCanvas = document.querySelector("#trace-canvas");
-const traceOrderSvg = document.querySelector("#trace-order-svg");
-const traceRemaining = document.querySelector("#trace-remaining");
-const traceClearBtn = document.querySelector("#trace-clear");
-const traceNextBtn = document.querySelector("#trace-next");
-const traceLoading = document.querySelector("#trace-loading");
-const traceCtx = traceCanvas?.getContext("2d") || null;
 
 const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
 
@@ -606,8 +574,6 @@ document.querySelector("#open-stroop-train").addEventListener("click", () => cho
 document.querySelector("#open-compare")?.addEventListener("click", () => chooseGame(GAMES.compare.id));
 // Phase 8A — 成语填空入口
 document.querySelector("#open-idiom-fill")?.addEventListener("click", () => chooseGame(GAMES.idiomFill.id));
-// Phase trace-tian — 田字格描红入口
-document.querySelector("#open-trace-tian")?.addEventListener("click", () => chooseGame(GAMES.traceTian.id));
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
 document.querySelector("#replay-sound").addEventListener("click", () => playReplayVoice());
 // “再听一遍” 按钮在听音点卡 + 看字识颜色 中隐藏（不依赖读音重播）
@@ -740,10 +706,8 @@ function chooseGame(gameId) {
 }
 
 // Phase 8B v2: compare 用 L1-L4 关卡 (难度设计 A), 其他游戏还原默认难度文字 (不动其他游戏)
-// Phase trace-tian（feat/trace-tian）：覆盖 size 3/4/5 为三池文字，隐藏 6/7
 function syncSetupForGame(gameId) {
   const isCompare = gameId === GAMES.compare.id;
-  const isTraceTian = gameId === GAMES.traceTian.id;
   document.querySelectorAll('#setup .difficulty').forEach((btn) => {
     const size = parseInt(btn.dataset.size, 10);
     const strongEl = btn.querySelector('strong');
@@ -755,19 +719,6 @@ function syncSetupForGame(gameId) {
       if (cfg && strongEl && spanEl) {
         strongEl.textContent = cfg.name;
         spanEl.textContent = `${cfg.questionCount}题`;
-      }
-    } else if (isTraceTian) {
-      // 池映射：3=数字 / 4=拼音 / 5=汉字；6/7 隐藏
-      btn.hidden = (size === 6 || size === 7);
-      if (size === 3 && strongEl && spanEl) {
-        strongEl.textContent = "数字";
-        spanEl.textContent = "一-十 / 人教版";
-      } else if (size === 4 && strongEl && spanEl) {
-        strongEl.textContent = "拼音";
-        spanEl.textContent = "人教版 / 整体认读";
-      } else if (size === 5 && strongEl && spanEl) {
-        strongEl.textContent = "汉字";
-        spanEl.textContent = "一年级上 / 会写字";
       }
     } else {
       btn.hidden = false;
@@ -789,7 +740,6 @@ const RECOMMENDED_SIZE = {
   stroopTrain: 3,  // 3×3 入门（颜色字少不晕）
   compare: 3,      // 看图比大小 3×3 入门
   idiomFill: 4,    // 4 个成语，1 字/成语（入门梯度）
-  traceTian: 3,    // 数字池入门（10 个数字字最少，描红最难）
 };
 
 function setRecommendedDifficulty(gameId) {
@@ -846,30 +796,14 @@ function startGame(size) {
     if (stroopHost) stroopHost.hidden = true;
     if (idiomHost) idiomHost.hidden = false;
     if (compareHost) compareHost.hidden = true;
-  } else if (state.game === GAMES.traceTian.id) {
-    // Phase trace-tian: 田字格描红（独立 zone-stack，不复用 board/quiz/stroopHost）
-    board.hidden = true;
-    quiz.hidden = true;
-    if (stroopHost) stroopHost.hidden = true;
-    if (idiomHost) idiomHost.hidden = true;
-    if (compareHost) compareHost.hidden = true;
-    if (traceHost) traceHost.hidden = false;
   } else {
     board.hidden = isQuizGame;
     quiz.hidden = !isQuizGame;
     if (stroopHost) stroopHost.hidden = true;
     if (idiomHost) idiomHost.hidden = true;
     if (compareHost) compareHost.hidden = true;
-    if (traceHost) traceHost.hidden = true;
   }
   syncStroopHud();
-  // Phase trace-tian: 时钟区隐藏、进度区显示、Z2 复用全局 #progress
-  if (state.game === GAMES.traceTian.id) {
-    const hudTimer = document.querySelector(".hud-timer");
-    const replayBtn = document.querySelector("#replay-sound");
-    if (hudTimer) hudTimer.hidden = true;
-    if (replayBtn) replayBtn.hidden = true; // 不用 TTS 不需要重播按钮
-  }
   optionGrid.innerHTML = "";
   quizMain.innerHTML = "";
 
@@ -898,14 +832,6 @@ function startGame(size) {
   // Phase 8A: 成语填空分支
   if (state.game === GAMES.idiomFill.id) {
     startIdiomFillGame(size);
-    showScreen("game");
-    window.bgmController?.playForGame(state.game);
-    return;
-  }
-
-  // Phase trace-tian: 田字格描红分支
-  if (state.game === GAMES.traceTian.id) {
-    startTraceTianGame(size);
     showScreen("game");
     window.bgmController?.playForGame(state.game);
     return;
@@ -1419,11 +1345,6 @@ function getTileLabel(tile, isHidden) {
 }
 
 function updateProgress() {
-  // Phase trace-tian: 描红按 traceIndex / traceItems.length 显示进度
-  if (state.game === GAMES.traceTian.id) {
-    progress.textContent = `${state.traceIndex} / ${state.traceItems.length}`;
-    return;
-  }
   progress.textContent = `${state.matchedCount} / ${state.totalTargets}`;
 }
 
@@ -3313,624 +3234,4 @@ function shuffle(items) {
       api.toggle(!api.isEnabled());
     });
   }
-})();
-
-// =====================================================
-// Phase trace-tian — 田字格描红 (feat/trace-tian, 2026-09-22)
-// 数据源：人教版一年级上册（数字 / 拼音 / 汉字 三池）
-// 字库：assets/data/trace-{numbers,pinyin,hanzi}.js
-// 字体：LXGW Wenkai → 楷体/系统字体 降级
-// =====================================================
-
-// 池映射：size 3/4/5 → numbers/pinyin/hanzi；6/7 隐藏（setup 同步）
-const TRACE_POOLS = {
-  3: () => window.TRACE_NUMBERS,
-  4: () => window.TRACE_PINYIN,
-  5: () => window.TRACE_HANZI
-};
-// 池 → 每局取样数
-const TRACE_POOL_SAMPLE = { 3: 10, 4: 8, 5: 10 };
-// hanzi 池笔顺数据 CDN（固定版本，避免上游格式漂移）
-const HWR_CDN = "https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1";
-// CDN 请求缓存（按 char 缓存 promise；用 in 判断避免 null 真值陷阱）
-const hwrCache = Object.create(null);
-
-async function fetchHanziWriterData(char) {
-  if (char in hwrCache) return hwrCache[char];
-  const p = (async () => {
-    // 优先走本地预下载回退包（assets/data/hanzi-cache/{char}.json）
-    // 本地无则降级到 CDN；CDN 失败则 throw
-    let data = null;
-    try {
-      const localUrl = `assets/data/hanzi-cache/${encodeURIComponent(char)}.json`;
-      const r = await fetch(localUrl);
-      if (r.ok) {
-        data = await r.json();
-        // console.debug(`[traceTian] ${char} 本地命中`);
-      }
-    } catch (_) { /* 本地查不到是常态，忽略 */ }
-    if (!data) {
-      const r = await fetch(`${HWR_CDN}/${encodeURIComponent(char)}.json`);
-      if (!r.ok) throw new Error(`HTTP ${r.status} (CDN)`);
-      data = await r.json();
-    }
-    const strokes = data.strokes || [];
-    const medians = data.medians || [];
-    return { strokes, medians, yAxis: "up" };
-  })();
-  p.catch(() => { hwrCache[char] = null; });  // 失败标记，下次不重试
-  hwrCache[char] = p;
-  return p;
-}
-
-// 预热后续 N 项资源（不阻塞）
-function warmupHanziWriter(items, currentIndex, count = 3) {
-  for (let i = 1; i <= count; i++) {
-    const item = items[currentIndex + i];
-    if (!item) continue;
-    if (false && item.pool === "hanzi") {
-      fetchHanziWriterData(item.charKey).catch(() => {});
-    }
-  }
-}
-
-// ====== 游戏主入口 ======
-async function startTraceTianGame(size) {
-  const token = ++state.traceLoadToken;
-
-  // 1. 选池 + 抽取本局项
-  const poolGetter = TRACE_POOLS[size];
-  if (!poolGetter) {
-    console.error("[traceTian] no pool for size", size);
-    return;
-  }
-  const pool = poolGetter();
-  state.tracePool = pool.id;
-  state.traceItems = shuffle(pool.items).slice(0, TRACE_POOL_SAMPLE[size] || pool.items.length);
-  state.traceIndex = 0;
-  state.traceStrokes = [];
-  state.traceStrokeSpec = null;
-  state.traceIsDrawing = false;
-  state.traceActivePointer = null;
-  state.traceGuideRevealedCount = 0;
-
-  // 2. UI 初始：标题 / 进度 / hint / 隐藏"下一关"按钮
-  const game = getCurrentGame();
-  const poolLabel = `${pool.name} · ${pool.subtitle}`;
-  gameSubtitle.textContent = poolLabel;
-  gameTitle.textContent = game.title;
-  setHint(game.startHint);
-  updateProgress();
-  if (traceRemaining) traceRemaining.innerHTML = "";
-  if (traceLoading) traceLoading.hidden = false;
-  if (traceStage) traceStage.classList.add("is-locked");
-  if (traceNextBtn) traceNextBtn.disabled = true;
-  if (traceClearBtn) traceClearBtn.disabled = false;
-  const nextBtn = document.querySelector("#next-board");
-  if (nextBtn) nextBtn.hidden = true; // 描红无"下一关"语义
-
-  // 3. 渲染 Z4 待选列表（包含当前字 + 后续字）
-  renderTraceRemaining();
-
-  // 4. 等待字体就绪（带 timeout 兜底）
-  await waitTraceFontReady(2000).catch(() => {});  // 失败不阻塞
-  if (token !== state.traceLoadToken) return; // 防竞态
-
-  // 5. 准备首字
-  await loadCurrentTraceChar(token);
-  if (token !== state.traceLoadToken) return;
-  if (traceLoading) traceLoading.hidden = true;
-
-  // 6. 画米字格 + 灰色字
-  drawTraceStage();
-
-  // 7. 播放笔顺动画（揭示后开放描写）
-  playStrokeGuide(() => {
-    if (token !== state.traceLoadToken) return;
-    if (traceStage) traceStage.classList.remove("is-locked");
-    if (traceNextBtn) traceNextBtn.disabled = false;  // 解锁「下一字」（startTraceTianGame 初始化时禁用）
-    setHint("跟着笔顺，动手描一描");
-  });
-
-  // 8. 预热后续 3 个字
-  warmupHanziWriter(state.traceItems, state.traceIndex, 3);
-}
-
-// 字体加载等待：document.fonts.load + 兜底 timeout
-function waitTraceFontReady(timeoutMs) {
-  if (state.traceFontReady) return Promise.resolve();
-  return new Promise((resolve) => {
-    let settled = false;
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      state.traceFontReady = true;
-      resolve();
-    };
-    try {
-      if (document.fonts && document.fonts.load) {
-        document.fonts.load('64px "LXGW Wenkai Trace"').then(() => {
-          if (document.fonts.check('64px "LXGW Wenkai Trace"')) {
-            finish();
-            return;
-          }
-          // 字体未命中（系统未装，也未引 woff2）→ 走超时兜底
-          setTimeout(finish, Math.min(timeoutMs, 800));
-        });
-      } else {
-        setTimeout(finish, Math.min(timeoutMs, 800));
-      }
-    } catch {
-      finish();
-    }
-    setTimeout(finish, timeoutMs);
-  });
-}
-
-// 加载当前字的笔画 spec
-async function loadCurrentTraceChar(token) {
-  const item = state.traceItems[state.traceIndex];
-  if (!item) return;
-  const pool = item.pool;
-  if (pool === "pinyin") {
-    // 拼音走本地模板（同步）
-    if (window.TRACE_PINYIN && typeof window.TRACE_PINYIN.getStrokeSpec === "function") {
-      state.traceStrokeSpec = window.TRACE_PINYIN.getStrokeSpec(item.charKey);
-    }
-  } else if (pool === "numbers") {
-    // 阿拉伯数字 1-10 走本地模板（同步，避免 CDN 依赖）
-    if (window.TRACE_NUMBERS && typeof window.TRACE_NUMBERS.getStrokeSpec === "function") {
-      state.traceStrokeSpec = window.TRACE_NUMBERS.getStrokeSpec(item.charKey);
-    }
-  } else if (pool === "hanzi") {
-    // 汉字池走 Hanzi Writer CDN（人教版一上 100 字）
-    // CDN 数据 Y-up，需要 spec.yAxis = "up" 标记；渲染层会包 .trace-flip <g>
-    // 100 字已预下载到 assets/data/hanzi-cache/ 做回退（见 fetchHanziWriterData）
-    try {
-      const spec = await fetchHanziWriterData(item.charKey);
-      state.traceStrokeSpec = { ...spec, yAxis: "up" };
-    } catch (err) {
-      console.warn("[traceTian] 笔顺数据加载失败", item.charKey, err);
-      state.traceStrokeSpec = { strokes: [], medians: [], yAxis: "up" };
-      setHint("笔顺数据暂不可用，可以直接描");
-    }
-  }
-  if (token !== state.traceLoadToken) return;
-  state.traceGuideRevealedCount = 0;
-  renderTraceOrderSvg();
-}
-
-// ====== Z4 待选列表渲染 ======
-function renderTraceRemaining() {
-  if (!traceRemaining) return;
-  traceRemaining.innerHTML = "";
-  state.traceItems.forEach((item, idx) => {
-    const card = document.createElement("div");
-    card.className = "trace-remaining-card";
-    card.setAttribute("role", "listitem");
-    card.dataset.idx = String(idx);
-    card.textContent = item.display;
-    if (idx < state.traceIndex) card.classList.add("is-done");
-    if (idx === state.traceIndex) card.classList.add("is-current");
-    traceRemaining.appendChild(card);
-  });
-}
-
-// ====== 工具：取 stage 内容区尺寸（不含 border，避免 canvas/SVG 错位）======
-function getTraceStageSize() {
-  if (!traceStage) return 0;
-  // clientWidth/Height 不含 border，与绝对定位子元素的可用内容区一致
-  const w = traceStage.clientWidth || 0;
-  const h = traceStage.clientHeight || 0;
-  return Math.min(w, h);
-}
-
-// ====== Z3 米字格 + 灰色字 + 笔顺 SVG ======
-function drawTraceStage() {
-  if (!traceCanvas || !traceCtx) return;
-  const cssSize = getTraceStageSize();
-  if (!cssSize) return;
-  const dpr = window.devicePixelRatio || 1;
-  traceCanvas.width = Math.round(cssSize * dpr);
-  traceCanvas.height = Math.round(cssSize * dpr);
-  traceCanvas.style.width = `${cssSize}px`;
-  traceCanvas.style.height = `${cssSize}px`;
-  traceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  traceCtx.clearRect(0, 0, cssSize, cssSize);
-
-  // 米字格虚线
-  drawMiGrid(traceCtx, cssSize);
-
-  // 灰色示范字
-  const item = state.traceItems[state.traceIndex];
-  if (!item) return;
-  // 修复 0.68 字号过大 + +0.02 offset 位置偏低（主人反馈学字偏大偏下）
-  // 字号改 0.55；textBaseline="middle" 视觉居中，去掉 +0.02 微调
-  const fontSize = Math.round(cssSize * 0.55);
-  traceCtx.font = `normal ${fontSize}px "LXGW Wenkai Trace", "KaiTi", "STKaiti", "PingFang SC", "Microsoft YaHei", sans-serif`;
-  traceCtx.fillStyle = "#b0b0b0";
-  traceCtx.textAlign = "center";
-  traceCtx.textBaseline = "middle";
-  traceCtx.fillText(item.display, cssSize / 2, cssSize / 2);
-}
-
-// 米字格：横中线 + 竖中线 + 两条对角线（全部虚线）
-function drawMiGrid(ctx, size) {
-  const mid = size / 2;
-  ctx.save();
-  ctx.lineWidth = Math.max(1, size * 0.005);
-  ctx.setLineDash([size * 0.02, size * 0.02]);
-  // 横中线 + 竖中线
-  ctx.strokeStyle = "#b8b8b8";
-  ctx.beginPath();
-  ctx.moveTo(size * 0.05, mid); ctx.lineTo(size * 0.95, mid);
-  ctx.moveTo(mid, size * 0.05); ctx.lineTo(mid, size * 0.95);
-  ctx.stroke();
-  // 对角线
-  ctx.strokeStyle = "#d0d0d0";
-  ctx.beginPath();
-  ctx.moveTo(size * 0.05, size * 0.05); ctx.lineTo(size * 0.95, size * 0.95);
-  ctx.moveTo(size * 0.95, size * 0.05); ctx.lineTo(size * 0.05, size * 0.95);
-  ctx.stroke();
-  // 外框
-  ctx.setLineDash([]);
-  ctx.strokeStyle = "rgba(47, 140, 115, 0.0)";  // 框由 .trace-stage 的 border 提供
-  ctx.strokeRect(0, 0, size, size);
-  ctx.restore();
-}
-
-// 红色笔迹绘制（按 0~1 归一化坐标）
-function drawUserStrokes() {
-  if (!traceCtx || !traceCanvas) return;
-  const cssSize = getTraceStageSize();
-  if (!cssSize) return;
-  traceCtx.save();
-  traceCtx.lineWidth = Math.max(3, cssSize * 0.045);
-  traceCtx.lineCap = "round";
-  traceCtx.lineJoin = "round";
-  traceCtx.strokeStyle = "#d86d4c";  // 主题红
-  for (const stroke of state.traceStrokes) {
-    if (!stroke.points || stroke.points.length < 2) continue;
-    traceCtx.beginPath();
-    traceCtx.moveTo(stroke.points[0][0] * cssSize, stroke.points[0][1] * cssSize);
-    for (let i = 1; i < stroke.points.length; i++) {
-      traceCtx.lineTo(stroke.points[i][0] * cssSize, stroke.points[i][1] * cssSize);
-    }
-    traceCtx.stroke();
-  }
-  traceCtx.restore();
-}
-
-// ====== Z3 笔顺 SVG 渲染（蓝色笔顺 + 起点圆点 + 序号）======
-// spec 格式：{ strokes: [{d, transform?}], medians: [...], yAxis?: "up"|"down" }
-// 坐标系：
-//   - 本地模板（pinyin / numbers）: Y-down（SVG 默认）= 视觉上从顶到底
-//   - hanzi-writer-data CDN: Y-up（数学约定）= 需要 scale(1,-1) translate(0,-1024) 翻转
-// 渲染层根据 spec.yAxis 决定是否包 .trace-flip <g>
-function renderTraceOrderSvg() {
-  if (!traceOrderSvg) return;
-  traceOrderSvg.innerHTML = "";
-  const spec = state.traceStrokeSpec;
-  if (!spec || !spec.strokes || spec.strokes.length === 0) return;
-  const NS = "http://www.w3.org/2000/svg";
-  // Y-up 数据需要 .trace-flip <g> 翻转；Y-down 不需要
-  const yAxis = spec.yAxis || "down";
-  let root = traceOrderSvg;
-  if (yAxis === "up") {
-    const g = document.createElementNS(NS, "g");
-    g.setAttribute("transform", "scale(1, -1) translate(0, -1024)");
-    g.setAttribute("class", "trace-flip");
-    traceOrderSvg.appendChild(g);
-    root = g;
-  }
-  spec.strokes.forEach((strokeObj, idx) => {
-    // 兼容旧格式：string 直接当 d
-    const d = typeof strokeObj === "string" ? strokeObj : strokeObj.d;
-    const transform = typeof strokeObj === "string" ? null : strokeObj.transform;
-    const p = document.createElementNS(NS, "path");
-    p.setAttribute("d", d);
-    p.setAttribute("class", "trace-stroke-path");
-    p.dataset.idx = String(idx);
-    if (transform) {
-      const g2 = document.createElementNS(NS, "g");
-      g2.setAttribute("transform", `translate(${transform.dx || 0}, ${transform.dy || 0})`);
-      g2.appendChild(p);
-      root.appendChild(g2);
-    } else {
-      root.appendChild(p);
-    }
-  });
-  // 起点圆点 + 序号（默认全部隐藏；playStrokeGuide 逐笔揭示时显示）
-  // hanzi-writer-data medians 格式：[[[x,y],[x,y],...], ...]（每个笔画是一组点）
-  // 取每笔第一个点当起点
-  if (spec.medians) {
-    spec.medians.forEach((median, idx) => {
-      if (!median) return;
-      let cx, cy, transform = null;
-      if (Array.isArray(median)) {
-        // 数组形态：可能是 [[x,y], ...]（hanzi-writer-data，每笔多点）
-        // 或 [x, y]（旧格式，单点）
-        if (median.length > 0 && Array.isArray(median[0])) {
-          const p = median[0];
-          cx = p[0]; cy = p[1];
-        } else {
-          cx = median[0]; cy = median[1];
-        }
-      } else {
-        cx = median.x; cy = median.y;
-        transform = median.transform;
-      }
-      const dot = document.createElementNS(NS, "circle");
-      dot.setAttribute("cx", cx);
-      dot.setAttribute("cy", cy);
-      dot.setAttribute("r", 28);
-      dot.setAttribute("class", "trace-stroke-point");
-      dot.dataset.idx = String(idx);
-      dot.style.opacity = "0";
-      const txt = document.createElementNS(NS, "text");
-      txt.setAttribute("x", cx);
-      txt.setAttribute("y", cy);
-      txt.setAttribute("text-anchor", "middle");
-      txt.setAttribute("dominant-baseline", "central");
-      txt.setAttribute("class", "trace-stroke-num");
-      txt.dataset.idx = String(idx);
-      txt.textContent = String(idx + 1);
-      txt.style.opacity = "0";
-      if (transform) {
-        const g = document.createElementNS(NS, "g");
-        g.setAttribute("transform", `translate(${transform.dx || 0}, ${transform.dy || 0})`);
-        g.appendChild(dot);
-        g.appendChild(txt);
-        root.appendChild(g);
-      } else {
-        root.appendChild(dot);
-        root.appendChild(txt);
-      }
-    });
-  }
-}
-
-// 笔顺动画：按 strokes 顺序逐笔揭示（200ms / 笔）
-function playStrokeGuide(onComplete) {
-  const spec = state.traceStrokeSpec;
-  if (!spec || !spec.strokes || spec.strokes.length === 0) {
-    // 没有笔顺数据 → 直接开放描写
-    if (typeof onComplete === "function") onComplete();
-    return;
-  }
-  if (state.traceGuideTimer) {
-    clearTimeout(state.traceGuideTimer);
-    state.traceGuideTimer = null;
-  }
-  state.traceGuideRevealedCount = 0;
-  const total = spec.strokes.length;
-  let i = 0;
-  const reveal = () => {
-    if (i >= total) {
-      state.traceGuideTimer = null;
-      if (typeof onComplete === "function") onComplete();
-      return;
-    }
-    const path = traceOrderSvg?.querySelector(`.trace-stroke-path[data-idx="${i}"]`);
-    const dot = traceOrderSvg?.querySelector(`.trace-stroke-point[data-idx="${i}"]`);
-    const num = traceOrderSvg?.querySelector(`.trace-stroke-num[data-idx="${i}"]`);
-    if (path) path.classList.add("is-revealed");
-    if (dot) dot.style.opacity = "1";
-    if (num) num.style.opacity = "1";
-    state.traceGuideRevealedCount = i + 1;
-    i++;
-    state.traceGuideTimer = setTimeout(reveal, 600);  // 600ms/笔，便于观察
-  };
-  reveal();
-}
-
-// ====== Pointer 笔迹追踪 ======
-function attachTracePointerHandlers() {
-  if (!traceStage || !traceCanvas) return;
-  traceStage.addEventListener("pointerdown", onTracePointerDown);
-  traceStage.addEventListener("pointermove", onTracePointerMove);
-  traceStage.addEventListener("pointerup", onTracePointerUp);
-  traceStage.addEventListener("pointercancel", onTracePointerUp);
-  traceStage.addEventListener("pointerleave", onTracePointerUp);
-}
-function detachTracePointerHandlers() {
-  if (!traceStage || !traceCanvas) return;
-  traceStage.removeEventListener("pointerdown", onTracePointerDown);
-  traceStage.removeEventListener("pointermove", onTracePointerMove);
-  traceStage.removeEventListener("pointerup", onTracePointerUp);
-  traceStage.removeEventListener("pointercancel", onTracePointerUp);
-  traceStage.removeEventListener("pointerleave", onTracePointerUp);
-}
-function onTracePointerDown(e) {
-  if (!traceStage || traceStage.classList.contains("is-locked")) return;
-  if (e.button !== undefined && e.button !== 0) return; // 只主键
-  e.preventDefault();
-  const cssSize = getTraceStageSize();
-  if (!cssSize) return;
-  // stage 是 aspect-ratio 1:1 正方形，绘画区是 border 内的内容区
-  // clientWidth = 总宽（含 2px border 左右），绘画区 = clientWidth - 4
-  // 绘画区相对 stage 左上角的偏移：border 2px
-  const stageRect = traceStage.getBoundingClientRect();
-  // 计算绘画区左上去 stage 左上的偏移（可能被 aspect-ratio 居中拉伸）
-  const contentOffsetX = (stageRect.width - cssSize) / 2;
-  const contentOffsetY = (stageRect.height - cssSize) / 2;
-  const x = (e.clientX - stageRect.left - contentOffsetX) / cssSize;
-  const y = (e.clientY - stageRect.top - contentOffsetY) / cssSize;
-  state.traceIsDrawing = true;
-  state.traceActivePointer = e.pointerId;
-  state.traceStrokes.push({ points: [[x, y]] });
-  traceStage.classList.add("is-drawing");
-  try { traceStage.setPointerCapture(e.pointerId); } catch {}
-  drawUserStrokes();
-}
-function onTracePointerMove(e) {
-  if (!state.traceIsDrawing) return;
-  if (state.traceActivePointer !== e.pointerId) return;
-  const cssSize = getTraceStageSize();
-  if (!cssSize) return;
-  const stageRect = traceStage.getBoundingClientRect();
-  const contentOffsetX = (stageRect.width - cssSize) / 2;
-  const contentOffsetY = (stageRect.height - cssSize) / 2;
-  const x = (e.clientX - stageRect.left - contentOffsetX) / cssSize;
-  const y = (e.clientY - stageRect.top - contentOffsetY) / cssSize;
-  const stroke = state.traceStrokes[state.traceStrokes.length - 1];
-  if (!stroke) return;
-  const last = stroke.points[stroke.points.length - 1];
-  // 距离阈值过滤（避免噪声点）
-  if (last) {
-    const dx = x - last[0];
-    const dy = y - last[1];
-    if (dx * dx + dy * dy < 0.00005) return;  // ~0.7% 边长
-  }
-  stroke.points.push([x, y]);
-  drawUserStrokeSegment(stroke, stroke.points.length - 2);
-}
-function drawUserStrokeSegment(stroke, fromIdx) {
-  if (!traceCtx || !traceCanvas) return;
-  if (!stroke.points || stroke.points.length < 2) return;
-  const cssSize = getTraceStageSize();
-  if (!cssSize) return;
-  traceCtx.save();
-  traceCtx.lineWidth = Math.max(3, cssSize * 0.045);
-  traceCtx.lineCap = "round";
-  traceCtx.lineJoin = "round";
-  traceCtx.strokeStyle = "#d86d4c";
-  const start = stroke.points[Math.max(0, fromIdx)];
-  const end = stroke.points[stroke.points.length - 1];
-  traceCtx.beginPath();
-  traceCtx.moveTo(start[0] * cssSize, start[1] * cssSize);
-  traceCtx.lineTo(end[0] * cssSize, end[1] * cssSize);
-  traceCtx.stroke();
-  traceCtx.restore();
-}
-function onTracePointerUp(e) {
-  if (!state.traceIsDrawing) return;
-  if (state.traceActivePointer !== null && e.pointerId !== state.traceActivePointer) return;
-  state.traceIsDrawing = false;
-  state.traceActivePointer = null;
-  if (traceStage) traceStage.classList.remove("is-drawing");
-  try { traceStage.releasePointerCapture(e.pointerId); } catch {}
-}
-
-// ====== Toolbar 处理 ======
-function onTraceClear() {
-  state.traceStrokes = [];
-  drawTraceStage();
-}
-function onTraceNext() {
-  // 判定：有笔迹即可推进。单 tap / 鼠标点一下但 pointermove 未触发时，points.length 可能为 1。
-  // 只要有任意一条非空 stroke（points >= 1）就允许推进，避免孩子描了半天还是灰按钮。
-  const hasInk = state.traceStrokes.some(s => s.points && s.points.length >= 1);
-  if (!hasInk) {
-    // 无笔迹 → shake 提示
-    if (traceNextBtn) {
-      traceNextBtn.classList.add("is-shake");
-      setTimeout(() => traceNextBtn.classList.remove("is-shake"), 350);
-    }
-    setHint("先描几笔，再换下一个字");
-    return;
-  }
-  state.traceIndex += 1;
-  state.matchedCount = state.traceIndex;  // 复用 matchedCount 作为已完成数
-  state.traceStrokes = [];
-  updateProgress();
-  if (state.traceIndex >= state.traceItems.length) {
-    // 全部完成
-    finishTraceTianGame();
-    return;
-  }
-  renderTraceRemaining();
-  if (traceStage) traceStage.classList.add("is-locked");
-  if (traceLoading) traceLoading.hidden = false;
-  if (traceNextBtn) traceNextBtn.disabled = true;  // 锁住等下一个字笔顺动画播放
-  const token = state.traceLoadToken;
-  loadCurrentTraceChar(token).then(() => {
-    if (token !== state.traceLoadToken) return;
-    if (traceLoading) traceLoading.hidden = true;
-    drawTraceStage();
-    playStrokeGuide(() => {
-      if (token !== state.traceLoadToken) return;
-      if (traceStage) traceStage.classList.remove("is-locked");
-      if (traceNextBtn) traceNextBtn.disabled = false;  // 解锁「下一字」
-      setHint("跟着笔顺，动手描一描");
-    });
-  });
-  warmupHanziWriter(state.traceItems, state.traceIndex, 3);
-}
-
-// ====== 完成流程 ======
-function finishTraceTianGame() {
-  if (traceStage) traceStage.classList.add("is-completed");
-  setTimeout(() => {
-    if (traceStage) traceStage.classList.remove("is-completed");
-  }, 500);
-  const total = state.traceItems.length;
-  const correct = total;  // 描红模式下"全部完成"=全部描过
-  state.matchedCount = correct;
-  state.totalTargets = total;
-  setHint("描完啦！");
-  if (traceLoading) traceLoading.hidden = true;
-  if (traceHost) traceHost.hidden = true;
-  setMascotState("celebrate");
-  renderCompletePanel(state.game, correct, total);
-  renderTrophiesAndStars(correct, total);
-  // 描红无"下一关"（不是棋盘语义）
-  const nextBtn = document.querySelector("#next-board");
-  if (nextBtn) nextBtn.hidden = true;
-  // 时间显示"描完 X 个字"
-  if (completeTime) completeTime.textContent = `描完 ${correct} / ${total} 个字`;
-  if (bestRecord) bestRecord.hidden = true;  // 描红无时间竞赛
-  window.setTimeout(() => {
-    completePanel.hidden = false;
-    spawnConfetti(28);
-  }, 200);
-}
-
-// ====== 离开游戏清理 ======
-function teardownTraceTian() {
-  if (state.traceGuideTimer) {
-    clearTimeout(state.traceGuideTimer);
-    state.traceGuideTimer = null;
-  }
-  state.traceLoadToken += 1;  // 让所有 in-flight 加载失效
-  state.traceStrokes = [];
-  state.traceStrokeSpec = null;
-  state.traceItems = [];
-  state.traceIndex = 0;
-  state.traceIsDrawing = false;
-  state.traceActivePointer = null;
-  if (traceStage) {
-    traceStage.classList.remove("is-locked", "is-drawing", "is-completed");
-  }
-  if (traceRemaining) traceRemaining.innerHTML = "";
-  if (traceOrderSvg) traceOrderSvg.innerHTML = "";
-  if (traceLoading) traceLoading.hidden = true;
-}
-
-// ====== 启动 Pointer 监听 + Toolbar 按钮（仅一次）======
-attachTracePointerHandlers();
-traceClearBtn?.addEventListener("click", onTraceClear);
-traceNextBtn?.addEventListener("click", onTraceNext);
-
-// 窗口大小变化时重画米字格 + 重放笔迹
-let traceResizeRaf = null;
-window.addEventListener("resize", () => {
-  if (state.game !== GAMES.traceTian.id) return;
-  if (traceResizeRaf) cancelAnimationFrame(traceResizeRaf);
-  traceResizeRaf = requestAnimationFrame(() => {
-    drawTraceStage();
-    drawUserStrokes();
-  });
-});
-
-// ====== 在 leaveGame 尾部调用 teardownTraceTian ======
-(function patchLeaveGameForTrace() {
-  if (typeof leaveGame !== "function") return;
-  const orig = leaveGame;
-  window.__origLeaveGameForTrace = orig;
-  leaveGame = function patchedLeaveGame() {
-    const wasTrace = state.game === GAMES.traceTian.id;
-    orig.apply(this, arguments);
-    if (wasTrace) teardownTraceTian();
-  };
 })();
