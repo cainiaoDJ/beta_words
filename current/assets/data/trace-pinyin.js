@@ -285,37 +285,36 @@ window.TRACE_PINYIN = window.TRACE_PINYIN || (function () {
 
   // ===== 拼音项数据 =====
   const items = [
-    // 声母带调（单字符 + 声调）
-    { display: "bā", pool: "pinyin", charKey: "b1", type: "pinyin", pinyin: "bā" },
-    { display: "bà", pool: "pinyin", charKey: "b4", type: "pinyin", pinyin: "bà" },
-    { display: "pá", pool: "pinyin", charKey: "p2", type: "pinyin", pinyin: "pá" },
-    { display: "mā", pool: "pinyin", charKey: "m1", type: "pinyin", pinyin: "mā" },
-    { display: "má", pool: "pinyin", charKey: "m2", type: "pinyin", pinyin: "má" },
-    { display: "mǎ", pool: "pinyin", charKey: "m3", type: "pinyin", pinyin: "mǎ" },
-    { display: "mà", pool: "pinyin", charKey: "m4", type: "pinyin", pinyin: "mà" },
-    { display: "fā", pool: "pinyin", charKey: "f1", type: "pinyin", pinyin: "fā" },
-    { display: "dā", pool: "pinyin", charKey: "d1", type: "pinyin", pinyin: "dā" },
-    { display: "dé", pool: "pinyin", charKey: "d2", type: "pinyin", pinyin: "dé" },
-    { display: "tā", pool: "pinyin", charKey: "t1", type: "pinyin", pinyin: "tā" },
-    { display: "ná", pool: "pinyin", charKey: "n2", type: "pinyin", pinyin: "ná" },
-    { display: "lā", pool: "pinyin", charKey: "l1", type: "pinyin", pinyin: "lā" },
-    { display: "gā", pool: "pinyin", charKey: "g1", type: "pinyin", pinyin: "gā" },
-    { display: "hā", pool: "pinyin", charKey: "h1", type: "pinyin", pinyin: "hā" },
-    { display: "kā", pool: "pinyin", charKey: "k1", type: "pinyin", pinyin: "kā" },
-    { display: "yā", pool: "pinyin", charKey: "y1", type: "pinyin", pinyin: "yā" },
-    { display: "wā", pool: "pinyin", charKey: "w1", type: "pinyin", pinyin: "wā" },
-
-    // 整体认读音节（多字符）
-    { display: "zhi", pool: "pinyin", charKey: "zhi", type: "pinyin", pinyin: "zhī" },
-    { display: "chi", pool: "pinyin", charKey: "chi", type: "pinyin", pinyin: "chī" },
-    { display: "shi", pool: "pinyin", charKey: "shi", type: "pinyin", pinyin: "shī" },
-    { display: "ri",  pool: "pinyin", charKey: "ri",  type: "pinyin", pinyin: "rì" },
-    { display: "zi",  pool: "pinyin", charKey: "zi",  type: "pinyin", pinyin: "zī" },
-    { display: "ci",  pool: "pinyin", charKey: "ci",  type: "pinyin", pinyin: "cī" },
-    { display: "si",  pool: "pinyin", charKey: "si",  type: "pinyin", pinyin: "sī" },
-    { display: "yi",  pool: "pinyin", charKey: "yi",  type: "pinyin", pinyin: "yī" },
-    { display: "wu",  pool: "pinyin", charKey: "wu",  type: "pinyin", pinyin: "wū" },
-    { display: "yu",  pool: "pinyin", charKey: "yu",  type: "pinyin", pinyin: "yū" }
+    // 单元音 + 4 声调（6 元音 × 4 = 24 项）
+    // 修复主人反馈"全是 ma ba，没有单拼音"：之前 display 是双字符音节，charKey 拆出元音，导致灰字与笔顺不匹配
+    // 现在 display 直接是单元音+声调（如"ā"），charKey 同步（"a1"），灰字=笔顺=vowel
+    { display: "ā", pool: "pinyin", charKey: "a1", type: "pinyin", pinyin: "ā" },
+    { display: "á", pool: "pinyin", charKey: "a2", type: "pinyin", pinyin: "á" },
+    { display: "ǎ", pool: "pinyin", charKey: "a3", type: "pinyin", pinyin: "ǎ" },
+    { display: "à", pool: "pinyin", charKey: "a4", type: "pinyin", pinyin: "à" },
+    { display: "ō", pool: "pinyin", charKey: "o1", type: "pinyin", pinyin: "ō" },
+    { display: "ó", pool: "pinyin", charKey: "o2", type: "pinyin", pinyin: "ó" },
+    { display: "ǒ", pool: "pinyin", charKey: "o3", type: "pinyin", pinyin: "ǒ" },
+    { display: "ò", pool: "pinyin", charKey: "o4", type: "pinyin", pinyin: "ò" },
+    { display: "ē", pool: "pinyin", charKey: "e1", type: "pinyin", pinyin: "ē" },
+    { display: "é", pool: "pinyin", charKey: "e2", type: "pinyin", pinyin: "é" },
+    { display: "ě", pool: "pinyin", charKey: "e3", type: "pinyin", pinyin: "ě" },
+    { display: "è", pool: "pinyin", charKey: "e4", type: "pinyin", pinyin: "è" },
+    { display: "ī", pool: "pinyin", charKey: "i1", type: "pinyin", pinyin: "ī" },
+    { display: "í", pool: "pinyin", charKey: "i2", type: "pinyin", pinyin: "í" },
+    { display: "ǐ", pool: "pinyin", charKey: "i3", type: "pinyin", pinyin: "ǐ" },
+    { display: "ì", pool: "pinyin", charKey: "i4", type: "pinyin", pinyin: "ì" },
+    { display: "ū", pool: "pinyin", charKey: "u1", type: "pinyin", pinyin: "ū" },
+    { display: "ú", pool: "pinyin", charKey: "u2", type: "pinyin", pinyin: "ú" },
+    { display: "ǔ", pool: "pinyin", charKey: "u3", type: "pinyin", pinyin: "ǔ" },
+    { display: "ù", pool: "pinyin", charKey: "u4", type: "pinyin", pinyin: "ù" },
+    { display: "ǖ", pool: "pinyin", charKey: "ü1", type: "pinyin", pinyin: "ǖ" },
+    { display: "ǘ", pool: "pinyin", charKey: "ü2", type: "pinyin", pinyin: "ǘ" },
+    { display: "ǚ", pool: "pinyin", charKey: "ü3", type: "pinyin", pinyin: "ǚ" },
+    { display: "ǜ", pool: "pinyin", charKey: "ü4", type: "pinyin", pinyin: "ǜ" },
+    // 整体认读音节（zhi/chi/shi/ri/zi/ci/si/yi/wu/yu/ye/yue/yuan/ying/yun/yin 16 个）
+    // 暂时不放进这个池（需要不同的笔顺处理逻辑：多字符拼接、占 2/3 字符盒）
+    // 留作后续迭代：拼读池（recognition）单独一个池，跟描红池分开
   ];
 
   // ===== 笔画查找入口 =====
