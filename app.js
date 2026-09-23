@@ -3544,12 +3544,14 @@ function drawTraceStage() {
   // 灰色示范字
   const item = state.traceItems[state.traceIndex];
   if (!item) return;
-  const fontSize = Math.round(cssSize * 0.68);
+  // 修复 0.68 字号过大 + +0.02 offset 位置偏低（主人反馈学字偏大偏下）
+  // 字号改 0.55；textBaseline="middle" 视觉居中，去掉 +0.02 微调
+  const fontSize = Math.round(cssSize * 0.55);
   traceCtx.font = `normal ${fontSize}px "LXGW Wenkai Trace", "KaiTi", "STKaiti", "PingFang SC", "Microsoft YaHei", sans-serif`;
   traceCtx.fillStyle = "#b0b0b0";
   traceCtx.textAlign = "center";
   traceCtx.textBaseline = "middle";
-  traceCtx.fillText(item.display, cssSize / 2, cssSize / 2 + cssSize * 0.02);
+  traceCtx.fillText(item.display, cssSize / 2, cssSize / 2);
 }
 
 // 米字格：横中线 + 竖中线 + 两条对角线（全部虚线）

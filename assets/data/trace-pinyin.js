@@ -44,8 +44,14 @@ window.TRACE_PINYIN = window.TRACE_PINYIN || (function () {
 
   const letters = {
     a: {
-      strokes: ["M 412 412 A 200 180 0 1 0 612 412 A 200 180 0 1 0 412 412 Z", "M 612 412 L 612 772"],
-      medians: [[412, 412], [612, 412]]
+      // 手写体 a：两笔 — 椭圆 + 右竖
+      // 修复 cbc8f95 bug：原来两弧同方向(sweep=0, sweep=0) 画成两个堆叠圆
+      // 正确做法：两弧 sweep flag 必须相反（一个上弧一个下弧）
+      strokes: [
+        "M 412 512 A 100 80 0 1 0 612 512 A 100 80 0 1 1 412 512 Z",
+        "M 612 432 L 612 772"
+      ],
+      medians: [[412, 512], [612, 432]]
     },
     o: {
       strokes: ["M 312 512 A 240 240 0 1 0 712 512 A 240 240 0 1 0 312 512 Z"],
