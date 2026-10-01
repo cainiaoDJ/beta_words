@@ -16,7 +16,7 @@
 // Zone 预期数量（与 index.html 各游戏的 DOM 结构对应）：
 //   match/memory/stroop/quiz 都至少 1 个 .zone-primary（棋盘或题目卡）
 //   quiz 类（pinyin-friend + listen-card）多 1 个 .zone-secondary（选项网格）
-//   stroop-train 多 1 个 .zone-secondary（待选区）+ 1 个 .zone-toolbar（颜色条）
+//   stroop-train 运行时将 #stroop-board 改为 .stroop-track（滑动队列），不保留 primary/secondary Zone；保留 toolbar。
 //   trace-tian 多 1 个 .zone-secondary（待选字）+ 1 个 .zone-toolbar（清除/下一字）
 //   idiom-fill 多 1 个 .zone-secondary（候选字池）
 
@@ -32,17 +32,26 @@ const TESTS = [
   { name: 'Small phone   (360x640)',  vp: { width: 360, height: 640 } },
   { name: 'Tiny phone    (320x568)',  vp: { width: 320, height: 568 } },
 ];
-const GAMES = ['open-match', 'open-memory', 'open-pinyin-friend', 'open-listen-card', 'open-stroop-train', 'open-compare', 'open-idiom-fill', 'open-trace-tian'];
+// 可选：TEST_DEVICE='iPhone 13' 只跑一个设备，便于 CI 分片；不传仍跑全部设备。
+const TEST_DEVICE = process.env.TEST_DEVICE || '';
+const ACTIVE_TESTS = TEST_DEVICE
+  ? TESTS.filter((test) => test.name.includes(TEST_DEVICE))
+  : TESTS;
+if (!ACTIVE_TESTS.length) throw new Error(`No test device matches TEST_DEVICE=${TEST_DEVICE}`);
+// trace-tian 正在重建，尚未在正式大厅开放；恢复入口时再将其加回覆盖列表。
+const GAMES = ['open-match', 'open-memory', 'open-pinyin-friend', 'open-listen-card', 'open-stroop-train', 'open-compare', 'open-idiom-fill'];
 const DESIGN_W = 360;
 const DESIGN_H = 640;
+// 本测试只读取同步生成的 DOM/布局，不等待音效、动画或完成弹窗动画。
+// 保持短暂停顿让浏览器完成一次 layout；避免 364 个状态测试无谓地耗时数分钟。
+const SETTLE_MS = 250;
 
 // 测试目标 URL（默认本地开发服；可用 BASE_URL env 覆盖）
 const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:4174/';
 
 // 各游戏可测的难度 size
 const GAME_SIZES = {
-  'open-trace-tian': [3, 4, 5],
-  'open-compare':    [3, 5, 7],
+  'open-compare':    [3, 4, 5, 6],
   'open-idiom-fill': [3, 5, 7],
 };
 function sizesFor(gameId) {
@@ -55,8 +64,7 @@ const ZONE_EXPECT = {
   'memory':        { primary: 1, secondary: 0, toolbar: 0 },
   'pinyin-friend': { primary: 1, secondary: 1, toolbar: 0 },
   'listen-card':   { primary: 1, secondary: 1, toolbar: 0 },
-  'stroop-train':  { primary: 1, secondary: 1, toolbar: 1 },
-  'trace-tian':    { primary: 1, secondary: 1, toolbar: 1 },
+  'stroop-train':  { primary: 0, secondary: 0, toolbar: 1 },
   'idiom-fill':    { primary: 1, secondary: 1, toolbar: 0 },  // Phase 8A: 滚筒 + 候选字池
 };
 
@@ -73,7 +81,7 @@ function parseLabel(label) {
   const browser = await chromium.launch();
   const results = [];
 
-  for (const t of TESTS) {
+  for (const t of ACTIVE_TESTS) {
     const ctx = await browser.newContext({
       viewport: t.vp,
       deviceScaleFactor: 2,
@@ -81,7 +89,9 @@ function parseLabel(label) {
       hasTouch: true,
     });
     const page = await ctx.newPage();
-    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+    // 大厅会预加载多段 BGM；networkidle 会无谓等待音频连接，且布局断言不依赖它们。
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.stage-canvas');
 
     const measure = (label) => page.evaluate((args) => {
       const canvas = document.querySelector('.stage-canvas');
@@ -136,12 +146,12 @@ function parseLabel(label) {
     results.push({ device: t.name, ...(await measure('lobby')) });
     for (const g of GAMES) {
       await page.click('#' + g);
-      await page.waitForTimeout(250);
+      await page.waitForTimeout(SETTLE_MS);
       results.push({ device: t.name, ...(await measure(`setup:${g.replace('open-','')}`)) });
 
       for (const sz of sizesFor(g)) {
         await page.click(`button.difficulty[data-size="${sz}"]`);
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(SETTLE_MS);
         results.push({ device: t.name, ...(await measure(`play:${g.replace('open-','')}:${sz}`)) });
 
         // 触发 complete panel（fixed overlay，不影响 .screen.active 高度和 zone 结构）
@@ -152,14 +162,14 @@ function parseLabel(label) {
           const legacy = document.querySelector('#complete-time');
           if (legacy) legacy.textContent = '本次用时 00:42';
         });
-        await page.waitForTimeout(150);
+        await page.waitForTimeout(SETTLE_MS);
         results.push({ device: t.name, ...(await measure(`play:${g.replace('open-','')}:${sz}:complete`)) });
 
         await page.click('button[data-action="back-setup"]');
-        await page.waitForTimeout(150);
+        await page.waitForTimeout(SETTLE_MS);
       }
       await page.click('button[data-action="back-lobby"]');
-      await page.waitForTimeout(150);
+      await page.waitForTimeout(SETTLE_MS);
     }
     await ctx.close();
   }

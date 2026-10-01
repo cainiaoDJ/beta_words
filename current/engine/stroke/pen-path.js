@@ -125,6 +125,45 @@
     return t;
   };
 
+  function distance(a, b) {
+    var dx = a[0] - b[0], dy = a[1] - b[1];
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function pointToSegmentDistance(p, a, b) {
+    var dx = b[0] - a[0], dy = b[1] - a[1];
+    var den = dx * dx + dy * dy;
+    if (!den) return distance(p, a);
+    var t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / den;
+    t = Math.max(0, Math.min(1, t));
+    return distance(p, [a[0] + dx * t, a[1] + dy * t]);
+  }
+
+  function minDistanceToPolyline(p, line) {
+    if (!line.length) return Infinity;
+    if (line.length === 1) return distance(p, line[0]);
+    var min = Infinity;
+    for (var i = 1; i < line.length; i++) {
+      var d = pointToSegmentDistance(p, line[i - 1], line[i]);
+      if (d < min) min = d;
+    }
+    return min;
+  }
+
+  function resample(points, maxStep) {
+    if (points.length < 2) return points.slice();
+    var out = [points[0]];
+    for (var i = 1; i < points.length; i++) {
+      var a = points[i - 1], b = points[i];
+      var d = distance(a, b);
+      var n = Math.max(1, Math.ceil(d / maxStep));
+      for (var j = 1; j <= n; j++) {
+        out.push([a[0] + (b[0] - a[0]) * j / n, a[1] + (b[1] - a[1]) * j / n]);
+      }
+    }
+    return out;
+  }
+
   // 用声明的 Stroke 约束校验这一笔（起点/落点区域 + 边距）
   PenPath.prototype.validate = function (stroke) {
     if (!global.StrokeRegions) return { ok: true, reason: "" };
@@ -135,6 +174,51 @@
     return global.StrokeRegions.validateStroke(
       typeof s.constraint === "function" ? s.constraint() : s, a, b
     );
+  };
+
+  // 依据渲染后的中轴线验证描写质量。guide 与 points 均为 [0,1] 的
+  // 同一坐标系：起/落点要靠近，目标线必须被覆盖，笔迹本身也不能偏离。
+  PenPath.prototype.validateGuide = function (guide, options) {
+    var opts = options || {};
+    var startTolerance = typeof opts.startTolerance === "number" ? opts.startTolerance : 0.085;
+    var endTolerance = typeof opts.endTolerance === "number" ? opts.endTolerance : 0.085;
+    var corridor = typeof opts.corridor === "number" ? opts.corridor : 0.105;
+    var coverageDistance = typeof opts.coverageDistance === "number" ? opts.coverageDistance : 0.085;
+    var minGuideCoverage = typeof opts.minGuideCoverage === "number" ? opts.minGuideCoverage : 0.78;
+    var minInkCoverage = typeof opts.minInkCoverage === "number" ? opts.minInkCoverage : 0.85;
+    var ink = resample(this.points, 0.012);
+    var target = Array.isArray(guide) ? guide : [];
+    if (ink.length < 2 || target.length < 2) {
+      return { ok: false, reason: "too-short", startOk: false, endOk: false,
+               guideCoverage: 0, inkCoverage: 0, maxDeviation: Infinity };
+    }
+    var startDistance = distance(ink[0], target[0]);
+    var endDistance = distance(ink[ink.length - 1], target[target.length - 1]);
+    var startOk = startDistance <= startTolerance;
+    var endOk = endDistance <= endTolerance;
+    var guideHit = 0, inkHit = 0, maxDeviation = 0, totalDeviation = 0;
+    target.forEach(function (p) {
+      if (minDistanceToPolyline(p, ink) <= coverageDistance) guideHit++;
+    });
+    ink.forEach(function (p) {
+      var d = minDistanceToPolyline(p, target);
+      if (d <= corridor) inkHit++;
+      if (d > maxDeviation) maxDeviation = d;
+      totalDeviation += d;
+    });
+    var guideCoverage = guideHit / target.length;
+    var inkCoverage = inkHit / ink.length;
+    var ok = startOk && endOk && guideCoverage >= minGuideCoverage &&
+      inkCoverage >= minInkCoverage && maxDeviation <= corridor;
+    var reason = !startOk ? "start" : !endOk ? "end" :
+      guideCoverage < minGuideCoverage ? "coverage" :
+      (inkCoverage < minInkCoverage || maxDeviation > corridor) ? "deviation" : "";
+    return {
+      ok: ok, reason: reason, startOk: startOk, endOk: endOk,
+      startDistance: startDistance, endDistance: endDistance,
+      guideCoverage: guideCoverage, inkCoverage: inkCoverage,
+      maxDeviation: maxDeviation, meanDeviation: totalDeviation / ink.length
+    };
   };
 
   PenPath.prototype.clone = function () {
@@ -149,4 +233,5 @@
 
   global.PenPath = PenPath;
   global.PenPath.DEFAULT_MIN_DISTANCE = DEFAULT_MIN_DISTANCE;
+  global.PenPath.distanceToGuide = minDistanceToPolyline;
 })(window);

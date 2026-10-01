@@ -31,7 +31,7 @@
     <button id="btn-clear">清除笔迹</button>
     <button id="btn-next">下一笔</button>
   </div>
-  <div id="status">等待起笔…（起笔必须在当前笔的起笔区域内）</div>
+  <div id="status">等待起笔…（请从蓝色起点开始，沿笔顺描写）</div>
 </div>
 
 <script src="regions.js"></script>
@@ -47,7 +47,7 @@
   });
 
   // 载入"学"的笔顺数据（本地 hanzi-cache）
-  var spec = await fetch("../assets/data/hanzi-cache/学.json").then(function (r) { return r.json(); });
+  var spec = await fetch("../../assets/data/hanzi-cache/%E5%AD%A6.json").then(function (r) { return r.json(); });
   // hanzi-writer 数据是 Y-up（数学坐标），入口处一次翻成屏幕坐标（Y-down）
   var strokes = Stroke.fromHanziWriter(spec, { flipY: 1024, deriveRegions: true });
   zone.setStrokes(strokes);
@@ -62,15 +62,14 @@
     requireRegion: true,
     onStart: function (pt) {
       statusEl.className = "";
-      statusEl.textContent = "起笔 OK · 第 " + (curIdx + 1) + " 笔\n落点必须在[" +
-        (zone.strokes[curIdx].endRegion || "?") + "]区内";
+      statusEl.textContent = "起笔 OK · 第 " + (curIdx + 1) + " 笔\n沿蓝色笔画描到终点";
     },
     onEnd: function (p, result) {
       if (result.ok) {
         zone.addInk(p);
         statusEl.className = "ok";
-        statusEl.textContent = "✓ 第 " + (curIdx + 1) + " 笔通过\n起[" +
-          result.gotStart + "] 落[" + result.gotEnd + "]";
+        statusEl.textContent = "✓ 第 " + (curIdx + 1) + " 笔通过\n覆盖率 " +
+          Math.round(result.guideCoverage * 100) + "%";
         curIdx = Math.min(curIdx + 1, zone.strokes.length - 1);
         pen.setStrokeIndex(curIdx);
       }
@@ -79,10 +78,8 @@
       statusEl.className = "bad";
       var msg = result.phase === "start" ? "起笔被拒" : "落笔被拒";
       msg += " · 原因: " + result.reason;
-      if (result.got) msg += "\n你的区域: [" + result.got + "]";
-      if (result.expect) msg += "  需要: [" + result.expect + "]";
-      if (result.gotStart) msg += "\n起[" + result.gotStart + "] 落[" + result.gotEnd + "]";
-      if (result.expectStart) msg += "\n需要 起[" + result.expectStart + "] 落[" + result.expectEnd + "]";
+      if (typeof result.distance === "number") msg += "\n离起点还差 " + Math.round(result.distance * 1024) + " 格";
+      if (typeof result.guideCoverage === "number") msg += "\n笔画覆盖率 " + Math.round(result.guideCoverage * 100) + "%";
       statusEl.textContent = msg;
       zone.container.classList.add("is-reject");
       setTimeout(function () { zone.container.classList.remove("is-reject"); }, 340);
@@ -100,8 +97,7 @@
     curIdx = Math.min(curIdx + 1, zone.strokes.length - 1);
     pen.setStrokeIndex(curIdx);
     statusEl.className = "";
-    statusEl.textContent = "跳到第 " + (curIdx + 1) + " 笔 · 起笔区[" +
-      (zone.strokes[curIdx].startRegion || "?") + "]";
+    statusEl.textContent = "跳到第 " + (curIdx + 1) + " 笔 · 从蓝色圆点起笔";
   });
 
   // 暴露给自动化测试

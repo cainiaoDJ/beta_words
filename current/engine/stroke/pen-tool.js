@@ -1,11 +1,8 @@
 // engine/stroke/pen-tool.js
 // 自研引擎: 画笔工具（pointer 事件 → PenPath + 区域严格校验）
 //
-// 职责（2026-09-23 主人要求：起步落笔有严格要求）：
-//   1. pointerdown 必须落在当前描红笔的 startRegion 内，否则拒绝起笔（可给提示）
-//   2. pointerup   必须落在当前描红笔的 endRegion 内，否则判"落笔错"
-//   3. 起/落都必须离米字格边缘 >= edgeMargin（不许贴边画）
-//   4. 校验通过 → 回调 onAccept(stroke, pen)；不通过 → onReject(reason, pen)
+// 职责：pointer 事件 → PenPath，并依据“渲染后的 median”验证描写质量。
+// 起/落点、目标覆盖率和偏离程度均在同一个归一化 viewBox 坐标系中计算。
 //
 // 用法:
 //   const pen = new PenTool(zone, {
@@ -32,6 +29,7 @@
     this.edgeMargin = typeof opts.edgeMargin === "number" ? opts.edgeMargin : 0.08;
     this.requireRegion = opts.requireRegion !== false;
     this.minDistance = typeof opts.minDistance === "number" ? opts.minDistance : 0.004;
+    this.validation = opts.validation || {};
     this.strokeIndex = typeof opts.strokeIndex === "number" ? opts.strokeIndex : 0;
     this.strokes = zone.strokes || [];
 
@@ -91,19 +89,23 @@
     if (this.active) return;                 // 单指单笔
     var pt = this.zone.fromEvent(e);
 
-    // ---- 起笔校验：区域 + 边距 ----
+    // ---- 起笔校验：可见 median 的起点容差 ----
     var result = { ok: true, reason: "", phase: "start" };
     var stroke = this.currentStroke();
-    if (this.requireRegion && stroke && global.StrokeRegions) {
-      var inside = global.StrokeRegions.insideViewport(pt[0], pt[1], this.edgeMargin);
-      if (!inside) {
-        result = { ok: false, reason: "edge", phase: "start",
-                   got: global.StrokeRegions.regionOf(pt[0], pt[1]) };
-      } else if (!global.StrokeRegions.check(pt[0], pt[1], stroke.startRegion)) {
+    var guide = stroke && typeof this.zone.getValidationGuide === "function"
+      ? this.zone.getValidationGuide(stroke) : [];
+    if (this.requireRegion && stroke && guide.length >= 2) {
+      var tolerance = typeof this.validation.startTolerance === "number"
+        ? this.validation.startTolerance : 0.085;
+      var startDistance = global.PenPath.distanceToGuide(pt, [guide[0]]);
+      if (startDistance > tolerance) {
         result = { ok: false, reason: "start", phase: "start",
-                   got: global.StrokeRegions.regionOf(pt[0], pt[1]),
-                   expect: stroke.startRegion };
+                   distance: startDistance, tolerance: tolerance, target: guide[0] };
       }
+    } else if (this.requireRegion && stroke && global.StrokeRegions) {
+      // 兼容无 guide 的旧数据；新数据不应走这里。
+      var inside = global.StrokeRegions.insideViewport(pt[0], pt[1], this.edgeMargin);
+      if (!inside) result = { ok: false, reason: "edge", phase: "start" };
     }
 
     if (!result.ok) {
@@ -137,17 +139,18 @@
     this.activePointerId = null;
     try { this._target.releasePointerCapture(e.pointerId); } catch (err) {}
 
-    // ---- 落笔校验 ----
+    // ---- 轨迹校验：起落点 + 覆盖率 + 与 median 的偏离 ----
     var result = { ok: true, reason: "", phase: "end" };
     var stroke = this.currentStroke();
-    if (this.requireRegion && stroke && global.StrokeRegions) {
-      var v = pen.validate(stroke);
-      result = {
-        ok: v.ok, reason: v.reason, phase: "end",
-        gotStart: v.gotStart, gotEnd: v.gotEnd,
-        expectStart: v.expectStart, expectEnd: v.expectEnd,
-        startOk: v.startOk, endOk: v.endOk, insideOk: v.insideOk
-      };
+    var guide = stroke && typeof this.zone.getValidationGuide === "function"
+      ? this.zone.getValidationGuide(stroke) : [];
+    if (this.requireRegion && stroke && guide.length >= 2) {
+      var v = pen.validateGuide(guide, this.validation);
+      v.phase = "end";
+      result = v;
+    } else if (this.requireRegion && stroke && global.StrokeRegions) {
+      var legacy = pen.validate(stroke);
+      result = { ok: legacy.ok, reason: legacy.reason, phase: "end" };
     }
 
     if (this.onEnd) this.onEnd(pen, result);

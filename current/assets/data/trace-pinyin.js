@@ -44,27 +44,43 @@ window.TRACE_PINYIN = window.TRACE_PINYIN || (function () {
 
   const letters = {
     a: {
-      // 手写体 a：两笔 — 椭圆 + 右竖
-      // 修复 cbc8f95 bug：原来两弧同方向(sweep=0, sweep=0) 画成两个堆叠圆
-      // 正确做法：两弧 sweep flag 必须相反（一个上弧一个下弧）
+      // 手写体 a（两笔：椭圆主体 + 右下短竖）
+      // 证据等级：推断（来自主人手写照片 aoe-handwrite.jpg）。
+      // 烘焙到 viewBox 中格中心 (512, 520)，scale=5.33，直接填满 letterZone。
+      // 上一轮用 letter-level transform 是错的——照片原坐标 1377~1409 跑出 viewBox 1024 之外，
+      // fit 算法被骗，scale 被压到 0.67，字母被挤成小点。
       strokes: [
-        "M 412 512 A 100 80 0 1 0 612 512 A 100 80 0 1 1 412 512 Z",
-        "M 612 432 L 612 772"
+        "M 605.3 456.0 C 562.7 413.3 477.3 418.7 440.0 466.7 C 392.0 530.7 424.0 605.3 498.7 616.0 C 562.7 626.7 610.7 589.3 610.7 530.7 C 616.0 498.7 616.0 472.0 605.3 456.0",
+        "M 605.3 456.0 C 632.0 509.3 632.0 573.3 626.7 616.0"
       ],
-      medians: [[412, 512], [612, 432]]
+      medians: [[605, 456], [605, 456]]
     },
     o: {
-      strokes: ["M 312 512 A 240 240 0 1 0 712 512 A 240 240 0 1 0 312 512 Z"],
-      medians: [[312, 512]]
+      // 手写体 o（一笔：闭合近圆）
+      // 证据等级：推断（来自主人手写照片 aoe-handwrite.jpg）。
+      // 烘焙到 viewBox 中格中心 (512, 520)，scale=5.71。
+      strokes: [
+        "M 603.4 445.7 C 557.7 400.0 472.0 405.7 432.0 462.9 C 392.0 525.7 414.9 605.7 483.4 622.9 C 557.7 640.0 620.6 594.3 626.3 525.7 C 632.0 491.4 620.6 462.9 603.4 445.7 Z"
+      ],
+      medians: [[603, 446]]
     },
     e: {
-      // 手写体 e：两笔 — 短横 + 半圆弧（开口向下）
-      // 教育部《汉语拼音字母表》手写体规范
+      // 手写体 e（一笔：环+短横）
+      // 证据等级：推断（来自主人手写照片 aoe-handwrite.jpg）。
+      // 烘焙到 viewBox 中格中心 (512, 520)，scale=6.32。
       strokes: [
-        "M 312 492 L 712 492",
-        "M 712 492 A 200 180 0 0 1 312 492"
+        "M 600.4 497.9 C 562.5 434.7 486.7 428.4 436.2 472.6 C 392.0 516.8 423.6 586.3 493.1 598.9 C 556.2 611.6 606.7 573.7 632.0 535.8 M 436.2 510.5 C 486.7 491.6 556.2 491.6 600.4 497.9"
       ],
-      medians: [[312, 492], [712, 492]]
+      medians: [[600, 498]]
+    },
+    c: {
+      // 手写体 c（一笔：左开口圆弧，逆时针绕行）
+      // 证据等级：人教版课本底部小标签 c 的归一化描摹（推断坐标，清晰度较低）。
+      // c 的原图坐标已经在 viewBox 范围内 (y=442~672)，不需要大幅缩放，scale=1.04。
+      strokes: [
+        "M 629.4 435.5 C 583.5 400.0 502.1 402.1 448.9 441.7 C 392.5 483.5 396.7 562.8 453.0 600.3 C 511.5 640.0 593.9 629.6 631.5 594.1"
+      ],
+      medians: [[629, 436]]
     },
     i: {
       // 1. 主体竖  2. 上点（短横代替，靠近顶部）
@@ -240,27 +256,105 @@ window.TRACE_PINYIN = window.TRACE_PINYIN || (function () {
   };
 
   // ===== 声调符号（锚点 0,0）=====
+  // 证据等级：人教版课本示范骨架的归一化描摹（推断坐标）。
+  // codex 看图后取的实际位置：一声/二声/三声/四声均位于字母顶部水平居中。
+  // 修复历史：
+  //   - 旧版“右上偏”定位（旧公式 tx = vx + 220; ty = vy - 20）已被 buildVowel 重写为水平居中
+  //   - 旧版 toneMarks 形状（一眼弧/上下拱/对角线）是手编推断，本轮按课本示范重描
   const toneMarks = {
-    "1": "M -30 -10 L 30 -10",                        // ā 横
-    "2": "M -30 -10 L 30 30",                          // á 右下斜
-    "3": "M -30 10 Q 0 -30 30 10 Q 0 50 -30 10",     // ǎ 上拱下钩
-    "4": "M -30 30 L 30 -10"                           // à 右上斜
+    "1": "M -60 0 L 60 0",                                  // ā 一声：横
+    "2": "M -42 18 L 42 -18",                                // á 二声：左低→右高斜
+    "3": "M -48 -21 L 0 21 L 48 -21",                       // ǎ 三声：V 形（中间下凹，缩小避免溢出米字格）
+    "4": "M 42 -18 L -42 18"                                 // à 四声：左高→右低斜
   };
+
+  // ===== 简易 path bbox 估算（只覆盖本文件用到的 M/L/C/Q/H/V/A/Z）=====
+  // 给声调定位使用——不要求精度到亚像素，只求“主字符中心”在哪。
+  function pathBBox(d) {
+    var tokens = String(d).match(/[MmLlHhVvCcSsQqTtAaZz]|-?\d*\.?\d+/g) || [];
+    var x = 0, y = 0, cmd = null;
+    var xmin =  1e9, ymin =  1e9, xmax = -1e9, ymax = -1e9;
+    var i = 0;
+    function n() { return parseFloat(tokens[i++]); }
+    while (i < tokens.length) {
+      var t = tokens[i];
+      if (/[A-Za-z]/.test(t)) { cmd = t; i++; continue; }
+      var up = (cmd || "M").toUpperCase();
+      var rel = (cmd === (cmd || "M").toLowerCase()) && cmd !== undefined;
+      var cx = x, cy = y;
+      if (up === "M" || up === "L" || up === "T") { x = rel ? x + n() : n(); y = rel ? y + n() : n(); }
+      else if (up === "H") { x = rel ? x + n() : n(); }
+      else if (up === "V") { y = rel ? y + n() : n(); }
+      else if (up === "C") { var c1x = rel ? x + n() : n(); var c1y = rel ? y + n() : n();
+                              var c2x = rel ? x + n() : n(); var c2y = rel ? y + n() : n();
+                              x = rel ? x + n() : n(); y = rel ? y + n() : n();
+                              xmin = Math.min(xmin, c1x, c2x, x); ymin = Math.min(ymin, c1y, c2y, y);
+                              xmax = Math.max(xmax, c1x, c2x, x); ymax = Math.max(ymax, c1y, c2y, y);
+                              continue; }
+      else if (up === "S" || up === "Q") { var q1x = rel ? x + n() : n(); var q1y = rel ? y + n() : n();
+                                            x = rel ? x + n() : n(); y = rel ? y + n() : n();
+                                            xmin = Math.min(xmin, q1x, x); ymin = Math.min(ymin, q1y, y);
+                                            xmax = Math.max(xmax, q1x, x); ymax = Math.max(ymax, q1y, y);
+                                            continue; }
+      else if (up === "A") { n(); n(); n(); i += 2; x = rel ? x + n() : n(); y = rel ? y + n() : n(); }
+      else if (up === "Z") { /* close */ }
+      else { i++; continue; }
+      xmin = Math.min(xmin, x); ymin = Math.min(ymin, y);
+      xmax = Math.max(xmax, x); ymax = Math.max(ymax, y);
+    }
+    if (!isFinite(xmin)) return { x: 0, y: 0, width: 0, height: 0 };
+    return { x: xmin, y: ymin, width: xmax - xmin, height: ymax - ymin };
+  }
 
   // ===== 单字符带调 =====
   // 输出 spec 格式：{ strokes: [{d, transform?}], medians: [{x, y, transform?}] }
   function buildVowel(base, tone) {
     const tpl = letters[base];
     if (!tpl) return null;
-    const strokes = tpl.strokes.map(s => ({ d: s }));
-    const medians = tpl.medians.map(m => ({ x: m[0], y: m[1] }));
+    // 字母级 transform（用于“外部坐标系→1024 中心”的归一化，如主人手写照片）
+    const tform = tpl.transform || null;
+    const strokes = tpl.strokes.map(s => ({ d: s, transform: tform }));
+    const medians = tpl.medians.map(m => ({ x: m[0], y: m[1], transform: tform }));
     if (tone && tone !== "0" && toneMarks[tone]) {
-      const [vx, vy] = tpl.medians[0];
-      // 声调位置：元音第一笔起点右上偏 +220, -20（保持在字符盒顶部附近）
-      const tx = vx + 220;
-      const ty = vy - 20;
-      strokes.push({ d: toneMarks[tone], transform: { dx: tx, dy: ty } });
-      medians.push({ x: 0, y: 0, transform: { dx: tx, dy: ty } });
+      // 声调位置 bug 修复（主人 2026-09-23 反馈）：
+      //   旧公式 tx = vx + 220; ty = vy - 20
+      //   缺陷：锚在“第一笔起笔点”右上偏——a 的情况下，声调在 (820, 390)，
+      //         相对主字符中心 (480, 410) 偏移 +340×-20，完全错位。
+      //   正确：声调应该在主字符“水平居中、垂直顶部上方”某距离。
+      //   证据等级：公开教学资源（上海青浦世外学校）+ 推断（70 单位的间距为视觉适中）。
+      //   教育部明确答复拼音字母笔顺无国家标准，禁止再写“教育部规范”类措辞。
+      const TONE_GAP = 60;  // 声调距主字符顶部的垂直间距（codex 看课本图实测≈60）
+      const TONE_BOX = 136; // toneMark 水平覆盖范围（约 ±68），仅供 medians 记录用
+      var x0 =  1e9, y0 =  1e9, x1 = -1e9, y1 = -1e9;
+      tpl.strokes.forEach(function (d) {
+        var b = pathBBox(d);
+        if (b.width === 0 && b.height === 0) return;
+        if (b.x       < x0) x0 = b.x;
+        if (b.y       < y0) y0 = b.y;
+        if (b.x+b.width  > x1) x1 = b.x + b.width;
+        if (b.y+b.height > y1) y1 = b.y + b.height;
+      });
+      const cx = (x0 + x1) / 2;
+      const top = y0;
+      // 声调 y 坐标：
+      //   - 默认：主字符顶部上方 TONE_GAP（适用于米字格）
+      //   - 若字母设置了 toneY（拼音四线格专用）：使用该绝对坐标（viewBox 坐标系）
+      const tx = cx;                       // 水平居中于主字符（原始坐标系）
+      let ty;
+      if (typeof tpl.toneY === "number") {
+        // viewBox 绝对 y = 字母原始坐标系 y + 字母 transform dy
+        ty = tpl.toneY - (tform ? tform.dy : 0);   // 映射回原始坐标系
+      } else {
+        ty = top - TONE_GAP;
+      }
+      // isTone 标记让 zone-stroke 在渲染时走“声调样式”（stroke-width 0.018, 偏灰偏淡）
+      // toneX/toneY（viewBox 绝对坐标）：zone-stroke 会越过 fit transform 单独定位 tone。
+      // 逻辑：x 默认居中字母；y 默认叠 letter.dy；若字母定了 toneX/toneY 则用绝对值（拼音四线格）
+      const toneDx = (typeof tpl.toneX === "number") ? tpl.toneX : ((tform ? tform.dx : 0) + tx);
+      const toneDy = (typeof tpl.toneY === "number") ? tpl.toneY : ((tform ? tform.dy : 0) + ty);
+      strokes.push({ d: toneMarks[tone], transform: { dx: toneDx, dy: toneDy }, isTone: true,
+                      toneX: toneDx, toneY: toneDy });
+      medians.push({ x: TONE_BOX / 2, y: 0, transform: { dx: toneDx, dy: toneDy } });
     }
     return { strokes, medians };
   }

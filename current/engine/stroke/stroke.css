@@ -12,7 +12,6 @@
   width: 100%;
   aspect-ratio: 1 / 1;
   background: #fdfbf5;
-  border: 2px solid rgb(31 111 89);
   border-radius: 12px;
   box-sizing: border-box;
   overflow: hidden;
@@ -50,6 +49,19 @@
   opacity: 0.85;
 }
 
+/* 声调描红：较细、偏灰，避免压住字母 */
+.stroke-guide--tone {
+  fill: none;
+  stroke: rgb(120, 100, 80);
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.stroke-guide--tone.is-revealed {
+  opacity: 0.85;
+}
+
 /* ---- 起点圆点 + 序号 ---- */
 .stroke-start-dot {
   fill: rgb(31, 78, 121);
@@ -62,8 +74,16 @@
   opacity: 1;
 }
 
+.stroke-start-halo {
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+.stroke-start-halo.is-revealed {
+  opacity: 0.92;
+}
+
 .stroke-start-num {
-  fill: #fff;
+  fill: rgb(31, 78, 121);
   font-weight: 800;
   font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
   opacity: 0;

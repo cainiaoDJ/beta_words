@@ -6,7 +6,7 @@
 
 ---
 
-## 汉字池（hanzi）：✅ PASS
+## 汉字池（hanzi）：素材可用；描红交互待重新接入
 
 **数据源**：
 1. 教育部统编版《语文》一年级上册（2024 人教版沿用）书末"写字表"
@@ -24,7 +24,6 @@
 ```
 
 **验收**：
-- ✅ CDN 覆盖率：91/91 unique 字 HTTP 200（脚本 `/tmp/check100.sh` 实测）
 - ✅ 本地回退包：73 unique 字 JSON 预下载到 `current/assets/data/hanzi-cache/`
 - ✅ 渲染：playwright probe 实测 "国" 字 8 笔 + "个" 字 3 笔全部正确渲染
 - ✅ 坐标系：CDN Y-up + `.trace-flip <g transform="scale(1,-1) translate(0,-1024)">` 翻转 → 视觉 Y-down 正确
@@ -121,16 +120,17 @@
 | 池 | 验证项 | 状态 |
 |---|---|---|
 | hanzi | items 数 == 73 unique，每项能 getStrokeSpec | ✅ |
-| pinyin | items 28 项，charKey 命中 letters 表 | ⚠️ 缺 `q` 等 |
+| pinyin | items 24 项，均为带调单元音；字形仍待教材校对 | ⚠️ BETA |
 | numbers | items 11 项（0-10），每项能 getStrokeSpec | ✅ |
 
-### UI 级测试（mobile-one-screen-test.js）
+### 引擎级测试（`scripts/stroke-engine-test.js`）
 
-| 维度 | trace-tian | 状态 |
+| 维度 | 当前状态 |
 |---|---|---|
-| Zone 数量 | 1 primary + 1 secondary + 1 toolbar | ✅ 通过 |
-| Canvas fit | mobile viewport 内 | ✅ 通过 |
-| 不溢出 | designH <= 640 | ✅ 通过 |
+| 汉字 | 8 笔 demo：可见起点、正确 median、离线伪造路径 | ✅ 自动断言 |
+| 拼音 | a 四声渲染、声调 transform | ✅ 自动断言 |
+| 数字 | 10 个测试格均有引导路径 | ✅ 自动断言 |
+| 正式 trace-tian UI | 2026-09-23 已移除，尚未重新接入 | ⏳ 未验收 |
 
 ---
 
@@ -142,3 +142,6 @@
 - **2026-09-23 v1**：建立本文档
   - 汉字池：100 字清单 + CDN 覆盖率 91/91 + 本地回退包 73 字 ✅ PASS
   - 拼音池 / 数字池：BETA（待权威源校对）
+- **2026-10-01 v4**：同步引擎重建状态
+  - 素材池实际为 73 个去重汉字、24 个带调单元音、10 个数字项；不再误称 100 汉字 / 28 拼音 / 11 数字项。
+  - 新增 engine contract test；正式描红 UI 与原移动端 trace-tian 断言标记为待重新接入。

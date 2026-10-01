@@ -1,7 +1,7 @@
 // engine/stroke/stroke.js
 // 自研引擎: 笔画数据模型（纯数据，不碰 DOM 渲染）
 //
-// 一笔 = 一条 SVG path + 元数据（起笔/落笔区域 + 笔序号 + 提示）
+// 一笔 = 一条 SVG path + 可选中轴线（median）+ 元数据。
 //
 // 用法:
 //   const s = new Stroke({
@@ -179,10 +179,14 @@
     this.path = opts.path;
     this.index = typeof opts.index === "number" ? opts.index : null;
     this.label = opts.label || "";
-    // 官方笔迹中轴线的起/末点（逻辑坐标）。有它时，起落点判定优先用它，
-    // 因为它比 path 的首/末坐标更能代表「用户应该从哪里下笔」。
-    this.medianStart = opts.medianStart || null;
-    this.medianEnd = opts.medianEnd || null;
+    // 官方笔迹中轴线（逻辑坐标）。描写判定以它为准；没有时由渲染层
+    // 从中心线 SVG path 采样。不能把 outline 当成唯一数据源。
+    this.median = Array.isArray(opts.median)
+      ? opts.median.filter(function (p) { return Array.isArray(p) && p.length >= 2; })
+          .map(function (p) { return [p[0], p[1]]; })
+      : [];
+    this.medianStart = opts.medianStart || (this.median.length ? this.median[0].slice() : null);
+    this.medianEnd = opts.medianEnd || (this.median.length ? this.median[this.median.length - 1].slice() : null);
     // 可选平移 {dx, dy}：给「同一份笔画模板多次复用」的场景用（如拼音声调符号锚点在原点）。
     // 构造时直接烘焙进 path 和 median，下游全部无感。
     this.transform = opts.transform || null;
@@ -190,9 +194,15 @@
       var tdx = this.transform.dx || 0;
       var tdy = this.transform.dy || 0;
       this.path = translatePath(this.path, tdx, tdy);
+      this.median = this.median.map(function (p) { return [p[0] + tdx, p[1] + tdy]; });
       if (this.medianStart) this.medianStart = [this.medianStart[0] + tdx, this.medianStart[1] + tdy];
       if (this.medianEnd) this.medianEnd = [this.medianEnd[0] + tdx, this.medianEnd[1] + tdy];
     }
+    // 声调标记（拼音四线格专用）：zone-stroke 渲染时跳过 ghost + 走细线样式
+    this.isTone = opts.isTone === true;
+    // toneY/toneX（viewBox 绝对坐标）。tone 不走 fit transform，自己定位。
+    this.toneX = typeof opts.toneX === "number" ? opts.toneX : null;
+    this.toneY = typeof opts.toneY === "number" ? opts.toneY : null;
     // 起笔 / 落笔区域约束（数组 = 允许集合；null = 不限制）
     this.startRegion = opts.startRegion || null;
     this.endRegion = opts.endRegion || null;
@@ -216,6 +226,9 @@
     if (this.medianEnd) return this.medianEnd.slice();
     return pathEnd(this.path);
   };
+
+  Stroke.prototype.hasMedian = function () { return this.median.length >= 2; };
+  Stroke.prototype.medianPoints = function () { return this.median.map(function (p) { return p.slice(); }); };
 
   // 归一化（0~1）起点 / 落笔点
   Stroke.prototype.sampleStart = function (viewBoxW, viewBoxH) {
@@ -242,6 +255,12 @@
       path: this.path,
       index: this.index,
       label: this.label,
+      median: this.median,
+      medianStart: this.medianStart,
+      medianEnd: this.medianEnd,
+      isTone: this.isTone,
+      toneX: this.toneX,
+      toneY: this.toneY,
       startRegion: this.startRegion,
       endRegion: this.endRegion,
       edgeMargin: this.edgeMargin,
@@ -309,6 +328,7 @@
       var med = medians[i];
       var startRegion = null, endRegion = null;
       var medianStart = null, medianEnd = null;
+      var medianPoints = [];
       if (Array.isArray(med) && med.length) {
         // medians[i] 可能是 [[x,y],...] 或 [x,y]
         var first = Array.isArray(med[0]) ? med[0] : med;
@@ -321,6 +341,9 @@
           medianStart = [medianStart[0], flip - medianStart[1]];
           medianEnd = [medianEnd[0], flip - medianEnd[1]];
         }
+        medianPoints = (Array.isArray(med[0]) ? med : [med]).map(function (p) {
+          return [p[0], flip ? flip - p[1] : p[1]];
+        });
         if (opts.deriveRegions !== false && global.StrokeRegions) {
           var size = typeof opts.flipY === "number" ? opts.flipY : 1024;
           startRegion = global.StrokeRegions.regionOf(medianStart[0] / size, medianStart[1] / size);
@@ -330,6 +353,7 @@
       out.push(new Stroke({
         path: d,
         index: i + 1,
+        median: medianPoints,
         medianStart: medianStart,
         medianEnd: medianEnd,
         startRegion: opts.startRegion || startRegion,
@@ -340,6 +364,37 @@
       }));
     }
     return out;
+  };
+
+  // 通用描红素材适配器。pinyin / numbers 的 entry 都走这里，保证
+  // transform、median 和 tone 元数据不会在调用方被遗漏。
+  Stroke.fromTraceSpec = function (spec, opts) {
+    opts = opts || {};
+    var srcStrokes = (spec && spec.strokes) || [];
+    var srcMedians = (spec && spec.medians) || [];
+    return srcStrokes.map(function (entry, i) {
+      var item = typeof entry === "string" ? { d: entry } : (entry || {});
+      var rawMedian = srcMedians[i];
+      var median = [];
+      if (Array.isArray(rawMedian)) {
+        median = Array.isArray(rawMedian[0]) ? rawMedian : [rawMedian];
+      } else if (rawMedian && typeof rawMedian.x === "number" && typeof rawMedian.y === "number") {
+        median = [[rawMedian.x, rawMedian.y]];
+      }
+      return new Stroke({
+        path: item.d || item.path,
+        index: typeof item.index === "number" ? item.index : i + 1,
+        median: median,
+        // tone 用 toneX/toneY 在 ZoneStroke 中绝对定位，不能再烘焙一次平移。
+        transform: item.isTone ? null : (item.transform || null),
+        isTone: item.isTone === true,
+        toneX: item.toneX,
+        toneY: item.toneY,
+        edgeMargin: opts.edgeMargin,
+        centerRadius: opts.centerRadius,
+        meta: { source: opts.source || (spec && spec.id) || "trace-spec" }
+      });
+    });
   };
 
   global.Stroke = Stroke;

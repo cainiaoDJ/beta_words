@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>拼音字母 a/o/e/c 各实例对照</title>
+<link rel="stylesheet" href="../stroke.css" />
+<style>
+  body{margin:0;padding:16px;background:#f5f2e9;font:14px system-ui;color:#2f6f59}
+  h1{font-size:16px;margin:0 0 12px;text-align:center}
+  h2{font-size:13px;margin:16px 0 8px;color:#666}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:880px;margin:0 auto}
+  .cell{text-align:center}
+  .stroke-zone{aspect-ratio:1;background:#fdfbf5;border-radius:6px;overflow:hidden}
+  .label{font-size:11px;margin-top:3px;color:#444}
+  .label b{color:#2f6f59}
+</style>
+</head>
+<body>
+<h1>笔画框架 · 拼音 a/o/e/c 全部实例对照</h1>
+
+<h2>a （4 个实例）</h2>
+<div class="grid">
+  <div class="cell"><div id="a1" class="stroke-zone"></div><div class="label"><b>a-1</b> 当前用</div></div>
+  <div class="cell"><div id="a2" class="stroke-zone"></div><div class="label"><b>a-2</b></div></div>
+  <div class="cell"><div id="a3" class="stroke-zone"></div><div class="label"><b>a-3</b></div></div>
+  <div class="cell"><div id="a4" class="stroke-zone"></div><div class="label"><b>a-4</b></div></div>
+</div>
+
+<h2>o （4 个实例）</h2>
+<div class="grid">
+  <div class="cell"><div id="o1" class="stroke-zone"></div><div class="label"><b>o-1</b> 当前用</div></div>
+  <div class="cell"><div id="o2" class="stroke-zone"></div><div class="label"><b>o-2</b></div></div>
+  <div class="cell"><div id="o3" class="stroke-zone"></div><div class="label"><b>o-3</b></div></div>
+  <div class="cell"><div id="o4" class="stroke-zone"></div><div class="label"><b>o-4</b></div></div>
+</div>
+
+<h2>e （4 个实例）</h2>
+<div class="grid">
+  <div class="cell"><div id="e1" class="stroke-zone"></div><div class="label"><b>e-1</b> 太淡舍弃</div></div>
+  <div class="cell"><div id="e2" class="stroke-zone"></div><div class="label"><b>e-2</b> 当前用</div></div>
+  <div class="cell"><div id="e3" class="stroke-zone"></div><div class="label"><b>e-3</b></div></div>
+  <div class="cell"><div id="e4" class="stroke-zone"></div><div class="label"><b>e-4</b></div></div>
+</div>
+
+<h2>c （1 个实例）</h2>
+<div class="grid">
+  <div class="cell"><div id="c1" class="stroke-zone"></div><div class="label"><b>c-1</b> 当前用</div></div>
+  <div class="cell" style="visibility:hidden"></div>
+  <div class="cell" style="visibility:hidden"></div>
+  <div class="cell" style="visibility:hidden"></div>
+</div>
+
+<script src="../../../assets/data/trace-pinyin.js"></script>
+<script src="../regions.js"></script>
+<script src="../stroke.js"></script>
+<script src="../pen-path.js"></script>
+<script src="../zone-stroke.js"></script>
+<script src="../pen-tool.js"></script>
+<script>
+// 把 codex 从手写照片提取的所有 path 都注册到 TRACE_PINYIN 里供这个测试页用
+// （trace-pinyin.js 的 letters 是私有 IIFE 闭包里的，我们重新注入一个新池）
+window.HANDWRITE_AOAOES = {
+  a: {
+    a1: [
+      { path: 'M 128 1377 C 120 1369 104 1370 97 1379 C 88 1391 94 1405 108 1407 C 120 1409 129 1402 129 1391 C 130 1385 130 1380 128 1377' },
+      { path: 'M 128 1377 C 133 1387 133 1399 132 1407' }
+    ],
+    a2: [
+      { path: 'M 205 1377 C 197 1369 181 1370 174 1380 C 166 1392 172 1406 186 1408 C 199 1410 207 1402 207 1391 C 208 1385 207 1380 205 1377' },
+      { path: 'M 205 1377 C 211 1388 211 1400 209 1408' }
+    ],
+    a3: [
+      { path: 'M 263 1378 C 254 1372 240 1373 233 1382 C 226 1392 231 1405 243 1407 C 255 1409 264 1402 265 1392 C 266 1386 265 1381 263 1378' },
+      { path: 'M 263 1378 C 270 1388 269 1402 267 1410' }
+    ],
+    a4: [
+      { path: 'M 319 1379 C 311 1372 296 1373 289 1382 C 281 1393 287 287 300 1408 C 312 1410 321 1403 321 1392 C 322 1387 321 1382 319 1379' },
+      { path: 'M 319 1379 C 326 1389 326 1401 324 1408' }
+    ]
+  },
+  o: {
+    o1: [
+      { path: 'M 460 1377 C 452 1369 437 1370 430 1380 C 423 1391 427 1405 439 1408 C 452 1411 463 1403 464 1391 C 465 1385 463 1380 460 1377 Z' }
+    ],
+    o2: [
+      { path: 'M 534 1378 C 526 1370 511 1371 504 1381 C 497 1392 502 1405 514 1408 C 527 1410 538 1402 538 1391 C 538 1385 537 1381 534 1378 Z' }
+    ],
+    o3: [
+      { path: 'M 600 1379 C 592 1371 578 1372 571 1382 C 565 1393 569 1406 581 1409 C 594 1411 604 1403 604 1392 C 604 1386 603 1382 600 1379 Z' }
+    ],
+    o4: [
+      { path: 'M 660 1378 C 653 1371 639 1372 632 1382 C 625 1394 630 1407 642 1409 C 655 1411 666 1403 666 1391 C 666 1385 664 1381 660 1378 Z' }
+    ]
+  },
+  e: {
+    e1: [
+      { path: 'M 733 1393 C 727 1384 716 1383 709 1389 C 702 1396 707 1405 717 1407 C 726 1409 733 1404 736 1399 M 709 1394 C 716 1392 725 1392 732 1393' }
+    ],
+    e2: [
+      { path: 'M 783 1392 C 777 1382 765 1381 757 1388 C 750 1395 755 1406 766 1408 C 776 1410 784 1404 788 1398 M 757 1394 C 765 1391 776 1391 783 1392' }
+    ],
+    e3: [
+      { path: 'M 849 1391 C 842 1381 830 1391 822 1388 C 815 1396 820 1406 831 1408 C 842 1410 851 1404 855 1398 M 822 1394 C 830 1391 841 1391 849 1391' }
+    ],
+    e4: [
+      { path: 'M 896 1391 C 889 1382 877 1381 869 1388 C 862 1396 867 1406 878 1408 C 889 1410 898 1404 898 1398 M 869 1394 C 877 1391 888 1391 896 1391' }
+    ]
+  },
+  c: {
+    c1: [
+      { path: 'M 618 476 C 574 442 496 444 445 482 C 391 522 395 598 449 634 C 505 672 584 662 620 628' }
+    ]
+  }
+};
+
+// 把每个实例放到 viewBox 中央 (512, 512) 的 letterZone
+var VB = 1024;
+// a/o/e 在原图 y=1377~1410, 整体偏移到中格中心 (512, 520)
+// a/o/e 平均高度 ~40，需要加 letter transform 把它们从底部平移到中部
+var OFFSETS = {
+  a: { dx: 401.5, dy: -877.0 },  // 已经在 trace-pinyin.js
+  o: { dx: 68.0, dy: -878.0 },
+  e: { dx: -257.0, dy: -883.5 },
+  c: { dx: -118.0, dy: 504.0 }  // c 的原图是 y=276~662，需要偏移 (c 原始 618 接近中线)
+};
+
+function build(host, strokes, transform, label, toneIndex) {
+  var zone = new ZoneStroke(document.getElementById(host), {
+    viewBox: VB, padding: 0.04, grid: 'four-line',
+    letterZone: { cx: 512, cy: 520, width: 700, height: 240 },
+    showGhost: true, showGuide: true, showNumbers: false
+  });
+  // 声调几何：toneMarks 锈点 0,0，位于字母顶部上方（_gap_ = 70 单位）
+  var toneMarks = {
+    1: 'M -50 0 L 50 0',                       // ā 横
+    2: 'M -42 18 L 42 -18',                   // á 左低→右高斜
+    3: 'M -42 -18 L 0 18 L 42 -18',           // ǎ V 形（与斜调号同尺寸）
+    4: 'M 42 -18 L -42 18'                    // à 左高→右低斜
+  };
+  var allStrokes = strokes.map(function (s, i) {
+    return new Stroke({
+      path: s.path, index: i + 1, transform: transform
+    });
+  });
+  // 加声调 stroke（不需要 bake transform，zone 会根据 tone 标记设 transform）
+  if (toneIndex) {
+    allStrokes.push(new Stroke({
+      path: toneMarks[toneIndex],
+      index: 99,
+      transform: null,                    // 不 bake
+      isTone: true,
+      toneX: 512,                          // 字母中心 x (letterZone 中心)
+      toneY: 280                           // 上格中心（四线格专用）
+    }));
+  }
+  zone.setStrokes(allStrokes);
+  document.querySelectorAll('#' + host + ' .stroke-guide').forEach(function (g) {
+    g.classList.add('is-revealed');
+  });
+}
+
+// a 统一用 a-1（codex 推荐：唯一有清晰眼形 + 收尾钩），4 个声调共享同一字母本体
+[['a1', 1], ['a2', 2], ['a3', 3], ['a4', 4]].forEach(function (pair) {
+  build('a' + pair[0].slice(1), window.HANDWRITE_AOAOES.a.a1, OFFSETS.a, pair[0], pair[1]);
+});
+// o 统一用 o-1（codex 推荐），4 个声调共享同一字母本体
+[['o1', 1], ['o2', 2], ['o3', 3], ['o4', 4]].forEach(function (pair) {
+  build('o' + pair[0].slice(1), window.HANDWRITE_AOAOES.o.o1, OFFSETS.o, pair[0], pair[1]);
+});
+// e 统一用 e-2（codex 推荐最饱满、最稳定），4 个声调共享同一字母本体
+[['e1', 1], ['e2', 2], ['e3', 3], ['e4', 4]].forEach(function (pair) {
+  build('e' + pair[0].slice(1), window.HANDWRITE_AOAOES.e.e2, OFFSETS.e, pair[0], pair[1]);
+});
+// c（无 tone）
+build('c1', window.HANDWRITE_AOAOES.c.c1, OFFSETS.c, 'c1');
+</script>
+</body></html>

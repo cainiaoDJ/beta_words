@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>拼音测试（a 4 声调）</title>
+<link rel="stylesheet" href="../stroke.css?v=20260924-1132" />
+<style>
+  body{margin:0;padding:16px;background:#f5f2e9;font:14px system-ui;color:#2f6f59}
+  h1{font-size:16px;margin:0 0 8px;text-align:center}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:420px;margin:0 auto}
+  .cell{text-align:center}
+  .stroke-zone{aspect-ratio:1;background:#fdfbf5;border-radius:8px;overflow:hidden}
+  .label{font-size:13px;margin-top:4px;color:#666}
+</style>
+</head>
+<body>
+<h1>笔画框架 · 拼音 a 四声（模板 + 声调偏移）</h1>
+<div class="grid">
+  <div class="cell"><div id="z1" class="stroke-zone"></div><div class="label">ā (a1)</div></div>
+  <div class="cell"><div id="z2" class="stroke-zone"></div><div class="label">á (a2)</div></div>
+  <div class="cell"><div id="z3" class="stroke-zone"></div><div class="label">ǎ (a3)</div></div>
+  <div class="cell"><div id="z4" class="stroke-zone"></div><div class="label">à (a4)</div></div>
+</div>
+<script src="../../../assets/data/trace-pinyin.js"></script>
+<script src="../regions.js"></script>
+<script src="../stroke.js"></script>
+<script src="../pen-path.js"></script>
+<script src="../zone-stroke.js"></script>
+<script src="../pen-tool.js"></script>
+<script>
+(function () {
+  // TRACE_PINYIN.getStrokeSpec(charKey) → { strokes: [{d, transform?}], medians: [{x,y,transform?}] }
+  function build(host, charKey) {
+    var spec = TRACE_PINYIN.getStrokeSpec(charKey);
+    if (!spec) { console.warn('no spec', charKey); return; }
+    // 所有素材统一走适配器，避免调用方漏传 median / transform / tone 元数据。
+    var strokes = Stroke.fromTraceSpec(spec, { source: 'trace-pinyin' });
+    var zone = new ZoneStroke(document.getElementById(host), {
+      viewBox: 1024, padding: 0.04, grid: 'four-line',
+      // 拼音专用：a/o/e 主体限位在中格（y=400~640，height=240，三等分之一），codex GB/T 16159
+      letterZone: { cx: 512, cy: 520, width: 700, height: 240 },
+      showGhost: true, showGuide: true, showNumbers: true
+    });
+    zone.setStrokes(strokes);
+    revealAll(host);
+  }
+  function revealAll(host) {
+    document.querySelectorAll('#' + host + ' .stroke-guide, #' + host + ' .stroke-start-dot, #' + host + ' .stroke-start-halo, #' + host + ' .stroke-start-num')
+      .forEach(function (e) { e.classList.add('is-revealed'); });
+  }
+  build('z1', 'a1');
+  build('z2', 'a2');
+  build('z3', 'a3');
+  build('z4', 'a4');
+})();
+</script>
+</body></html>
