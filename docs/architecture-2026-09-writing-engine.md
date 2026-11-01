@@ -96,9 +96,13 @@ a: {
 - 数据只有 outline，**skeleton 没作为独立层**
 - 没有 pen model（笔锋粗细、cap、join）
 - 不同声调用了不同手写实例（a-1/e-2/o-1 各 4 份） → **4 个 e 永远长不一样**（被 VLM 和 27B 同时指出）
-- 数据源问题：22 个其他字母 + 10 个数字 **完全没有源**
+- 数据源问题：22 个其他字母仍没有逐字教材来源；数字 1–10 已于 2026-10-01 补齐教材页码与验收记录。
 
-### 2.3 数字部分（`trace-numbers.js`）❌ 仅有占位 path，质量未定
+### 2.3 数字部分（`trace-numbers.js`）✅ 1–10 有可追溯 median
+
+数字 1–10 已按教材田字格点线字形逐页视觉核对，并保存 render path、完整 median 与
+页码来源。`0` 只保留为开发 demo，不属于正式池。教材没有独立箭头笔顺图，因此 median
+方向是产品轨迹规定，而非声称来自教材的笔顺结论。
 
 ### 2.4 渲染层（`engine/stroke/zone-stroke.js`）
 
@@ -112,8 +116,8 @@ class Stroke {
 
 2026-10-01 已补上最小 skeleton 消费链：`Stroke.median[]` 保留汉字中轴线，
 `ZoneStroke.getValidationGuide()` 将它转换到 auto-fit 后的渲染坐标，`PenTool`
-在同一坐标系校验用户笔迹。拼音/数字尚无可信 median 时，临时从其中心线 SVG
-path 采样；这不是权威 skeleton，不能把它当作数据验收完成。
+在同一坐标系校验用户笔迹。拼音尚无可信 median 时，临时从其中心线 SVG path 采样；
+数字 1–10 已不走该回退。这不是权威 skeleton，不能把它当作拼音数据验收完成。
 
 仍未实现 pen model、Bézier fitting 与 outline expansion；当前 SVG path 仍是渲染素材。
 
@@ -190,7 +194,7 @@ e3"双层/党帽"的根因：
 - [x] 判定升级：起/落点距离 + 目标覆盖率 + 偏离走廊，取代八扇区终点判定。
 - [x] 数据接入：新增 `Stroke.fromTraceSpec()`，拼音/数字 demo 统一使用。
 - [x] 回归：新增 `scripts/stroke-engine-test.js`（汉字正/反例、拼音、数字）。
-- [ ] 拼音/数字改成权威 skeleton 与参数化 pen model（后续对应方案 D）。
+- [ ] 拼音改成权威 skeleton 与参数化 pen model；数字下一步才评估是否迁入参数化 pen model（后续对应方案 D）。
 - [ ] 描红游戏 UI 重新接入（引擎回归稳定后再做）。
 
 这不是方案 A 的完整 renderer 重写，也不是承认技术债的方案 C；是先把方案 D
@@ -217,22 +221,23 @@ BASE_URL=http://127.0.0.1:4174/ node scripts/stroke-engine-test.js
 ```
 
 它验证：auto-fit 后可见起点可以起笔、沿 target median 的轨迹通过、经过远离目标
-角落的伪造轨迹被拒绝，以及拼音/数字 demo 可渲染且没有无效 SVG transform。
-它不替代正式游戏的手机一屏测试，也不代表拼音/数字字形已通过教材验收。
+角落的伪造轨迹被拒绝、拼音 demo 可渲染且没有无效 SVG transform，以及数字 1–10 每笔
+的 author median、正例、偏离反例与错误起笔反例。
+它不替代正式游戏的手机一屏测试，也不代表拼音字形已通过教材验收。
 
 ## 10. 下一步计划（2026-10-01 暂定）
 
 ### 当前冻结边界
 
 - 汉字引擎与 demo 作为下一阶段 UI 接入的稳定基线；修复只接受有契约测试覆盖的回归。
-- 拼音与数字可演示、可走轨迹判定，但字形、笔顺和 median 数据仍为 BETA；不提前在正式大厅开放。
+- 拼音可演示、可走轨迹判定，但字形、笔顺和 median 数据仍为 BETA；数字 1–10 的素材验收已完成。两者均不提前在正式大厅开放，直到描红 UI 试点通过。
 
-### Phase 1：数字 1–10 素材验收（优先）
+### Phase 1：数字 1–10 素材验收（已完成，待回归后提交）
 
-1. 从人教版数学一年级上册的田字格示范逐字提取可追溯参考。
-2. 为每个数字记录笔顺、起落点与完整 centerline median；不再依赖 path 采样回退。
-3. 将每个数字加入 `stroke-engine-test.js` 的正例、偏离反例与起笔反例。
-4. 仅在数据、引擎测试和 364 项移动端回归全绿后提交独立 `asset(numbers):` commit。
+1. ✅ 从人教版数学一年级上册的田字格示范逐字提取可追溯参考：1–5 p16、6–7 p40、8–9 p51、10 p60。
+2. ✅ 为每个数字记录完整 centerline median 和产品规定的起落点；不再依赖 path 采样回退。
+3. ✅ 每一笔加入 `stroke-engine-test.js` 的正例、偏离反例与错误起笔反例。
+4. ⏳ 运行数据、引擎测试和 364 项移动端回归全绿后，提交独立 `asset(numbers):` commit。
 
 ### Phase 2：拼音素材验收
 

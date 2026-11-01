@@ -85,10 +85,52 @@ async function open(page, path) {
   const numbers = await page.evaluate(() => ({
     zones: document.querySelectorAll('.stroke-zone-svg').length,
     withoutGuide: [...document.querySelectorAll('.stroke-zone-svg')]
-      .filter((zone) => !zone.querySelector('.stroke-guide')).length
+      .filter((zone) => !zone.querySelector('.stroke-guide')).length,
+    digits: Object.keys(window.__numberZones || {}).sort(),
+    checks: Object.keys(window.__numberZones || {}).sort().flatMap((digit) => {
+      const spec = window.TRACE_NUMBERS.getStrokeSpec(digit);
+      const zone = window.__numberZones[digit];
+      return zone.strokes.map((stroke, index) => {
+        const guide = zone.getValidationGuide(stroke, 40);
+        const good = new PenPath({ minDistance: 0 });
+        good.begin(guide[0][0], guide[0][1], 0);
+        guide.slice(1, -1).forEach((point) => good.extend(point[0], point[1]));
+        good.end(guide[guide.length - 1][0], guide[guide.length - 1][1], 100);
+
+        const fake = new PenPath({ minDistance: 0 });
+        fake.begin(guide[0][0], guide[0][1], 0);
+        fake.extend(0.08, 0.92);
+        fake.extend(0.92, 0.08);
+        fake.end(guide[guide.length - 1][0], guide[guide.length - 1][1], 100);
+
+        const wrongStart = new PenPath({ minDistance: 0 });
+        wrongStart.begin((guide[0][0] + 0.38) % 0.95, (guide[0][1] + 0.31) % 0.95, 0);
+        wrongStart.extend(guide[0][0], guide[0][1]);
+        guide.slice(1, -1).forEach((point) => wrongStart.extend(point[0], point[1]));
+        wrongStart.end(guide[guide.length - 1][0], guide[guide.length - 1][1], 100);
+        return {
+          digit, index, guide: guide.length, median: stroke.medianPoints().length,
+          source: spec.source, good: good.validateGuide(guide),
+          fake: fake.validateGuide(guide), wrongStart: wrongStart.validateGuide(guide)
+        };
+      });
+    })
   }));
   check(numbers.zones === 10, `numbers: expected 10 zones, got ${numbers.zones}`);
   check(numbers.withoutGuide === 0, `numbers: ${numbers.withoutGuide} zones lack a guide`);
+  check(numbers.digits.join(',') === '1,10,2,3,4,5,6,7,8,9',
+    `numbers: expected 1-10 zones, got ${numbers.digits.join(',')}`);
+  numbers.checks.forEach((item) => {
+    const name = `number ${item.digit} stroke ${item.index + 1}`;
+    check(item.median >= 2, `${name}: missing authored median`);
+    check(item.guide >= 2, `${name}: no validation guide`);
+    check(item.source && item.source.verified && Number.isInteger(item.source.page),
+      `${name}: missing verified textbook citation`);
+    check(item.good.ok, `${name}: exact median rejected (${item.good.reason})`);
+    check(!item.fake.ok, `${name}: off-path fake accepted`);
+    check(!item.wrongStart.ok && item.wrongStart.reason === 'start',
+      `${name}: wrong start was not rejected as start (${item.wrongStart.reason})`);
+  });
 
   await browser.close();
   if (failures.length) {
@@ -96,5 +138,5 @@ async function open(page, path) {
     failures.forEach((failure) => console.error(`- ${failure}`));
     process.exit(1);
   }
-  console.log('PASS: Stroke engine contract checks (8 Hanzi strokes, pinyin, numbers)');
+  console.log('PASS: Stroke engine contract checks (8 Hanzi strokes, pinyin, 1-10 numbers)');
 })();

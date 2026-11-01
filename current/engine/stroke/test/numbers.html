@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>数字测试（0-9）</title>
+<title>数字测试（1-10）</title>
 <link rel="stylesheet" href="../stroke.css" />
 <style>
   body{margin:0;padding:16px;background:#f5f2e9;font:14px system-ui;color:#2f6f59}
@@ -15,9 +15,8 @@
 </style>
 </head>
 <body>
-<h1>笔画框架 · 数字 0-9（纯 SVG 路径，不依赖字体）</h1>
+<h1>笔画框架 · 数字 1-10（教材字形已验收）</h1>
 <div class="grid">
-  <div class="cell"><div id="z0" class="stroke-zone"></div><div class="label">0</div></div>
   <div class="cell"><div id="z1" class="stroke-zone"></div><div class="label">1</div></div>
   <div class="cell"><div id="z2" class="stroke-zone"></div><div class="label">2</div></div>
   <div class="cell"><div id="z3" class="stroke-zone"></div><div class="label">3</div></div>
@@ -27,6 +26,7 @@
   <div class="cell"><div id="z7" class="stroke-zone"></div><div class="label">7</div></div>
   <div class="cell"><div id="z8" class="stroke-zone"></div><div class="label">8</div></div>
   <div class="cell"><div id="z9" class="stroke-zone"></div><div class="label">9</div></div>
+  <div class="cell"><div id="z10" class="stroke-zone"></div><div class="label">10</div></div>
 </div>
 <script src="../../../assets/data/trace-numbers.js"></script>
 <script src="../regions.js"></script>
@@ -36,6 +36,7 @@
 <script src="../pen-tool.js"></script>
 <script>
 (function () {
+  var zones = {};
   function build(host, ch) {
     var spec = TRACE_NUMBERS.getStrokeSpec(ch);
     if (!spec) { console.warn('no spec', ch); return; }
@@ -46,10 +47,14 @@
       showGhost: true, showGuide: true, showNumbers: true
     });
     zone.setStrokes(strokes);
+    zones[ch] = zone;
     document.querySelectorAll('#' + host + ' .stroke-guide, #' + host + ' .stroke-start-dot, #' + host + ' .stroke-start-halo, #' + host + ' .stroke-start-num')
       .forEach(function (e) { e.classList.add('is-revealed'); });
   }
-  for (var i = 0; i <= 9; i++) build('z' + i, String(i));
+  ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].forEach(function (ch) {
+    build('z' + ch, ch);
+  });
+  window.__numberZones = zones;
 })();
 </script>
 </body></html>
