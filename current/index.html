@@ -722,6 +722,16 @@
               <span class="entry-copy">跟着灰色字描一描</span>
             </span>
           </button>
+          <!-- Phase 9 — 算术闪卡（mathFlash）入口 -->
+          <button id="open-math-flash" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-math-flash.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">算术闪卡</span>
+              <span class="entry-copy">算一算，选答案</span>
+            </span>
+          </button>
           <!-- Phase 8A — 成语填空（idiomFill）入口 -->
           <button id="open-idiom-fill" class="game-entry clickable focus-ring" type="button">
             <span class="entry-icon" aria-hidden="true">
@@ -764,6 +774,17 @@
           <button class="difficulty" type="button" data-size="7">
             <strong>7 x 7</strong>
             <span>极限挑战</span>
+          </button>
+        </div>
+
+        <!-- Phase 9 — 算术闪卡：困难模式开关（默认隐藏，仅 mathFlash 显示） -->
+        <div class="mode-row" id="math-hard-row" hidden>
+          <span class="mode-row-text">
+            <span class="mode-row-title">困难模式</span>
+            <span class="mode-row-sub">每题 5 秒，超时算错</span>
+          </span>
+          <button id="math-hard-toggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="困难模式">
+            <span class="toggle-knob"></span>
           </button>
         </div>
       </section>
@@ -826,6 +847,30 @@
             <button id="trace-clear" class="trace-tool-button trace-clear-button" type="button">清除笔迹</button>
             <button id="trace-next" class="trace-tool-button trace-next-button" type="button">下一字</button>
           </div>
+        </div>
+
+        <!-- Phase 9 — 算术闪卡（mathFlash）：纸质名片卡 + 4 个数字选项
+             .math-flip-pair 是 primary zone（翻页时同位置叠两张卡）；
+             卡片内容由 app.js 的 renderMathQuestion() 填充 -->
+        <div id="math-host" class="math-host zone-stack" hidden>
+          <div class="math-flip-pair zone-primary">
+            <div class="math-card">
+              <div class="math-card__inner">
+                <div class="math-card__face math-card__face--front">
+                  <div class="math-card__timer"><i style="width:100%"></i></div>
+                  <div class="math-card__head">
+                    <span class="math-card__badge"></span>
+                    <span class="math-card__label"></span>
+                  </div>
+                  <div class="math-eq" aria-live="polite"></div>
+                </div>
+                <div class="math-card__face math-card__face--back">
+                  <div class="math-card__watermark">+ −</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="math-options" class="option-grid zone-secondary" role="list" aria-label="答案选项"></div>
         </div>
 
         <div id="quiz" class="quiz zone-stack" hidden>
@@ -937,6 +982,8 @@
     <script src="scripts/stage.js"></script>
     <script src="engine/marquee.js?v=stroop-marquee"></script>
     <script src="engine/sliding-note.js?v=stroop-sliding-v2"></script>
+    <!-- Phase 9 — 算术闪卡：纯逻辑模块（出题 / 干扰项 / 星级），Node 端可直接 require 做单测 -->
+    <script src="engine/math-flash.js?v=math-flash"></script>
     <script src="app.js" defer></script>
   </body>
 </html>
