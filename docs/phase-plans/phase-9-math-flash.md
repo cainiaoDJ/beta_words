@@ -422,7 +422,25 @@ function flipMathCard() {
 - [x] 完成面板显示奖杯 + 星星 + 统计 + 新纪录
 - [x] `mobile-one-screen-test.js` Failed = 0
 - [x] `math-flash-test.js` 全绿
-- [ ] 线上 md5 与本地一致（**待部署**）
+- [x] 线上 md5 与本地一致（**已部署 2026-11-01 10:24**）
+
+### ✅ 部署记录（2026-11-01）
+
+- **服务器**：`sophie520:/var/www/games/current/`（nginx `location ^~ /games/ { alias /var/www/games/current/; }`）
+- **基准**：部署前线上 md5 == `4743b11`（= 本分支基线）→ 只带 mathFlash 增量
+- **注意**：服务器上另有一个嵌套残留目录 `/var/www/games/current/current/`（旧构建 `da6aea7`），
+  公网 `/games/current/` 会打到它；本次**两条路径都更新**，避免同一站点两个版本
+- **发布文件**：`app.js` / `index.html` / `styles.css` / `engine/math-flash.js` / `assets/icon-math-flash.svg`
+- **方式**：scp 到 `.tmp` → 校验 md5 → `mv` 原子替换 → 回读远端 md5 比对
+- **回滚点**：
+  - `/var/www/games/current.bak-mathflash-outer-4743b11-20261101-102406`
+  - `/var/www/games/current.bak-mathflash-nested-da6aea7-20261101-102406`
+- **线上验证**：
+  - 公网 md5 与本地 5 个文件全部一致（`/games/` 与 `/games/current/` 两条路径）
+  - `mobile-one-screen-test.js` 跑公网：`Total: 462, Failed: 0`（9 游戏 × 7 视口）
+  - 真实浏览器走查：全对 → 3 星 + 金杯 + “全对啦！”；错 9 个 → 1 星 + 铜杯 + “差一点点”
+  - 困难模式：倒计时 5→4→3→2，≤2s 触发 `is-urgent`，超时自动判错并翻页
+  - 0 page error；其余 8 个游戏入口与行为未受影响（`styles.css`/`index.html` 相对基线**零删除行**）
 
 ---
 
