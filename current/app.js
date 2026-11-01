@@ -88,6 +88,14 @@ const GAMES = {
     boardLabel: "田字格描红区",
     startHint: "先看笔顺，再动手描",
     recordPrefix: "beta_words_trace_tian_best"
+  },
+  mathFlash: {
+    id: "mathFlash",
+    name: "算术闪卡",
+    title: "算一算，选答案",
+    boardLabel: "算术闪卡题目区",
+    startHint: "选一个答案",
+    recordPrefix: "beta_words_mathflash_best"
   }
 };
 
@@ -321,7 +329,15 @@ const state = {
   traceFontReady: false,    // 字体加载完成
   traceLoadToken: 0,        // 防竞态 token（切池 / 快速返回 setup）
   traceGuideRevealedCount: 0, // 已揭示的笔顺序号
-  traceGuideTimer: null     // 笔顺演示 setTimeout 链
+  traceGuideTimer: null,    // 笔顺演示 setTimeout 链
+  // 算术闪卡专用状态
+  mathSession: null,        // 引擎会话
+  mathHard: false,          // 困难模式开关
+  mathTickId: null,         // 每题倒计时 interval
+  mathStartAt: 0,           // 本局开始时间戳
+  mathDeadline: 0,          // 当前题截止时间戳
+  mathLocked: false,
+  mathFrameId: null         // 翻卡下一帧
 };
 
 const AUDIO_MAP = window.BETA_WORDS_AUDIO || {};
@@ -594,6 +610,12 @@ const traceClearBtn = document.querySelector("#trace-clear");
 const traceNextBtn = document.querySelector("#trace-next");
 const traceLoading = document.querySelector("#trace-loading");
 const traceCtx = traceCanvas?.getContext("2d") || null;
+// 算术闪卡沿用静态纸卡 DOM，延迟回调在离开或重玩时统一取消。
+const mathHost = document.querySelector("#math-host");
+const mathOptions = document.querySelector("#math-options");
+const mathHardRow = document.querySelector("#math-hard-row");
+const mathHardToggle = document.querySelector("#math-hard-toggle");
+const mathTimeouts = new Set();
 
 const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
 
@@ -608,6 +630,17 @@ document.querySelector("#open-compare")?.addEventListener("click", () => chooseG
 document.querySelector("#open-idiom-fill")?.addEventListener("click", () => chooseGame(GAMES.idiomFill.id));
 // Phase trace-tian — 田字格描红入口
 document.querySelector("#open-trace-tian")?.addEventListener("click", () => chooseGame(GAMES.traceTian.id));
+document.querySelector("#open-math-flash")?.addEventListener("click", () => chooseGame(GAMES.mathFlash.id));
+mathHardToggle?.addEventListener("click", () => {
+  stopMathCountdown();
+  state.mathHard = !state.mathHard;
+  try {
+    localStorage.setItem("beta_words_mathflash_hard", state.mathHard ? "1" : "0");
+  } catch (error) {
+    // 存储不可用时，当前页面仍可切换模式。
+  }
+  syncMathHardToggle();
+});
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
 document.querySelector("#replay-sound").addEventListener("click", () => playReplayVoice());
 // “再听一遍” 按钮在听音点卡 + 看字识颜色 中隐藏（不依赖读音重播）
@@ -699,6 +732,7 @@ function syncBgLayer(gameId) {
 }
 
 function leaveGame() {
+  clearMathFlash();
   stopMemoryCountdown();
   stopTimer();
   state.locked = false;
@@ -729,6 +763,7 @@ function leaveGame() {
 
 function chooseGame(gameId) {
   state.game = gameId;
+  if (gameId === GAMES.mathFlash.id) restoreMathHard();
   const game = getCurrentGame();
   setupTitle.textContent = `${game.name} · 选择难度`;
   syncTheme(gameId);  // 同步主题色到 body[data-game]
@@ -744,11 +779,21 @@ function chooseGame(gameId) {
 function syncSetupForGame(gameId) {
   const isCompare = gameId === GAMES.compare.id;
   const isTraceTian = gameId === GAMES.traceTian.id;
+  const isMathFlash = gameId === GAMES.mathFlash.id;
+  if (mathHardRow) mathHardRow.hidden = !isMathFlash;
+  if (isMathFlash) restoreMathHard();
   document.querySelectorAll('#setup .difficulty').forEach((btn) => {
     const size = parseInt(btn.dataset.size, 10);
     const strongEl = btn.querySelector('strong');
     const spanEl = btn.querySelector('span');
-    if (isCompare) {
+    if (isMathFlash) {
+      const cfg = MathFlashEngine.LEVELS[size];
+      btn.hidden = !cfg;
+      if (cfg && strongEl && spanEl) {
+        strongEl.textContent = cfg.name;
+        spanEl.textContent = cfg.sub;
+      }
+    } else if (isCompare) {
       // size 7 没在 COMPARE_LEVELS, 隐藏
       btn.hidden = (size === 7);
       const cfg = COMPARE_LEVELS[size];
@@ -790,6 +835,7 @@ const RECOMMENDED_SIZE = {
   compare: 3,      // 看图比大小 3×3 入门
   idiomFill: 4,    // 4 个成语，1 字/成语（入门梯度）
   traceTian: 3,    // 数字池入门（10 个数字字最少，描红最难）
+  mathFlash: 3,    // 10 以内加法入门
 };
 
 function setRecommendedDifficulty(gameId) {
@@ -803,6 +849,7 @@ function setRecommendedDifficulty(gameId) {
 }
 
 function startGame(size) {
+  clearMathFlash();
   stopMemoryCountdown();
   resetTimer();
   state.size = size;
@@ -827,7 +874,17 @@ function startGame(size) {
   const isQuizGame = isCurrentQuizGame();
   const isStroopGame = state.game === GAMES.stroopTrain.id;
   const isCompareGame = state.game === GAMES.compare.id;
-  if (isStroopGame) {
+  const isMathFlash = state.game === GAMES.mathFlash.id;
+  if (mathHost) mathHost.hidden = !isMathFlash;
+  if (isMathFlash) {
+    board.hidden = true;
+    quiz.hidden = true;
+    if (stroopHost) stroopHost.hidden = true;
+    if (idiomHost) idiomHost.hidden = true;
+    if (compareHost) compareHost.hidden = true;
+    if (traceHost) traceHost.hidden = true;
+    gameSubtitle.textContent = game.name;
+  } else if (isStroopGame) {
     board.hidden = true;
     quiz.hidden = true;
     if (stroopHost) stroopHost.hidden = false;
@@ -872,6 +929,13 @@ function startGame(size) {
   }
   optionGrid.innerHTML = "";
   quizMain.innerHTML = "";
+
+  if (isMathFlash) {
+    startMathFlashGame(size);
+    showScreen("game");
+    window.bgmController?.playForGame(state.game);
+    return;
+  }
 
   if (isQuizGame) {
     startQuizGame(size);
@@ -936,6 +1000,209 @@ function startGame(size) {
   playVoiceVariant("prompt.start", { replayable: false });
   // Phase 7B: 进 play 页面 — 启动当前游戏 BGM
   window.bgmController?.playForGame(state.game);
+}
+
+// ===== 算术闪卡：独立会话、纸质翻卡与每题倒计时 =====
+function syncMathHardToggle() {
+  mathHardToggle?.setAttribute("aria-checked", String(state.mathHard));
+  mathHardRow?.classList.toggle("is-on", state.mathHard);
+}
+
+function restoreMathHard() {
+  try {
+    state.mathHard = localStorage.getItem("beta_words_mathflash_hard") === "1";
+  } catch (error) {
+    state.mathHard = false;
+  }
+  syncMathHardToggle();
+}
+
+function stopMathCountdown() {
+  clearInterval(state.mathTickId);
+  state.mathTickId = null;
+}
+
+function clearMathFlash() {
+  stopMathCountdown();
+  mathTimeouts.forEach((id) => clearTimeout(id));
+  mathTimeouts.clear();
+  cancelAnimationFrame(state.mathFrameId);
+  state.mathFrameId = null;
+  state.mathSession = null;
+  state.mathLocked = false;
+  state.mathDeadline = 0;
+  timer.classList.remove("is-countdown", "is-urgent");
+  // 中途返回也只保留一张模板卡，避免下一局带入旧动画。
+  const cards = mathHost?.querySelectorAll(".math-card") || [];
+  cards.forEach((card, i) => {
+    if (i < cards.length - 1) card.remove();
+    else card.classList.remove("is-out", "is-in", "is-urgent");
+  });
+}
+
+function scheduleMathFlash(callback, delay) {
+  const session = state.mathSession;
+  const id = setTimeout(() => {
+    mathTimeouts.delete(id);
+    if (state.mathSession === session && state.game === GAMES.mathFlash.id) callback();
+  }, delay);
+  mathTimeouts.add(id);
+}
+
+function startMathFlashGame(size) {
+  state.mathSession = MathFlashEngine.createSession(size);
+  state.mathLocked = false;
+  state.mathStartAt = Date.now();
+  MathFlashEngine.startQuestion(state.mathSession);
+  renderMathQuestion();
+  if (!state.mathHard) startTimer();
+  playVoiceVariant("prompt.start", { replayable: false });
+}
+
+function renderMathQuestion(card = mathHost.querySelector(".math-card:last-child")) {
+  const session = state.mathSession;
+  const question = session.current;
+  const level = MathFlashEngine.LEVELS[session.size];
+  card.querySelector(".math-card__badge").textContent = level.name + (state.mathHard ? " · 困难" : "");
+  card.querySelector(".math-card__label").textContent = `第 ${session.cursor + 1} 题`;
+  card.querySelector(".math-eq").innerHTML =
+    `<span>${question.a}</span><span class="op">${question.op}</span><span>${question.b}</span><span class="op">=</span><span class="q">?</span>`;
+  card.classList.remove("is-urgent");
+  card.querySelector(".math-card__timer").hidden = !state.mathHard;
+  card.querySelector(".math-card__timer i").style.width = "100%";
+  mathOptions.innerHTML = "";
+  session.options.forEach((value) => {
+    const button = document.createElement("button");
+    button.className = "option-button math-option";
+    button.type = "button";
+    button.setAttribute("role", "listitem");
+    button.setAttribute("aria-label", `选项 ${value}`);
+    button.textContent = value;
+    button.dataset.value = value;
+    button.addEventListener("click", () => handleMathOptionClick(value, button));
+    mathOptions.appendChild(button);
+  });
+  progress.textContent = `${session.cursor + 1} / 10`;
+  setHint("选一个答案");
+  stopMathCountdown();
+  timer.classList.remove("is-countdown", "is-urgent");
+  if (state.mathHard) startMathCountdown(card);
+}
+
+function startMathCountdown(card) {
+  state.mathDeadline = Date.now() + 5000;
+  function tick() {
+    const remaining = Math.max(0, state.mathDeadline - Date.now());
+    card.querySelector(".math-card__timer i").style.width = `${remaining / 5000 * 100}%`;
+    timer.textContent = Math.ceil(remaining / 1000);
+    timer.classList.add("is-countdown");
+    timer.classList.toggle("is-urgent", remaining <= 2000);
+    card.classList.toggle("is-urgent", remaining <= 2000);
+    if (remaining <= 0) handleMathTimeout();
+  }
+  state.mathTickId = setInterval(tick, 100);
+  tick();
+}
+
+function handleMathOptionClick(value, button) {
+  const session = state.mathSession;
+  if (!session || session.locked || state.mathLocked) return;
+  // 截止时刻以时间戳为准，避免点击赶在下一次 tick 前抢答。
+  if (state.mathHard && Date.now() >= state.mathDeadline) {
+    handleMathTimeout();
+    return;
+  }
+  const result = MathFlashEngine.submitAnswer(session, value);
+  if (result) showMathFeedback(result, button);
+}
+
+function handleMathTimeout() {
+  const session = state.mathSession;
+  if (!session || session.locked || state.mathLocked) return;
+  const result = MathFlashEngine.submitTimeout(session);
+  if (!result) return;
+  mathHost.querySelector(".math-card:last-child").classList.add("is-urgent");
+  showMathFeedback(result);
+}
+
+function showMathFeedback(result, button) {
+  stopMathCountdown();
+  mathOptions.querySelectorAll("button").forEach((option) => { option.disabled = true; });
+  if (result.correct) {
+    button.classList.add("is-correct");
+    const rect = button.getBoundingClientRect();
+    spawnMiniConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 330);
+    playVoiceVariant("prompt.correct", { replayable: false });
+    setMascotState("happy");
+  } else {
+    button?.classList.add("is-wrong");
+    mathOptions.querySelector(`[data-value="${result.answer}"]`).classList.add("is-correct", "is-flashing");
+    playVoiceVariant("prompt.tryAgain", { replayable: false });
+    setMascotState("sad");
+    setHint("再想想");
+  }
+  scheduleMathFlash(() => {
+    if (MathFlashEngine.nextQuestion(state.mathSession)) {
+      completeMathFlash();
+      return;
+    }
+    MathFlashEngine.startQuestion(state.mathSession);
+    flipMathCard(renderMathQuestion);
+  }, result.correct ? 600 : 1300);
+}
+
+function flipMathCard(nextRenderFn) {
+  stopMathCountdown();
+  const pair = mathHost.querySelector(".math-flip-pair");
+  const oldCard = pair.querySelector(".math-card:last-child");
+  const newCard = oldCard.cloneNode(true);
+  newCard.classList.remove("is-out", "is-in", "is-urgent");
+  newCard.classList.add("is-in");
+  nextRenderFn(newCard);
+  pair.appendChild(newCard);
+  oldCard.classList.add("is-out");
+  // 先提交新卡起手姿态，下一帧移除类名才能触发 CSS 过渡。
+  newCard.querySelector(".math-card__inner").getBoundingClientRect();
+  state.mathFrameId = requestAnimationFrame(() => {
+    state.mathFrameId = null;
+    newCard.classList.remove("is-in");
+  });
+  scheduleMathFlash(() => oldCard.remove(), 480);
+}
+
+function completeMathFlash() {
+  stopMathCountdown();
+  stopTimer();
+  state.mathLocked = true;
+  const session = state.mathSession;
+  session.locked = true;
+  const elapsed = Date.now() - state.mathStartAt;
+  const stars = MathFlashEngine.calcStars(session.wrongCount);
+  showTrophy(MathFlashEngine.calcTrophy(session.wrongCount));
+  showStars(stars);
+  const title = document.querySelector(".complete-title");
+  title.textContent = MathFlashEngine.calcTitle(stars);
+  title.dataset.tier = stars === 3 ? "perfect" : stars === 2 ? "good" : "tryAgain";
+  playVoiceVariant(stars >= 2 ? "prompt.complete" : "prompt.tryAgain", { replayable: false });
+  setMascotState(stars === 3 ? "celebrate" : stars > 0 ? "happy" : "sad");
+  const pct = Math.round(session.correctCount / 10 * 100);
+  completeTime.textContent = `用时 ${formatTime(elapsed)}\n答对 ${session.correctCount} / 10（${pct}%）`;
+  const best = getBestRecord(state.size);
+  const showRecord = session.correctCount > 0 && (!best || elapsed < best.elapsedMs);
+  bestRecord.hidden = !showRecord;
+  if (showRecord) saveBestRecord(state.size, elapsed);
+  timer.classList.remove("is-countdown", "is-urgent");
+  updateTimerDisplay(elapsed);
+  setHint("完成");
+  document.querySelector("#next-board").hidden = !MathFlashEngine.LEVELS[state.size + 1];
+  scheduleMathFlash(() => {
+    completePanel.hidden = false;
+    if (stars === 3) spawnConfetti(28);
+    else if (stars === 2) {
+      const rect = completePanel.getBoundingClientRect();
+      spawnMiniConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 330);
+    }
+  }, 260);
 }
 
 function calcTileFont() {
