@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Phase 9 — 算式卡「旧 vs 新」对比图
 
-左：旧版 300x300 正方形方框
-右：新版 332x200 纸质名片卡（正面 / 背面 / 翻起侧立）
+左：旧版 300x300 正方形方框（无材质、静态）
+右：新版 300x300 正方形纸卡（正面 / 背面 / 翻起侧立）—— 形状不变，
+    改的是材质（纸纹 + 分层投影）、摆正不倾斜、以及新增翻卡动效
 
 用法：
   python3 gen_card_compare.py
@@ -65,7 +66,7 @@ CSS = """
   /* ---- 新版：纸卡 ---- */
   .new-slot { perspective: 1100px; }
   .new-card {
-    width: 250px; height: 151px;
+    width: 200px; height: 200px;
     position: relative;
     transform-style: preserve-3d;
   }
@@ -93,9 +94,9 @@ CSS = """
       0 2px 3px rgba(31,44,36,.1),
       0 14px 22px -12px rgba(31,44,36,.3);
   }
-  .new-card .face.front { transform: rotate(-2deg); }
+  .new-card .face.front { transform: none; }
   .new-card .face.back {
-    transform: rotateY(180deg) rotate(-2deg);
+    transform: rotateY(180deg);
     background-color: #faf6ec;
     display: grid; place-items: center;
   }
@@ -138,7 +139,7 @@ HTML = """<!DOCTYPE html>
 </head>
 <body data-game="mathFlash">
   <h1>算式卡改版 · 旧 vs 新</h1>
-  <p class="sub">旧版 300×300 正方形方框 → 新版 332×200 名片比例纸卡（比例 1.66，贴 90×54mm 标准名片），带纸纹 / 投影 / 摆放倾角，并新增翻卡动效。</p>
+  <p class="sub">形状保持 300×300 正方形（2026-11-01 定稿：摆正、不旋转）；改动集中在材质 —— 暖白纸底 + 双向纤维纹理 + 上沿高光 / 下沿厚度、分层投影（纸片浮在桌面上），并新增正反双面翻卡动效。</p>
   <div class="cols">
     <div class="col">
       <div class="col-head">旧版 · 正方形方框</div>
@@ -162,8 +163,8 @@ HTML = """<!DOCTYPE html>
     </div>
 
     <div class="col">
-      <div class="col-head">新版 · 纸质名片卡</div>
-      <div class="col-sub">332 × 200，纸纹 + 分层投影 + −2° 摆放倾角，正反双面可翻</div>
+      <div class="col-head">新版 · 正方形纸卡</div>
+      <div class="col-sub">300 × 300，纸纹 + 分层投影，摆正不倾斜，正反双面可翻</div>
       <div class="stagebox new">
         <div class="new-slot">
           <div class="new-card is-front"><div class="inner">
@@ -198,10 +199,10 @@ HTML = """<!DOCTYPE html>
       </div>
       <div class="new-notes">
         <b>改动</b><br>
-        · 比例 1 : 1 → <b>1.66 : 1</b>（标准名片比例），横向更像"一张拿在手里的卡"<br>
+        · 形状仍为 <b>1 : 1</b> 正方形，<b>摆正不旋转</b>（不做倾斜摆放）<br>
         · 暖白纸底 + 双向纤维纹理 + 上沿高光 / 下沿厚度<br>
         · 分层投影：接触影 + 环境影 → 纸片浮在桌面上<br>
-        · −2° 摆放倾角，随手放桌上的手感<br>
+        · 分层投影制造"纸片浮在桌面"的层次感（不靠倾斜制造立体感）<br>
         · 双面结构，绕 Y 轴 <b>480ms</b> 翻转完成翻页<br>
         · 角标（关卡名 / 第 N 题）+ 底部倒计时条
       </div>

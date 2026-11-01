@@ -37,8 +37,8 @@
   }
   .slot {
     position: relative;
-    width: 236px;
-    height: 142px;
+    width: 210px;
+    height: 210px;
     perspective: 900px;
     margin: 0 auto 14px;
   }
@@ -56,7 +56,7 @@
   .slot.is-d .math-card__inner { transform: rotateY(-180deg); }
   .slot.is-d .math-card__face--front { opacity: 0; }
   .slot.is-d .math-card__face--back {
-    transform: rotateY(180deg) rotate(-2deg);
+    transform: rotateY(180deg);
     opacity: 1;
   }
   .cap {
@@ -82,7 +82,7 @@
 </head>
 <body data-game="mathFlash">
   <h1 class="diagram-title">算术闪卡 · 翻卡动效分解</h1>
-  <p class="diagram-sub">纸质名片卡（332×200，比例 1.66）绕 Y 轴翻转；翻页时旧卡翻走、下一题卡从背面转出，全程约 480ms。</p>
+  <p class="diagram-sub">正方形纸卡（300×300）绕 Y 轴翻转；翻页时旧卡翻走、下一题卡从背面转出，全程约 480ms。</p>
   <div class="row"><div class="cell"><div class="slot is-a">
             <div class="math-card">
               <div class="math-card__inner">
@@ -100,7 +100,7 @@
                   <div class="math-card__watermark">6 + 7</div>
                 </div>
               </div>
-            </div></div><div class="cap">① 正面</div><div class="note">题目卡正面，纸质名片比例 332×200</div></div><div class="arrow">→</div><div class="cell"><div class="slot is-b">
+            </div></div><div class="cap">① 正面</div><div class="note">题目卡正面，正方形纸卡 300×300</div></div><div class="arrow">→</div><div class="cell"><div class="slot is-b">
             <div class="math-card">
               <div class="math-card__inner">
                 <div class="math-card__face math-card__face--front">

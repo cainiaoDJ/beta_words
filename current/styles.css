@@ -3525,24 +3525,24 @@ body[data-game="traceTian"] {
 
 /* ============================================================================
  * Phase 9 — 算术闪卡 mathFlash（feat/math-flash）
- * 纸质名片卡（332×200，比例 1.66，贴 90×54mm 标准名片）+ 翻卡动效
+ * 正方形纸卡（300×300，与框架 zone-primary 一致）+ 翻卡动效
  * ============================================================================ */
 
-/* ===== 题目卡：纸质名片 ===== */
+/* ===== 题目卡：正方形纸卡 ===== */
 .math-host {
-  /* 占满内容宽（332px），比 300px 更像"一张拿在手里的卡" */
-  --primary-size: 332px;
-  --secondary-w: 332px;
+  /* 正方形卡片：沿用框架默认 300×300 主区尺寸 */
+  --primary-size: 300px;
+  --secondary-w: 300px;
   /* 卡片 + 选项作为一组在 zone 内居中，避免上下留白失衡 */
   justify-content: center;
   gap: 14px;
 }
 
-/* 翻页容器：同一时刻叠两张卡（旧卡翻走 + 新卡推入） */
+/* 翻页容器：同一时刻叠两张卡（旧卡翻走 + 新卡推入）
+ * 卡片为正方形：沿用 .zone-primary 框架的 aspect-ratio:1，不再覆盖 */
 .math-flip-pair {
   position: relative;
   width: min(100%, var(--primary-size));
-  aspect-ratio: 332 / 200;  /* 覆盖 .zone-primary 的 aspect-ratio:1 */
   display: block;           /* 覆盖 .zone-primary 的 display:grid */
   flex-shrink: 0;
 }
@@ -3586,14 +3586,14 @@ body[data-game="traceTian"] {
   overflow: hidden;
 }
 
-/* 正面轻微倾斜，像随手放在桌上 */
+/* 正面：摆正，不做倾斜 */
 .math-card__face--front {
-  transform: rotate(-2deg);
+  transform: none;
 }
 
 /* 背面：素纸 + 极淡水印 */
 .math-card__face--back {
-  transform: rotateY(180deg) rotate(-2deg);
+  transform: rotateY(180deg);
   background-color: #faf6ec;
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 50%),
@@ -3647,7 +3647,8 @@ body[data-game="traceTian"] {
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  font-size: 52px;
+  /* 48px：正方形卡片内最宽合法算式（10+10=?）左右仍留 10px 以上余量 */
+  font-size: 48px;
   font-weight: var(--fw-black);
   line-height: 1;
   color: var(--ink);

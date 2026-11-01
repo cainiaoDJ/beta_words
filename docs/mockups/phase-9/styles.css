@@ -146,6 +146,12 @@
   --theme-idiomFill-ink: #0d9488;
   --theme-idiomFill-glow: rgba(20, 184, 166, 0.4);
 
+  /* Phase 9 — 算术闪卡 mathFlash（玫红，第 9 套主题色） */
+  --theme-mathFlash-bg: rgba(236, 72, 153, 0.06);
+  --theme-mathFlash-accent: #ec4899;
+  --theme-mathFlash-accent-soft: rgba(236, 72, 153, 0.15);
+  --theme-mathFlash-ink: #be185d;
+  --theme-mathFlash-glow: rgba(236, 72, 153, 0.4);
   --theme-lobby-bg: rgba(247, 215, 92, 0.04);
   --theme-lobby-accent: #f5cd2f;
   --theme-lobby-accent-soft: rgba(247, 215, 92, 0.12);
@@ -236,6 +242,15 @@ button {
   --theme-accent-soft: var(--theme-idiomFill-accent-soft);
   --theme-ink: var(--theme-idiomFill-ink);
   --theme-glow: var(--theme-idiomFill-glow);
+}
+
+/* Phase 9 — 算术闪卡 mathFlash 主题映射（玫红） */
+[data-game="mathFlash"] {
+  --theme-bg: var(--theme-mathFlash-bg);
+  --theme-accent: var(--theme-mathFlash-accent);
+  --theme-accent-soft: var(--theme-mathFlash-accent-soft);
+  --theme-ink: var(--theme-mathFlash-ink);
+  --theme-glow: var(--theme-mathFlash-glow);
 }
 
 [data-game="lobby"] {
@@ -3228,4 +3243,604 @@ img.compare-emoji {
   .compare-symbols { gap: 8px; }
   .compare-area { gap: 10px; }
   .compare-row { gap: 8px; }
+}
+
+/* ============================================================================
+ * Phase trace-tian — 田字格描红 (feat/trace-tian, 2026-09-22)
+ * 数据源：人教版一年级上册（数字 / 拼音 / 汉字 三池）
+ * 字库：assets/data/trace-{numbers,pinyin,hanzi}.js
+ * 字体：LXGW WenKai（@font-face 注册；降级到楷体/系统字体）
+ * ============================================================================ */
+
+/* === 字体加载 === */
+@font-face {
+  font-family: "LXGW Wenkai Trace";
+  src: local("LXGW WenKai TC"), local("LXGW WenKai"), local("霞鹜文楷"),
+       local("KaiTi"), local("STKaiti"), local("楷体"),
+       local("PingFang SC"), local("Microsoft YaHei"), local("微软雅黑"),
+       local("sans-serif");
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+0020-007F, U+00C0-00FF, U+0100-017F, U+0250-02AF, U+0300-036F, U+1E00-1EFF;
+}
+
+/* trace-host 顶层容器：沿用 zone-stack 布局（不加新 flex） */
+.trace-host {
+  /* zone-stack 已定义：flex column + gap + align center + flex:1 */
+  /* 加一条专用宽度约束，避免主区在桌面端无限拉大 */
+  width: min(100%, 480px);
+}
+
+/* === Z3 米字格主交互区 === */
+.trace-stage {
+  position: relative;
+  display: block;          /* 覆写 .zone-primary 的 grid，子元素走绝对定位 */
+  flex-shrink: 0;
+  width: min(100%, 480px);
+  aspect-ratio: 1;
+  align-self: center;
+  border: 2px solid var(--accent, #2F8C73);
+  border-radius: 8px;
+  background: #fffaf0;
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0,0,0,0.06));
+  overflow: hidden;
+  touch-action: none;       /* 防止手指描写时页面滚动 */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.trace-canvas {
+  position: absolute;
+  /* 不再用 inset:0（会被 2px border 吃掉边）；居中正方形，匹配 stage 内容区 */
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.trace-order-svg {
+  position: absolute;
+  /* 同 canvas，避免 stroke guide 边缘被 border 裁切 */
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* 笔顺 SVG 内部元素 */
+.trace-stroke-path {
+  fill: none;
+  stroke: rgb(91, 156, 207);    /* 浅蓝 */
+  stroke-width: 22;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.trace-stroke-path.is-revealed {
+  opacity: 0.85;
+}
+
+.trace-stroke-point {
+  fill: rgb(31, 78, 121);       /* 深蓝起点圆点 */
+  stroke: white;
+  stroke-width: 4;
+}
+
+.trace-stroke-num {
+  font-family: var(--font-numeric, system-ui);
+  font-feature-settings: "tnum" 1;
+  font-size: 44px;
+  font-weight: 800;
+  fill: rgb(31, 78, 121);
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 5;
+  stroke-linejoin: round;
+}
+
+/* 状态：笔顺演示中（禁止用户描写） */
+.trace-stage.is-locked {
+  pointer-events: none;
+}
+
+.trace-stage.is-locked .trace-canvas {
+  cursor: not-allowed;
+}
+
+/* 状态：用户描写中 */
+.trace-stage.is-drawing {
+  border-color: rgb(var(--color-primary-strong, 31 111 89));
+  box-shadow: 0 0 0 3px rgba(47, 140, 115, 0.2);
+}
+
+/* 状态：完成当前字（绿色脉冲） */
+.trace-stage.is-completed {
+  border-color: rgb(var(--color-primary-strong, 31 111 89));
+  animation: trace-pulse 480ms ease-out;
+}
+
+@keyframes trace-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(47, 140, 115, 0.6); }
+  100% { box-shadow: 0 0 0 12px rgba(47, 140, 115, 0); }
+}
+
+/* === Loading 遮罩 === */
+.trace-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 250, 240, 0.85);
+  z-index: 2;
+}
+
+.trace-loading-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgb(var(--color-primary-strong, 31 111 89));
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgb(var(--color-warning-soft, 255 248 214));
+}
+
+/* === Z4 待选列表（一行横向滚动） === */
+.trace-remaining {
+  display: flex;             /* 覆写 .zone-secondary 的 grid，让待选列表横向 */
+  width: 100%;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 8px;
+  padding: 8px 4px;
+  scrollbar-width: thin;
+}
+
+.trace-remaining-card {
+  flex-shrink: 0;
+  min-width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--line, #d8e2dc);
+  border-radius: 6px;
+  background: white;
+  font-family: "LXGW Wenkai Trace", "KaiTi", "STKaiti", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: rgb(var(--color-primary-strong, 31 111 89));
+  cursor: default;
+  transition: transform var(--motion-fast, 120ms) ease, background var(--motion-base, 200ms) ease, border-color var(--motion-base, 200ms) ease;
+  user-select: none;
+}
+
+.trace-remaining-card.is-current {
+  background: rgb(var(--color-warning-soft, 255 248 214));
+  border-color: rgb(var(--color-warning-strong, 215 167 28));
+  transform: scale(1.06);
+}
+
+.trace-remaining-card.is-done {
+  background: rgb(var(--color-primary-soft, 223 243 234));
+  border-color: rgb(var(--color-primary, 47 140 115));
+  color: rgb(var(--color-primary, 47 140 115));
+  position: relative;
+}
+
+.trace-remaining-card.is-done::after {
+  content: "✓";
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgb(var(--color-primary, 47 140 115));
+  color: white;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* === Z5 Toolbar === */
+.trace-toolbar {
+  display: grid;             /* 沿用 .zone-toolbar 的 grid 即可 */
+  width: 100%;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.trace-tool-button {
+  height: 48px;
+  border-radius: 8px;
+  border: 2px solid var(--line, #d8e2dc);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--motion-fast, 120ms) ease, background var(--motion-base, 200ms) ease, border-color var(--motion-base, 200ms) ease;
+}
+
+.trace-clear-button {
+  background: white;
+  color: rgb(110, 110, 110);
+  border-color: var(--line, #d8e2dc);
+}
+
+.trace-clear-button:hover:not(:disabled) {
+  border-color: rgb(140, 140, 140);
+  background: #fafafa;
+}
+
+.trace-clear-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.trace-next-button {
+  background: rgb(var(--color-primary, 47 140 115));
+  color: white;
+  border-color: rgb(var(--color-primary-strong, 31 111 89));
+}
+
+.trace-next-button:hover:not(:disabled) {
+  background: rgb(var(--color-primary-hover, 38 158 130));
+}
+
+.trace-next-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.trace-next-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.trace-next-button.is-shake {
+  animation: tile-wrong-shake 320ms var(--ease-standard, ease-out);
+}
+
+/* === body[data-game="traceTian"] 主题色覆写（与其他游戏风格一致） === */
+body[data-game="traceTian"] {
+  --theme-accent: #2F8C73;
+  --theme-accent-strong: #1F6F59;
+}
+
+/* 移动端：稍小一点让单屏可见 */
+@media (max-width: 480px) {
+  .trace-stage { width: min(100%, 360px); }
+  .trace-remaining-card { min-width: 48px; height: 48px; font-size: 24px; }
+  .trace-tool-button { height: 44px; font-size: 14px; }
+}
+
+/* ============================================================================
+ * Phase 9 — 算术闪卡 mathFlash（feat/math-flash）
+ * 正方形纸卡（300×300，与框架 zone-primary 一致）+ 翻卡动效
+ * ============================================================================ */
+
+/* ===== 题目卡：正方形纸卡 ===== */
+.math-host {
+  /* 正方形卡片：沿用框架默认 300×300 主区尺寸 */
+  --primary-size: 300px;
+  --secondary-w: 300px;
+  /* 卡片 + 选项作为一组在 zone 内居中，避免上下留白失衡 */
+  justify-content: center;
+  gap: 14px;
+}
+
+/* 翻页容器：同一时刻叠两张卡（旧卡翻走 + 新卡推入）
+ * 卡片为正方形：沿用 .zone-primary 框架的 aspect-ratio:1，不再覆盖 */
+.math-flip-pair {
+  position: relative;
+  width: min(100%, var(--primary-size));
+  display: block;           /* 覆盖 .zone-primary 的 display:grid */
+  flex-shrink: 0;
+}
+
+/* 卡片绝对定位填满容器 → 两张卡重叠在同一位置 */
+.math-flip-pair .math-card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  perspective: 1400px;
+  margin: 0;
+}
+
+.math-card__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 480ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+/* 纸面：正面题目 / 背面素纸，共用一张「纸」的材质 */
+.math-card__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: var(--radius-md);
+  background-color: var(--tile);
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 42%),
+    repeating-linear-gradient(90deg, rgba(186, 164, 122, 0.045) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, rgba(186, 164, 122, 0.035) 0 1px, transparent 1px 3px);
+  border: 1px solid rgba(122, 100, 68, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(122, 100, 68, 0.08),
+    0 2px 3px rgba(31, 44, 36, 0.1),
+    0 14px 22px -12px rgba(31, 44, 36, 0.3);
+  overflow: hidden;
+}
+
+/* 正面：摆正，不做倾斜 */
+.math-card__face--front {
+  transform: none;
+}
+
+/* 背面：素纸 + 极淡水印 */
+.math-card__face--back {
+  transform: rotateY(180deg);
+  background-color: #faf6ec;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 50%),
+    repeating-linear-gradient(90deg, rgba(186, 164, 122, 0.05) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, rgba(186, 164, 122, 0.04) 0 1px, transparent 1px 3px);
+  display: grid;
+  place-items: center;
+}
+
+.math-card__watermark {
+  font-size: 88px;
+  font-weight: var(--fw-black);
+  color: rgba(236, 72, 153, 0.1);
+  line-height: 1;
+  user-select: none;
+  letter-spacing: 6px;
+}
+
+/* 名片抬头行 */
+.math-card__head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 0;
+}
+
+.math-card__badge {
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--theme-ink);
+  background: var(--theme-accent-soft);
+  border-radius: var(--radius-xs);
+  padding: 3px 8px;
+}
+
+.math-card__label {
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--muted);
+}
+
+/* 算式：印在纸上的感觉（浅浮雕） */
+.math-eq {
+  position: absolute;
+  inset: 30px 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  /* 48px：正方形卡片内最宽合法算式（10+10=?）左右仍留 10px 以上余量 */
+  font-size: 48px;
+  font-weight: var(--fw-black);
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.math-eq .op {
+  color: var(--theme-ink);
+  margin: 0 8px;
+}
+
+.math-eq .q {
+  color: var(--theme-accent);
+}
+
+/* 倒计时进度条：贴在纸的下缘，像卡片压边 */
+.math-card__timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: rgba(122, 100, 68, 0.14);
+}
+
+.math-card__timer i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--theme-accent);
+  transition: width 100ms linear;
+}
+
+.math-card.is-urgent .math-card__timer i {
+  background: rgb(var(--color-danger));
+}
+
+.math-card.is-urgent .math-card__face--front {
+  border-color: rgb(var(--color-danger));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(122, 100, 68, 0.08),
+    0 2px 3px rgba(31, 44, 36, 0.1),
+    0 14px 22px -12px rgba(216, 109, 76, 0.42);
+}
+
+/* ===== 翻卡：旧卡侧立翻走，下一题卡从相反方向推入 ===== */
+.math-card.is-out .math-card__inner {
+  transform: rotateY(-82deg) translateX(-40px) translateZ(-10px);
+}
+
+.math-card.is-out {
+  pointer-events: none;
+}
+
+.math-card.is-in .math-card__inner {
+  transform: rotateY(26deg) translateX(34px) translateZ(4px);
+}
+
+.math-card.is-in {
+  pointer-events: none;
+}
+
+/* 纸卡厚度：翻起时露出的折脊（仅动效态出现，静止态不加） */
+.math-card__face--front::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: -1px;
+  bottom: 2px;
+  width: 7px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, #efe4cd, #ddcdae);
+  transform: translateZ(9px);
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
+.math-card.is-out .math-card__face--front::after,
+.math-card.is-in .math-card__face--front::after {
+  opacity: 1;
+}
+
+/* ===== 选项：4 个数字（外框缩为原来的一半：2×2 大 tile → 1×4 扁条）=====
+ * 线上 .option-button 带 padding-right:36px !important + display:flex !important
+ * （那是为了给拼音题的小耳朵图标留位）。数学选项没有耳朵，必须覆盖掉，
+ * 否则数字会整体偏左。 */
+.math-host .option-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  flex: 0 0 auto;
+  align-content: center;
+  gap: 8px;
+}
+
+.option-button.math-option {
+  font-size: 26px;
+  min-height: 48px;
+  padding: 4px 6px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 正确答案闪动（答错时高亮闪动，翻页之前）===== */
+.option-button.math-option.is-flashing {
+  animation: math-correct-flash 0.42s ease-in-out 3 alternate !important;
+  background: rgb(var(--color-primary-soft));
+  border-color: rgb(var(--color-primary-strong));
+  color: rgb(var(--color-primary-strong));
+  box-shadow: 0 0 0 4px rgba(47, 140, 115, 0.28);
+  z-index: 2;
+}
+
+@keyframes math-correct-flash {
+  from {
+    background: rgb(var(--color-primary-soft));
+    box-shadow: 0 0 0 0 rgba(47, 140, 115, 0.34);
+  }
+  to {
+    background: #b9e6d5;
+    box-shadow: 0 0 0 8px rgba(47, 140, 115, 0);
+  }
+}
+
+/* ===== HUD：困难模式倒计时 ===== */
+.hud-timer.is-countdown {
+  background: rgb(var(--color-warning));
+  color: #222;
+}
+
+.hud-timer.is-urgent {
+  background: rgb(var(--color-danger-soft));
+  border-color: rgb(var(--color-danger));
+  color: rgb(var(--color-danger-strong));
+  animation: math-countdown-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes math-countdown-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* ===== 选关界面：困难模式开关行 ===== */
+.mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.mode-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mode-row-title {
+  font-size: 15px;
+  font-weight: var(--fw-black);
+  color: var(--theme-ink);
+}
+
+.mode-row-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* 开关打开时整行染主题色（和 .difficulty[data-recommended] 一个味道） */
+.mode-row.is-on {
+  border-color: var(--theme-ink);
+  background: var(--theme-accent-soft);
+}
+
+/* ===== 大厅入口：算术闪卡 ===== */
+.game-entry[id="open-math-flash"] {
+  background: var(--theme-mathFlash-bg);
+  border: 2px solid var(--theme-mathFlash-accent);
+}
+
+.game-entry[id="open-math-flash"] .entry-icon {
+  background: var(--theme-mathFlash-accent-soft);
+}
+
+.game-entry[id="open-math-flash"]:hover {
+  box-shadow: 0 4px 16px var(--theme-mathFlash-glow);
 }
