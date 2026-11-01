@@ -65,13 +65,14 @@
  * ============================================================ */
 
 .math-host {
-  /* 正方形卡片：沿用框架默认 300×300 主区尺寸 */
-  --primary-size: 300px;
-  --secondary-w: 300px;
+  /* 名片比 300 宽会显得小，占满内容宽更接近"一张拿在手里的卡" */
+  --primary-size: 332px;
+  --secondary-w: 332px;
 }
 
 .math-card {
-  /* 覆盖 .zone-primary 的 display:grid；正方形沿用框架 aspect-ratio:1 */
+  /* 覆盖 .zone-primary 的 aspect-ratio:1 与 display:grid */
+  aspect-ratio: 332 / 200;
   display: block;
   perspective: 1400px;
   position: relative;
@@ -110,7 +111,7 @@
   overflow: hidden;
 }
 
-/* 正面：摆正，不做倾斜 */
+/* 正面：摆正，不做倾斜（2026-11-01 定稿） */
 .math-card__face--front {
   transform: none;
 }
@@ -171,7 +172,7 @@
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  font-size: 48px;
+  font-size: 52px;
   font-weight: var(--fw-black);
   line-height: 1;
   color: var(--ink);
@@ -363,7 +364,8 @@
 /* ===== 翻卡动画：两张卡叠在同一位置（一出 一进）===== */
 .math-flip-pair {
   position: relative;
-  width: min(100%, var(--primary-size));
+  width: min(100%, 332px);
+  aspect-ratio: 332 / 200;
   margin: 0 auto;
   perspective: 1400px;
 }

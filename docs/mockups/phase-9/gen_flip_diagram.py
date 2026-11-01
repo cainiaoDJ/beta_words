@@ -20,7 +20,7 @@ CHROME = "/home/alpha/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome"
 
 # 每帧：槽位 class + 卡片内容 + 标题
 FRAMES = [
-    ("is-a", "① 正面", "4 + 3 = ?", "题目卡正面，正方形纸卡 300×300"),
+    ("is-a", "① 正面", "4 + 3 = ?", "题目卡正面，纸质名片比例 332×200"),
     ("is-b", "② 翻起 30°", "4 + 3 = ?", "卡片绕 Y 轴抬起，纸面开始侧转"),
     ("is-c", "③ 翻起 65°", "4 + 3 = ?", "接近侧立，只剩窄条，透出纸卡折脊"),
     ("is-d", "④ 背面", "", "背面素纸，露出新题（下一题）"),
@@ -58,8 +58,8 @@ CSS = """
   }
   .slot {
     position: relative;
-    width: 210px;
-    height: 210px;
+    width: 236px;
+    height: 142px;
     perspective: 900px;
     margin: 0 auto 14px;
   }
@@ -153,7 +153,7 @@ def build():
 </head>
 <body data-game="mathFlash">
   <h1 class="diagram-title">算术闪卡 · 翻卡动效分解</h1>
-  <p class="diagram-sub">正方形纸卡（300×300）绕 Y 轴翻转；翻页时旧卡翻走、下一题卡从背面转出，全程约 480ms。</p>
+  <p class="diagram-sub">纸质名片卡（332×200，比例 1.66）绕 Y 轴翻转；翻页时旧卡翻走、下一题卡从背面转出，全程约 480ms。</p>
   <div class="row">%s</div>
 </body>
 </html>""" % (CSS, "".join(cells))
