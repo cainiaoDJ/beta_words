@@ -416,6 +416,7 @@ function flipMathCard() {
 - [x] 答错：红抖动 + **正确答案绿高亮闪动 3 次** → 再翻页（顺序不能反）
 - [x] 纸卡为正方形（300×300），有纸纹/投影，**摆正不倾斜**（2026-11-01 主人定稿）
 - [x] 算式字号 52px → 48px（正方形卡片内最宽合法算式 `10+10=?` 仍留 10px 以上余量）
+- [x] 线上实测：卡片 325×325 (ratio=1.000)、`transform: none`、最宽算式余量 10px
 - [x] 翻页动效：旧卡侧立翻走、新卡从背面转出，全程 480ms，不闪白不消失
 - [x] 星级按错题数：0→3★ / 1-3→2★ / 4-9→1★ / 10→0★
 - [x] 3 星时撒花，1-2 星不撒
@@ -510,3 +511,17 @@ function flipMathCard() {
 > 第 4 项的详细规格见下方「🃏 算式卡重设计（纸质名片翻卡）」。
 
 ---
+
+### ✅ 第 2 轮部署记录（2026-11-01 11:02，卡片正方形 + 摆正）
+
+- **改动**：仅 `current/styles.css`（其余 4 个文件未变）
+  - `.math-flip-pair` 去掉 `aspect-ratio: 332/200` → 沿用框架 `.zone-primary` 的 `aspect-ratio: 1`
+  - `.math-host` 的 `--primary-size` / `--secondary-w`：`332px` → `300px`
+  - `.math-card__face--front`：`rotate(-2deg)` → `none`；`.math-card__face--back`：去掉 `rotate(-2deg)`，保留 `rotateY(180deg)` 翻面
+  - `.math-eq` 字号 `52px` → `48px`（正方形卡片内最宽合法算式 `10+10=?` 左右仍留 10px）
+- **线上实测**（`https://sophie520.top/games/`）：卡片 325×325 ratio=1.000，`transform: none`，
+  最宽算式 `10+10=?` 字形 304px / 卡片 325px，左右各余 10px；翻卡后仍为正方形
+- **回归**：`mobile-one-screen-test.js` 打公网 → **Total: 462, Failed: 0**（math-flash 266×266 @320×568）
+- **回滚点**：
+  - `/var/www/games/current.bak-mathflash-square-20261101-110207`
+  - `/var/www/games/current.bak-mathflash-square-nested-20261101-110207`
