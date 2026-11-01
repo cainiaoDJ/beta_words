@@ -512,12 +512,15 @@ function flipMathCard() {
 
 ---
 
-### ✅ 第 2 轮部署记录（2026-11-01，卡片摆正不倾斜）
+### ✅ 部署记录（第 2 轮 · 卡片摆正不倾斜）
 
-- **改动**：仅 `current/styles.css`，且只有两处 `transform`（形状/尺寸/字号/材质一律不变）
+- **改动**：仅 `current/styles.css`，且**只有两处 `transform`**（形状 / 尺寸 / 字号 / 材质一律不变）
   - `.math-card__face--front`：`rotate(-2deg)` → `none`
-  - `.math-card__face--back`：`rotateY(180deg) rotate(-2deg)` → `rotateY(180deg)`（只留翻面）
+  - `.math-card__face--back`：`rotateY(180deg) rotate(-2deg)` → `rotateY(180deg)`（只留翻面，不动翻面动效）
   - 卡片仍是 **332×200 名片比例**，`--primary-size: 332px`，算式字号仍 **52px**
 - **线上实测**（`https://sophie520.top/games/`）：卡片 360×217 ratio=1.66，
   正面 `transform: none`，最宽算式 `10+10=?` 字形 326px / 卡片 360px，左右各余 17px；翻卡后形状不变
-- **回归**：`mobile-one-screen-test.js` 打公网 → **Total: 462, Failed: 0**
+- **回归**：`mobile-one-screen-test.js` 打公网 → **Total: 462, Failed: 0**（math-flash @320×568 为 295×178）
+- **回滚点**：
+  - `/var/www/games/current.bak-mathflash-untilted-20261101-160151`
+  - `/var/www/games/current.bak-mathflash-untilted-nested-20261101-160151`
