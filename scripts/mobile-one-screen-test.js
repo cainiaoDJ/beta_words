@@ -16,7 +16,9 @@
 // Zone 预期数量（与 index.html 各游戏的 DOM 结构对应）：
 //   match/memory/stroop/quiz 都至少 1 个 .zone-primary（棋盘或题目卡）
 //   quiz 类（pinyin-friend + listen-card）多 1 个 .zone-secondary（选项网格）
-//   stroop-train 多 1 个 .zone-secondary（待选区）+ 1 个 .zone-toolbar（颜色条）
+//   stroop-train 用 .stroop-track 作为 primary，旧待选区已隐藏，保留 1 个 .zone-toolbar
+//   trace-tian 多 1 个 .zone-secondary（待选字）+ 1 个 .zone-toolbar（清除/下一字）
+//   idiom-fill 多 1 个 .zone-secondary（候选字池）
 
 const { chromium } = require('/tmp/node_modules/playwright/index.js');
 
@@ -30,9 +32,23 @@ const TESTS = [
   { name: 'Small phone   (360x640)',  vp: { width: 360, height: 640 } },
   { name: 'Tiny phone    (320x568)',  vp: { width: 320, height: 568 } },
 ];
-const GAMES = ['open-match', 'open-memory', 'open-pinyin-friend', 'open-listen-card', 'open-stroop-train'];
+const GAMES = ['open-match', 'open-memory', 'open-pinyin-friend', 'open-listen-card', 'open-stroop-train', 'open-compare', 'open-idiom-fill', 'open-trace-tian', 'open-math-flash'];
 const DESIGN_W = 360;
 const DESIGN_H = 640;
+
+// 测试目标 URL（默认本地开发服；可用 BASE_URL env 覆盖）
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:4174/';
+
+// 各游戏可测的难度 size
+const GAME_SIZES = {
+  'open-trace-tian': [3, 4, 5],
+  'open-compare':    [3, 5, 6],
+  'open-idiom-fill': [3, 5, 7],
+  'open-math-flash': [3, 4, 5, 6],
+};
+function sizesFor(gameId) {
+  return GAME_SIZES[gameId] || [3, 5, 7];
+}
 
 // Zone 预期数量（按游戏）
 const ZONE_EXPECT = {
@@ -40,14 +56,17 @@ const ZONE_EXPECT = {
   'memory':        { primary: 1, secondary: 0, toolbar: 0 },
   'pinyin-friend': { primary: 1, secondary: 1, toolbar: 0 },
   'listen-card':   { primary: 1, secondary: 1, toolbar: 0 },
-  'stroop-train':  { primary: 1, secondary: 1, toolbar: 1 },
+  'stroop-train':  { primary: 1, secondary: 0, toolbar: 1 },
+  'trace-tian':    { primary: 1, secondary: 1, toolbar: 1 },
+  'idiom-fill':    { primary: 1, secondary: 1, toolbar: 0 },  // Phase 8A: 滚筒 + 候选字池
+  'math-flash':    { primary: 1, secondary: 1, toolbar: 0 },
 };
 
 // 从 label 解析 phase/game/size
 function parseLabel(label) {
   if (label === 'lobby') return { phase: 'lobby' };
   if (label.startsWith('setup:')) return { phase: 'setup', game: label.slice(6) };
-  const m = label.match(/^play:(\w+):(\d+)(?::(\w+))?$/);
+  const m = label.match(/^play:([\w-]+):(\d+)(?::([\w-]+))?$/);
   if (m) return { phase: 'play', game: m[1], size: +m[2], sub: m[3] || null };
   return null;
 }
@@ -64,7 +83,7 @@ function parseLabel(label) {
       hasTouch: true,
     });
     const page = await ctx.newPage();
-    await page.goto('http://192.168.31.60:8091/', { waitUntil: 'networkidle' });
+    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
 
     const measure = (label) => page.evaluate((args) => {
       const canvas = document.querySelector('.stage-canvas');
@@ -92,7 +111,8 @@ function parseLabel(label) {
         const r = el.getBoundingClientRect();
         return { w: r.width, h: r.height, l: r.left, r: r.right, t: r.top, b: r.bottom };
       };
-      const primaryV   = visZones('.zone-primary');
+      // 滑动版 Stroop 会把旧棋盘 class 替换为 stroop-track；仍校验真实轨道的可见性与边界。
+      const primaryV   = visZones('.zone-primary, #stroop-board.stroop-track');
       const secondaryV = visZones('.zone-secondary');
       const toolbarV   = visZones('.zone-toolbar');
       return {
@@ -122,19 +142,24 @@ function parseLabel(label) {
       await page.waitForTimeout(250);
       results.push({ device: t.name, ...(await measure(`setup:${g.replace('open-','')}`)) });
 
-      for (const sz of [3, 5, 7]) {
+      for (const sz of sizesFor(g)) {
         await page.click(`button.difficulty[data-size="${sz}"]`);
         await page.waitForTimeout(500);
         results.push({ device: t.name, ...(await measure(`play:${g.replace('open-','')}:${sz}`)) });
 
-        // 触发 complete panel（fixed overlay，不影响 .screen.active 高度和 zone 结构）
+        // 显示真实 complete panel（fixed overlay，不影响 zone 结构）。
         await page.evaluate(() => {
           document.querySelector('#complete-panel').hidden = false;
-          document.querySelector('#complete-time').textContent = '本次用时 00:42';
+          const stats = document.querySelector('#complete-stats');
+          if (stats) stats.textContent = '用时 00:42 · 成功率 8 / 8（100%）';
+          // 向后兼容（Phase 4 之前用 #complete-time）
+          const legacy = document.querySelector('#complete-time');
+          if (legacy) legacy.textContent = '本次用时 00:42';
         });
         await page.waitForTimeout(150);
         results.push({ device: t.name, ...(await measure(`play:${g.replace('open-','')}:${sz}:complete`)) });
 
+        await page.evaluate(() => { document.querySelector('#complete-panel').hidden = true; });
         await page.click('button[data-action="back-setup"]');
         await page.waitForTimeout(150);
       }
@@ -142,11 +167,12 @@ function parseLabel(label) {
       await page.waitForTimeout(150);
     }
     await ctx.close();
+    console.log(`已完成视口：${t.name}`);
   }
   await browser.close();
 
   // 输出
-  console.log('=== Real Mobile Test Result (GameStage + Zone, 2026-07-29) ===');
+  console.log('=== Real Mobile Test Result (GameStage + Zone, 2026-09-22) ===');
   const fails = [];
   for (const r of results) {
     if (r.error) {
@@ -176,11 +202,11 @@ function parseLabel(label) {
         zoneOK = false;
         zoneFails.push(`primaryCount=${r.primaryCount} expected=${exp.primary}`);
       }
-      if (exp.secondary > 0 && r.secondaryCount !== exp.secondary) {
+      if (r.secondaryCount !== exp.secondary) {
         zoneOK = false;
         zoneFails.push(`secondaryCount=${r.secondaryCount} expected=${exp.secondary}`);
       }
-      if (exp.toolbar > 0 && r.toolbarCount !== exp.toolbar) {
+      if (r.toolbarCount !== exp.toolbar) {
         zoneOK = false;
         zoneFails.push(`toolbarCount=${r.toolbarCount} expected=${exp.toolbar}`);
       }
@@ -218,31 +244,9 @@ function parseLabel(label) {
     console.log('\n=== FAILS ===');
     for (const f of fails) {
       console.log(`  [${f.device}] ${f.label}`);
-      if (f.error) {
-        console.log(`    error: ${f.error}`);
-      } else {
-        if (f.canvasTop < -0.5 || f.canvasBottom > f.vpH + 0.5 || f.canvasLeft < -0.5 || f.canvasRight > f.vpW + 0.5) {
-          console.log(`    fit: top=${f.canvasTop.toFixed(1)} bot=${f.canvasBottom.toFixed(1)} left=${f.canvasLeft.toFixed(1)} right=${f.canvasRight.toFixed(1)} / vp ${f.vpW}x${f.vpH}`);
-        }
-        if (f.screenH_design > f.designH) {
-          console.log(`    design overflow: ${f.screenH_design} > ${f.designH} (overflow ${f.screenH_design - f.designH})`);
-        }
-        const parsed = parseLabel(f.label);
-        if (parsed && parsed.phase === 'play' && parsed.game && ZONE_EXPECT[parsed.game]) {
-          const exp = ZONE_EXPECT[parsed.game];
-          if (f.primaryCount !== exp.primary) console.log(`    zone primaryCount=${f.primaryCount} expected=${exp.primary}`);
-          if (exp.secondary > 0 && f.secondaryCount !== exp.secondary) console.log(`    zone secondaryCount=${f.secondaryCount} expected=${exp.secondary}`);
-          if (exp.toolbar > 0 && f.toolbarCount !== exp.toolbar) console.log(`    zone toolbarCount=${f.toolbarCount} expected=${exp.toolbar}`);
-          if (exp.primary > 0 && f.primaryRect) {
-            if (f.primaryRect.w === 0 || f.primaryRect.h === 0) {
-              console.log(`    zone primary zero size`);
-            } else if (f.primaryRect.l < f.canvasLeft - 0.5 || f.primaryRect.r > f.canvasRight + 0.5) {
-              console.log(`    zone primary outside canvas: L=${f.primaryRect.l.toFixed(1)} R=${f.primaryRect.r.toFixed(1)} / canvas L=${f.canvasLeft.toFixed(1)} R=${f.canvasRight.toFixed(1)}`);
-            }
-          }
-        }
-      }
+      if (f.primaryRect) console.log(`    primaryRect L=${f.primaryRect.l.toFixed(1)} R=${f.primaryRect.r.toFixed(1)} / canvas L=${f.canvasLeft.toFixed(1)} R=${f.canvasRight.toFixed(1)}`);
+      console.log(`    screenH=${f.screenH_design} designH=${f.designH} canvasH=${f.canvasH}`);
     }
   }
   process.exit(fails.length ? 1 : 0);
-})().catch(e => { console.error(e); process.exit(1); });
+})();

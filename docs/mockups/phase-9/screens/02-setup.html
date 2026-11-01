@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>算术闪卡设计稿</title>
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="../mockup.css" />
+<link rel="stylesheet" href="../mockup-frame.css" />
+
+</head>
+<body data-game="mathFlash" class="">
+  <div class="stage">
+    <div class="stage-canvas">
+      <main class="app" aria-live="polite">
+
+      <section id="setup" class="screen active" aria-labelledby="setup-title">
+        <div class="topbar compact">
+          <button class="text-button" type="button" data-action="back-lobby">返回</button>
+          <h2 id="setup-title">算术闪卡 · 选择关卡</h2>
+        </div>
+
+        <div class="difficulty-grid" role="list" aria-label="关卡选择">
+          <button class="difficulty" type="button" data-size="3" data-recommended="true">
+            <strong>10 以内加法</strong>
+            <span>10 题 · 入门</span>
+          </button>
+          <button class="difficulty" type="button" data-size="4">
+            <strong>10 以内减法</strong>
+            <span>10 题 · 熟练</span>
+          </button>
+          <button class="difficulty" type="button" data-size="5">
+            <strong>20 以内加法</strong>
+            <span>10 题 · 进位</span>
+          </button>
+          <button class="difficulty" type="button" data-size="6">
+            <strong>20 以内减法</strong>
+            <span>10 题 · 退位</span>
+          </button>
+          <button class="difficulty" type="button" data-size="7" hidden>
+            <strong>—</strong><span>—</span>
+          </button>
+        </div>
+
+        <div class="mode-row is-on">
+          <span class="mode-row-text">
+            <span class="mode-row-title">困难模式</span>
+            <span class="mode-row-sub">每题 5 秒，超时算错</span>
+          </span>
+          <button class="toggle-switch" type="button" role="switch" aria-checked="true" aria-label="困难模式">
+            <span class="toggle-knob"></span>
+          </button>
+        </div>
+      </section>
+
+      </main>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+  <!-- 田字格描红图标：米字格 + 一笔红色描红示意 -->
+  <rect x="3" y="3" width="26" height="26" rx="3" fill="#fff8d8" stroke="#2F8C73" stroke-width="1.6"/>
+  <!-- 米字格：横竖中线 + 两条对角虚线 -->
+  <line x1="3" y1="16" x2="29" y2="16" stroke="#bdbdbd" stroke-width="0.6" stroke-dasharray="1.5 1.5"/>
+  <line x1="16" y1="3" x2="16" y2="29" stroke="#bdbdbd" stroke-width="0.6" stroke-dasharray="1.5 1.5"/>
+  <line x1="3" y1="3" x2="29" y2="29" stroke="#d0d0d0" stroke-width="0.5" stroke-dasharray="1.2 1.2"/>
+  <line x1="29" y1="3" x2="3" y2="29" stroke="#d0d0d0" stroke-width="0.5" stroke-dasharray="1.2 1.2"/>
+  <!-- 灰色示范字「人」 -->
+  <text x="16" y="22" text-anchor="middle" font-size="14" font-weight="700" fill="#b0b0b0" font-family="KaiTi, STKaiti, serif">人</text>
+  <!-- 红色笔迹：撇 -->
+  <path d="M 9 9 L 16 22" stroke="#d86d4c" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+</svg>

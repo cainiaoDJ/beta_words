@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>算术闪卡设计稿</title>
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="../mockup.css" />
+<link rel="stylesheet" href="../mockup-frame.css" />
+
+</head>
+<body data-game="mathFlash" class="">
+  <div class="stage">
+    <div class="stage-canvas">
+      <main class="app" aria-live="polite">
+
+      <section id="game" class="screen active" aria-labelledby="game-title">
+
+        <div class="game-topbar">
+          <button class="text-button" type="button" data-action="back-setup">换关卡</button>
+          <div>
+            <p id="game-subtitle" class="eyebrow">算术闪卡</p>
+            <h2 id="game-title">算一算，选答案</h2>
+          </div>
+          <div class="game-topbar-right">
+            <img class="mascot-host game-mascot" src="assets/mascot-wave.svg" alt="小书本" />
+            <button id="replay-sound" class="round-button" type="button" aria-label="再听一遍">听</button>
+          </div>
+        </div>
+
+
+        <div class="game-hud" aria-label="游戏状态">
+          <span id="progress" class="hud-progress">10 / 10</span>
+          <span id="timer" class="hud-timer">00:12</span>
+          <span id="hint" class="hud-hint">选一个答案</span>
+        </div>
+
+        <div id="math-host" class="math-host zone-stack">
+
+        <div class="math-card zone-primary  " aria-label="题目卡片">
+          <div class="math-card__inner">
+            <div class="math-card__face math-card__face--front">
+              
+              <div class="math-card__head"><span class="math-card__badge">10 以内加法</span><span class="math-card__label">第 10 题</span></div>
+              <div class="math-eq"><span>4</span><span class="op">+</span><span>3</span><span class="op">=</span><span class="q">?</span></div>
+            </div>
+            <div class="math-card__face math-card__face--back">
+              <div class="math-card__watermark">+</div>
+            </div>
+          </div>
+        </div>
+
+<div id="math-options" class="option-grid zone-secondary" role="list" aria-label="答案选项"><button class="option-button math-option is-correct" type="button" role="listitem" aria-label="选项 7">7</button><button class="option-button math-option" type="button" role="listitem" aria-label="选项 6">6</button><button class="option-button math-option" type="button" role="listitem" aria-label="选项 8">8</button><button class="option-button math-option" type="button" role="listitem" aria-label="选项 5">5</button></div>
+        </div>
+
+        <div id="complete-panel" class="complete-panel">
+          <div class="confetti-layer" aria-hidden="true"><i style="position:absolute;left:62%;top:8%;width:7px;height:11px;background:#f0904f;transform:rotate(333deg);border-radius:2px"></i><i style="position:absolute;left:12%;top:8%;width:7px;height:11px;background:#8ab4f8;transform:rotate(48deg);border-radius:2px"></i><i style="position:absolute;left:62%;top:24%;width:7px;height:11px;background:#ec4899;transform:rotate(259deg);border-radius:2px"></i><i style="position:absolute;left:42%;top:8%;width:7px;height:11px;background:#ec4899;transform:rotate(222deg);border-radius:2px"></i><i style="position:absolute;left:72%;top:8%;width:7px;height:11px;background:#f7d75c;transform:rotate(46deg);border-radius:2px"></i><i style="position:absolute;left:72%;top:8%;width:7px;height:11px;background:#8ab4f8;transform:rotate(63deg);border-radius:2px"></i><i style="position:absolute;left:42%;top:24%;width:7px;height:11px;background:#8ab4f8;transform:rotate(31deg);border-radius:2px"></i><i style="position:absolute;left:72%;top:8%;width:7px;height:11px;background:#f7d75c;transform:rotate(23deg);border-radius:2px"></i><i style="position:absolute;left:32%;top:16%;width:7px;height:11px;background:#f0904f;transform:rotate(73deg);border-radius:2px"></i><i style="position:absolute;left:22%;top:24%;width:7px;height:11px;background:#5fd3bc;transform:rotate(286deg);border-radius:2px"></i><i style="position:absolute;left:32%;top:8%;width:7px;height:11px;background:#8ab4f8;transform:rotate(292deg);border-radius:2px"></i><i style="position:absolute;left:42%;top:16%;width:7px;height:11px;background:#ec4899;transform:rotate(280deg);border-radius:2px"></i><i style="position:absolute;left:22%;top:24%;width:7px;height:11px;background:#ec4899;transform:rotate(316deg);border-radius:2px"></i><i style="position:absolute;left:42%;top:16%;width:7px;height:11px;background:#8ab4f8;transform:rotate(218deg);border-radius:2px"></i><i style="position:absolute;left:62%;top:16%;width:7px;height:11px;background:#8ab4f8;transform:rotate(232deg);border-radius:2px"></i><i style="position:absolute;left:62%;top:16%;width:7px;height:11px;background:#f7d75c;transform:rotate(92deg);border-radius:2px"></i><i style="position:absolute;left:42%;top:8%;width:7px;height:11px;background:#8ab4f8;transform:rotate(153deg);border-radius:2px"></i><i style="position:absolute;left:82%;top:16%;width:7px;height:11px;background:#f0904f;transform:rotate(147deg);border-radius:2px"></i><i style="position:absolute;left:22%;top:8%;width:7px;height:11px;background:#8ab4f8;transform:rotate(214deg);border-radius:2px"></i><i style="position:absolute;left:32%;top:16%;width:7px;height:11px;background:#f7d75c;transform:rotate(250deg);border-radius:2px"></i><i style="position:absolute;left:72%;top:8%;width:7px;height:11px;background:#ec4899;transform:rotate(285deg);border-radius:2px"></i><i style="position:absolute;left:62%;top:16%;width:7px;height:11px;background:#5fd3bc;transform:rotate(304deg);border-radius:2px"></i><i style="position:absolute;left:82%;top:24%;width:7px;height:11px;background:#f0904f;transform:rotate(35deg);border-radius:2px"></i><i style="position:absolute;left:22%;top:16%;width:7px;height:11px;background:#f0904f;transform:rotate(356deg);border-radius:2px"></i><i style="position:absolute;left:22%;top:8%;width:7px;height:11px;background:#5fd3bc;transform:rotate(331deg);border-radius:2px"></i><i style="position:absolute;left:82%;top:16%;width:7px;height:11px;background:#f0904f;transform:rotate(342deg);border-radius:2px"></i></div>
+          <div class="trophy-row" aria-hidden="true"><div class="trophy" data-tier="bronze" hidden><svg class="trophy-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 18c-4 0-4 10 0 10" stroke="#cd7f32" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M56 18c4 0 4 10 0 10" stroke="#cd7f32" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M16 12h32v18c0 8-7 14-16 14s-16-6-16-14V12z" fill="#cd7f32"/><path d="M16 12h32v3H16z" fill="#e89858"/><rect x="24" y="44" width="16" height="4" fill="#a6611f"/><rect x="18" y="48" width="28" height="6" rx="1" fill="#8b4a0f"/><text x="32" y="32" text-anchor="middle" font-size="14" font-weight="900" fill="#fff8d8" font-family="system-ui">3</text></svg></div><div class="trophy" data-tier="silver" hidden><svg class="trophy-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 18c-4 0-4 10 0 10" stroke="#c0c0c0" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M56 18c4 0 4 10 0 10" stroke="#c0c0c0" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M16 12h32v18c0 8-7 14-16 14s-16-6-16-14V12z" fill="#d4d4d4"/><path d="M16 12h32v3H16z" fill="#f0f0f0"/><rect x="24" y="44" width="16" height="4" fill="#a0a0a0"/><rect x="18" y="48" width="28" height="6" rx="1" fill="#808080"/><text x="32" y="32" text-anchor="middle" font-size="14" font-weight="900" fill="#fff" font-family="system-ui">2</text></svg></div><div class="trophy" data-tier="gold"><svg class="trophy-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 18c-4 0-4 10 0 10" stroke="#f7d75c" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M56 18c4 0 4 10 0 10" stroke="#f7d75c" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M16 12h32v18c0 8-7 14-16 14s-16-6-16-14V12z" fill="#f7d75c"/><path d="M16 12h32v3H16z" fill="#fff3a8"/><rect x="24" y="44" width="16" height="4" fill="#d4a72c"/><rect x="18" y="48" width="28" height="6" rx="1" fill="#b8860b"/><text x="32" y="32" text-anchor="middle" font-size="14" font-weight="900" fill="#7a5c10" font-family="system-ui">1</text></svg></div></div>
+          <div class="star-row" aria-label="星星数"><svg class="star" data-star="1" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L14.85 8.5L22 9.27L16.5 14.14L18.18 21L12 17.27L5.82 21L7.5 14.14L2 9.27L9.15 8.5L12 2Z"/></svg><svg class="star" data-star="2" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L14.85 8.5L22 9.27L16.5 14.14L18.18 21L12 17.27L5.82 21L7.5 14.14L2 9.27L9.15 8.5L12 2Z"/></svg><svg class="star" data-star="3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L14.85 8.5L22 9.27L16.5 14.14L18.18 21L12 17.27L5.82 21L7.5 14.14L2 9.27L9.15 8.5L12 2Z"/></svg></div>
+          <p class="complete-title">全对啦！</p>
+          <p id="complete-stats" class="complete-stats">用时 01:12 · 答对 10 / 10（100%）</p>
+          <p id="best-record" class="complete-record">新纪录！</p>
+          <div class="actions">
+            <button id="play-again" class="primary-button" type="button">再玩一次</button>
+            <button id="next-board" class="secondary-button" type="button">下一关</button>
+            <button class="secondary-button" type="button" data-action="back-lobby">回大厅</button>
+          </div>
+        </div>
+
+      </section>
+
+      </main>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>算术闪卡设计稿</title>
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="../mockup.css" />
+<link rel="stylesheet" href="../mockup-frame.css" />
+
+</head>
+<body data-game="mathFlash" class="">
+  <div class="stage">
+    <div class="stage-canvas">
+      <main class="app" aria-live="polite">
+
+      <section id="game" class="screen active" aria-labelledby="game-title">
+
+        <div class="game-topbar">
+          <button class="text-button" type="button" data-action="back-setup">换关卡</button>
+          <div>
+            <p id="game-subtitle" class="eyebrow">算术闪卡</p>
+            <h2 id="game-title">算一算，选答案</h2>
+          </div>
+          <div class="game-topbar-right">
+            <img class="mascot-host game-mascot" src="assets/mascot-wave.svg" alt="小书本" />
+            <button id="replay-sound" class="round-button" type="button" aria-label="再听一遍">听</button>
+          </div>
+        </div>
+
+
+        <div class="game-hud" aria-label="游戏状态">
+          <span id="progress" class="hud-progress">3 / 10</span>
+          <span id="timer" class="hud-timer">00:12</span>
+          <span id="hint" class="hud-hint">选一个答案</span>
+        </div>
+
+        <div id="math-host" class="math-host zone-stack">
+
+        <div class="math-card zone-primary  " aria-label="题目卡片">
+          <div class="math-card__inner">
+            <div class="math-card__face math-card__face--front">
+              
+              <div class="math-card__head"><span class="math-card__badge">10 以内加法</span><span class="math-card__label">第 3 题</span></div>
+              <div class="math-eq"><span>4</span><span class="op">+</span><span>3</span><span class="op">=</span><span class="q">?</span></div>
+            </div>
+            <div class="math-card__face math-card__face--back">
+              <div class="math-card__watermark">+</div>
+            </div>
+          </div>
+        </div>
+
+<div id="math-options" class="option-grid zone-secondary" role="list" aria-label="答案选项"><button class="option-button math-option" type="button" role="listitem" aria-label="选项 6">6</button><button class="option-button math-option" type="button" role="listitem" aria-label="选项 7">7</button><button class="option-button math-option" type="button" role="listitem" aria-label="选项 8">8</button><button class="option-button math-option" type="button" role="listitem" aria-label="选项 5">5</button></div>
+        </div>
+      </section>
+
+      </main>
+    </div>
+  </div>
+</body>
+</html>

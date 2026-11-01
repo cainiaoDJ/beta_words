@@ -1,0 +1,379 @@
+/* ============================================================
+ * Phase 9 — 算术闪卡 mathFlash 设计稿专用样式（待并入 current/styles.css）
+ * 说明：本文件只是「设计稿预览」，实现阶段拆进 styles.css 对应分区
+ * ============================================================ */
+
+/* ===== 第 8 套主题 token：玫红（与已有 7 套色相都拉得开）===== */
+:root {
+  --theme-mathFlash-bg: rgba(236, 72, 153, 0.06);
+  --theme-mathFlash-accent: #ec4899;
+  --theme-mathFlash-accent-soft: rgba(236, 72, 153, 0.15);
+  --theme-mathFlash-ink: #be185d;
+  --theme-mathFlash-glow: rgba(236, 72, 153, 0.4);
+}
+
+[data-game="mathFlash"] {
+  --theme-bg: var(--theme-mathFlash-bg);
+  --theme-accent: var(--theme-mathFlash-accent);
+  --theme-accent-soft: var(--theme-mathFlash-accent-soft);
+  --theme-ink: var(--theme-mathFlash-ink);
+  --theme-glow: var(--theme-mathFlash-glow);
+}
+
+/* ===== 选关界面：4 关卡 + 困难模式开关 ===== */
+.mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.mode-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mode-row-title {
+  font-size: 15px;
+  font-weight: var(--fw-black);
+  color: var(--theme-ink);
+}
+
+.mode-row-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* 开关打开时整行染主题色（和 .difficulty[data-recommended] 一个味道） */
+.mode-row.is-on {
+  border-color: var(--theme-ink);
+  background: var(--theme-accent-soft);
+}
+
+/* ============================================================
+ * 题目卡：纸质名片 + 翻卡
+ * 名片比例 90:54 = 1.667 → 332×200
+ * 纸感：暖白纸基 + 纤维纹理 + 分层投影（贴纸浮在桌面）
+ * 翻卡：Y 轴 3D 翻转，正面=题目，背面=素纸
+ * ============================================================ */
+
+.math-host {
+  /* 名片比 300 宽会显得小，占满内容宽更接近"一张拿在手里的卡" */
+  --primary-size: 332px;
+  --secondary-w: 332px;
+}
+
+.math-card {
+  /* 覆盖 .zone-primary 的 aspect-ratio:1 与 display:grid */
+  aspect-ratio: 332 / 200;
+  display: block;
+  perspective: 1400px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.math-card__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 480ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+.math-card.is-flipped .math-card__inner {
+  transform: rotateY(180deg);
+}
+
+/* 纸面：正面题目 / 背面素纸，共用一张「纸」的材质 */
+.math-card__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: var(--radius-md);
+  background-color: var(--tile);
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 42%),
+    repeating-linear-gradient(90deg, rgba(186, 164, 122, 0.045) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, rgba(186, 164, 122, 0.035) 0 1px, transparent 1px 3px);
+  border: 1px solid rgba(122, 100, 68, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(122, 100, 68, 0.08),
+    0 2px 3px rgba(31, 44, 36, 0.1),
+    0 14px 22px -12px rgba(31, 44, 36, 0.3);
+  overflow: hidden;
+}
+
+/* 正面：摆正，不做倾斜（2026-11-01 定稿） */
+.math-card__face--front {
+  transform: none;
+}
+
+/* 背面：素纸 + 极淡水印 */
+.math-card__face--back {
+  transform: rotateY(180deg);
+  background-color: #faf6ec;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 50%),
+    repeating-linear-gradient(90deg, rgba(186, 164, 122, 0.05) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, rgba(186, 164, 122, 0.04) 0 1px, transparent 1px 3px);
+  display: grid;
+  place-items: center;
+}
+
+.math-card__watermark {
+  font-size: 88px;
+  font-weight: var(--fw-black);
+  color: rgba(236, 72, 153, 0.1);
+  line-height: 1;
+  user-select: none;
+  letter-spacing: 6px;
+}
+
+/* 名片抬头行 */
+.math-card__head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 0;
+}
+
+.math-card__badge {
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--theme-ink);
+  background: var(--theme-accent-soft);
+  border-radius: var(--radius-xs);
+  padding: 3px 8px;
+}
+
+.math-card__label {
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--muted);
+}
+
+/* 算式：印在纸上的感觉（浅浮雕） */
+.math-eq {
+  position: absolute;
+  inset: 30px 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-size: 52px;
+  font-weight: var(--fw-black);
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.math-eq .op {
+  color: var(--theme-ink);
+  margin: 0 8px;
+}
+
+.math-eq .q {
+  color: var(--theme-accent);
+}
+
+/* 倒计时进度条：贴在纸的下缘，像卡片压边 */
+.math-card__timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: rgba(122, 100, 68, 0.14);
+}
+
+.math-card__timer i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--theme-accent);
+  transition: width 100ms linear;
+}
+
+.math-card.is-urgent .math-card__timer i {
+  background: rgb(var(--color-danger));
+}
+
+.math-card.is-urgent .math-card__face--front {
+  border-color: rgb(var(--color-danger));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(122, 100, 68, 0.08),
+    0 2px 3px rgba(31, 44, 36, 0.1),
+    0 14px 22px -12px rgba(216, 109, 76, 0.42);
+}
+
+
+/* ===== 翻卡中段：旧卡侧立翻走（-72°，投影压到 ~30% 宽）=====
+   下一题卡片从相反方向推入（+48°），停在旧卡上层 */
+.math-card.is-out .math-card__inner {
+  transform: rotateY(-82deg) translateX(-40px) translateZ(-10px);
+}
+
+.math-card.is-out {
+  pointer-events: none;
+}
+
+.math-card.is-in .math-card__inner {
+  transform: rotateY(26deg) translateX(34px) translateZ(4px);
+}
+
+.math-card.is-in {
+  pointer-events: none;
+}
+
+/* 纸卡厚度：翻起时露出的折脊（仅动效态出现，静止态不加） */
+.math-card__face--front::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: -1px;
+  bottom: 2px;
+  width: 7px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, #efe4cd, #ddcdae);
+  transform: translateZ(9px);
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
+.math-card.is-out .math-card__face--front::after,
+.math-card.is-in .math-card__face--front::after {
+  opacity: 1;
+}
+
+/* ===== 正确答案闪动（答错时高亮闪烁）===== */
+.option-button.math-option.is-flashing {
+  animation: math-correct-flash 0.42s ease-in-out 3 alternate !important;
+  background: rgb(var(--color-primary-soft));
+  border-color: rgb(var(--color-primary-strong));
+  color: rgb(var(--color-primary-strong));
+  box-shadow: 0 0 0 4px rgba(47, 140, 115, 0.28);
+  z-index: 2;
+}
+
+@keyframes math-correct-flash {
+  from {
+    background: rgb(var(--color-primary-soft));
+    box-shadow: 0 0 0 0 rgba(47, 140, 115, 0.34);
+  }
+  to {
+    background: #b9e6d5;
+    box-shadow: 0 0 0 8px rgba(47, 140, 115, 0);
+  }
+}
+
+/* ===== 选项：4 个数字 =====
+ * 线上 .option-button 带 padding-right:36px !important + display:flex !important
+ * （那是为了给拼音题的小耳朵图标留位）。数学选项没有耳朵，必须覆盖掉，
+ * 否则数字会整体偏左。 */
+/* 选项外框缩小一半：原 2×2 大 tile（158×96）→ 1×4 扁条（77×48）
+ * 卡片 + 选项作为一组在 zone 内居中，避免上下留白失衡 */
+.math-host {
+  justify-content: center;
+  gap: 14px;
+}
+
+.math-host .option-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  flex: 0 0 auto;
+  align-content: center;
+  gap: 8px;
+}
+
+.option-button.math-option {
+  font-size: 26px;
+  min-height: 48px;
+  padding: 4px 6px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== HUD：困难模式倒计时 ===== */
+.hud-timer.is-countdown {
+  background: rgb(var(--color-warning));
+  color: #222;
+}
+
+.hud-timer.is-urgent {
+  background: rgb(var(--color-danger-soft));
+  border-color: rgb(var(--color-danger));
+  color: rgb(var(--color-danger-strong));
+  animation: math-countdown-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes math-countdown-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* ===== 选关界面 4 关卡按钮里的说明 ===== */
+.difficulty .lvl-tag {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* ===== 卡片角标 / 题号 ===== */
+.math-card__badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--theme-ink);
+  background: var(--theme-accent-soft);
+  border-radius: var(--radius-xs);
+  padding: 3px 8px;
+}
+
+.math-card__label {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--muted);
+}
+
+/* 困难模式：卡片进入告警态时整卡泛红 */
+.math-card.is-urgent {
+  border-color: rgb(var(--color-danger));
+  box-shadow: 0 6px 14px rgba(216, 109, 76, 0.45);
+}
+
+/* ===== 翻卡动画：两张卡叠在同一位置（一出 一进）===== */
+.math-flip-pair {
+  position: relative;
+  width: min(100%, 332px);
+  aspect-ratio: 332 / 200;
+  margin: 0 auto;
+  perspective: 1400px;
+}
+
+.math-flip-pair .math-card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
