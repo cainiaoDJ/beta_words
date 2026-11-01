@@ -1,0 +1,12 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+  <!-- Phase 8A — 成语填空 icon（4 字成语：3 实字 + 1 虚线格"填字"提示）-->
+  <rect width="32" height="32" rx="6" fill="#f0e6fa"/>
+  <!-- 4 字成语：3 实字 + 1 虚线格（idomFill 核心交互 — 填空） -->
+  <rect x="2.5" y="11" width="6" height="10" rx="1.5" fill="#6e3eb8"/>
+  <rect x="10" y="11" width="6" height="10" rx="1.5" fill="#6e3eb8"/>
+  <rect x="17.5" y="11" width="6" height="10" rx="1.5" stroke="#6e3eb8" stroke-width="1.5" stroke-dasharray="2 2" fill="#ffffff"/>
+  <rect x="25" y="11" width="6" height="10" rx="1.5" fill="#6e3eb8"/>
+  <!-- 下方小图标：填字笔 -->
+  <path d="M 14 24 l 5 2 l -1 3 l -3 -1 l -1 -4 z" fill="#6e3eb8" opacity="0.85"/>
+  <line x1="20" y1="22" x2="23" y2="25" stroke="#6e3eb8" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

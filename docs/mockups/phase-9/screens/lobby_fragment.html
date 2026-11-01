@@ -1,0 +1,97 @@
+<section id="lobby" class="screen active" aria-labelledby="lobby-title">
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">幼小衔接</p>
+            <h1 id="lobby-title">识字小游戏</h1>
+          </div>
+          <div class="topbar-right">
+            <button id="open-voice-picker" class="icon-button" type="button" aria-label="选声音" title="选声音">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+            <!-- Phase 2A：mascot 从顶栏移到 lobby 主体右下角，作为"陪伴吉祥物" -->
+          </div>
+        </div>
+
+        <div class="game-list">
+          <button id="open-match" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-match.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">识字消消乐</span>
+              <span class="entry-copy">找一找相同的字</span>
+            </span>
+          </button>
+          <button id="open-memory" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-memory.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">识字翻翻乐</span>
+              <span class="entry-copy">记一记，再翻出来</span>
+            </span>
+          </button>
+          <button id="open-pinyin-friend" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-pinyin-friend.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">拼音找朋友</span>
+              <span class="entry-copy">听一听，选拼音</span>
+            </span>
+          </button>
+          <button id="open-listen-card" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-listen-card.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">听音点卡</span>
+              <span class="entry-copy">听一听，点拼音</span>
+            </span>
+          </button>
+          <button id="open-compare" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-compare.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">看图比大小</span>
+              <span class="entry-copy">哪边 emoji 多</span>
+            </span>
+          </button>
+          <button id="open-stroop-train" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-stroop-train.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">看字识颜色</span>
+              <span class="entry-copy">字是什么颜色</span>
+            </span>
+          </button>
+          <!-- Phase 9 — 算术闪卡入口（新增） -->
+          <button id="open-math-flash" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-math-flash.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">算术闪卡</span>
+              <span class="entry-copy">算一算，选答案</span>
+            </span>
+          </button>
+          <!-- Phase 8A — 成语填空（idiomFill）入口 -->
+          <button id="open-idiom-fill" class="game-entry clickable focus-ring" type="button">
+            <span class="entry-icon" aria-hidden="true">
+              <img src="assets/icon-idiom-fill.svg" alt="" />
+            </span>
+            <span class="entry-text">
+              <span class="entry-title">成语填空</span>
+              <span class="entry-copy">把成语填完整</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Phase 2A：lobby 主体右下角浮动 mascot（letterbox 内） -->
+        <img class="mascot-companion" src="assets/mascot-wave.svg" alt="小书本" />
+      
