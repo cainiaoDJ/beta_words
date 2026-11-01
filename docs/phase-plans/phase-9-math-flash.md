@@ -524,3 +524,14 @@ function flipMathCard() {
 - **回滚点**：
   - `/var/www/games/current.bak-mathflash-untilted-20261101-160151`
   - `/var/www/games/current.bak-mathflash-untilted-nested-20261101-160151`
+
+### ✅ Git 管理收尾（2026-11-01）
+
+- **`main` 已建立并推至 github**：`git checkout -b main origin/main` → `git merge --no-ff feat/math-flash`
+  → 合并提交 `d73619e`，`main` 的树与 `feat/math-flash` 完全相同（`8658f8fc`），
+  且 `main:current/` 5 个文件的 md5 与线上生产逐个一致。
+- **远端拓扑**已写进 `AGENTS.md` §7.1：`github` 活跃、Gitea(`origin`) 已停用；
+  `master` 是一次性导入快照、**不是**主干，不要往它上面 merge。
+- **`feat/stroke-zone` 的 WIP 已提交**（`71c3fb6`「数字 1–10 教材字形验收完成」）并推至 github。
+  该分支仍在重建描红引擎、**暂未 merge 回 main**（它会删掉 trace-tian 的渲染与大厅入口，
+  且描红正式 UI 尚未接入，属未完成工作）。

@@ -173,6 +173,23 @@ message 必须包含：
 - `git checkout main && git merge --no-ff feat/<topic>`（**保留分支拓扑**，便于将来追到这次大改）
 - merge 后**立刻**部署（tar+ssh 流式同步），不要让分支留在 main 上没部署
 
+#### 7.1 远端拓扑（2026-11-01 核实）
+
+本仓库有两个 remote，**活跃的是 `github`**：
+
+| remote | 地址 | 状态 | 内容 |
+|---|---|---|---|
+| `github` | `git@github.com:cainiaoDJ/beta_words.git` | ✅ 活跃，唯一可写可推 | `main` / `feat/*` |
+| `origin` | `ssh://git@sophie520.top:22000/Alpha/beta_words.git` | ❌ Gitea 已于 2026-10-21 停用 | 仅存 `main`（f7f6a0f，22 commits） |
+
+- **产品真实演进线**：`origin/main`（f7f6a0f）→ `feat/trace-tian`（4743b11，线上基线）→ `feat/math-flash`（29030a3）。
+  `origin/main` 是这条线的祖先，但因 Gitea 停用，**`main` 分支已推至 github**（2026-11-01，`d73619e`）。
+- **`master`（dc9eca5）不是主干**：它是 2026-09-22 的一次性导入快照，与 `origin/main` **无共同祖先**，
+  文件布局也不同（老式根目录 `app.js`/`styles.css`，无 `current/`）。**不要往 master 上 merge**。
+- 合并主干前先确认目标：`git merge-base --is-ancestor origin/main <分支>` 应为真。
+- 新建 main 时用 `git checkout -b main origin/main`（拿真主干起点），**不要**从 `master` 建。
+- 推 `main` 用 `git push github main:main`（Gitea 已死，往 origin 推会失败）。
+
 ### 8. 当前进行中的架构改动
 
 - **feat/unified-game-zones**（2026-07-29 开）：统一 5 个游戏的画面分区
