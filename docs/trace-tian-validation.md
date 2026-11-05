@@ -1,5 +1,7 @@
 # 田字格描红（traceTian）数据验收清单
 
+> 状态：本清单对应的是**已撤下的**手写 path 数据；汉字数据（hanzi-writer-data skeleton+outline）仍然有效，数字数据以 `feat/stroke-zone` 的教材核对版（已原样保留至 current）为准，拼音数据已撤下待重建；新方案见 [Phase 10 计划](phase-plans/phase-10-tracing-rebuild.md)。以下历史 PASS 不代表当前产品开放或新引擎验收。
+
 > 2026-09-23 建立
 > 验收原则：每个可描对象必须标注教材版本 + 数据源 + 笔画数 + 起笔点 + 验收人。
 > 不接受"参考教育部规范"等含糊来源；要么有可验证源，要么标记为 BETA 待权威源校对。
