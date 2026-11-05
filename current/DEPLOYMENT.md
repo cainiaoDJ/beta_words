@@ -123,3 +123,29 @@ loginctl show-user alpha -p Linger
 ```
 
 期望返回 `Linger=yes`。
+
+## 公网部署（sophie520 / nginx）
+
+生产路径：`/var/www/games/current/`
+nginx：`location ^~ /games/ { alias /var/www/games/current/; }`
+→ `/games/` 与 `/games/current/`（历史嵌套残留）**都会解析到该站点，部署必须同时更新两处**，
+否则同一站点会对外提供两个版本。
+
+### 2026-11-06 — 描红 SVG 方案回退上线
+
+- 提交：`fbb908a`（merge `feat/trace-rebuild`），线上内容 == `main:current/`
+- 变更：撤下田字格描红入口与全部运行路径（笔顺镜像、字线错位的老实现）；
+  数字数据换为逐页核对教材的版本；拼音手写字形撤下；保留 73 字 hanzi-cache 骨架资产
+- 备份（回滚用，路径原样勿手打）：
+  - 外层：`/var/www/games/current.bak.trace-rollback-66adfd8-20261106-071602`
+  - 嵌套：`/var/www/games/current.bak.trace-rollback-66adfd8-nested-20261106-071602`
+- 回滚命令：
+
+```bash
+ssh -T sophie520 "cp -a '/var/www/games/current.bak.trace-rollback-66adfd8-20261106-071602' /var/www/games/current"
+ssh -T sophie520 "cp -a '/var/www/games/current.bak.trace-rollback-66adfd8-nested-20261106-071602' /var/www/games/current/current"
+```
+
+- 验收：两个路径 md5 均 == `main:current/`（110/110 文件一致）；
+  浏览器冒烟 8 个入口、描红入口与 DOM 全不存在、console error 0、pageerror 0
+- 描红重建方案：`docs/phase-plans/phase-10-tracing-rebuild.md`（重建完成并通过移动端回归后再开放入口）
