@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Phase 10 · 03-hanzi-complex · 静态设计稿</title>
+<link rel="icon" href="data:,"/>
+<link rel="stylesheet" href="../styles.css"/>
+<link rel="stylesheet" href="../mockup.css"/>
+<link rel="stylesheet" href="../mockup-frame.css"/>
+</head><body data-game="tracingPreview"><div class="stage"><div class="stage-canvas"><main class="app">
+<section class="screen active" aria-labelledby="game-title">
+<div class="game-topbar preview-topbar">
+  <button class="text-button" type="button">换练习</button>
+  <div><p class="eyebrow">田字格描红 · 汉字</p><h2 id="game-title">先看笔顺，再描一描</h2></div>
+  <span class="preview-tag">设计预览</span>
+</div>
+<div class="preview-hud"><span class="progress">第 4 / 5 字</span><span>先看 4 笔怎么写</span></div>
+<div class="zone-stack preview-host">
+  <div class="zone-primary writing-board"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="hanzi:中 真实骨架笔型预览" data-key="hanzi:中">
+<title>hanzi:中 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;hanzi:中&quot;, &quot;medians&quot;: [[[194, 426], [229, 452], [236, 471], [295, 701]], [[262, 433], [281, 445], [471, 413], [719, 383], [741, 386], [777, 428], [732, 564], [702, 578]], [[316, 674], [330, 659], [689, 615], [749, 619], [768, 626]], [[449, 201], [476, 207], [513, 243], [505, 368], [499, 1034]]], &quot;source&quot;: &quot;current/assets/data/hanzi-cache/中.json&quot;, &quot;evidence&quot;: &quot;B: hanzi-writer-data; pen preview BETA&quot;, &quot;rawSha256&quot;: &quot;6982c8c16e7e7f769011edef0608289443711dbb34046dd9ca763e79ec29192f&quot;}</metadata>
+<defs><path id="03-hanzi-complex-main-stroke-0" d="M 194 426 L 229 452 L 236 471 L 295 701"/><path id="03-hanzi-complex-main-stroke-1" d="M 262 433 L 281 445 L 471 413 L 719 383 L 741 386 L 777 428 L 732 564 L 702 578"/><path id="03-hanzi-complex-main-stroke-2" d="M 316 674 L 330 659 L 689 615 L 749 619 L 768 626"/><path id="03-hanzi-complex-main-stroke-3" d="M 449 201 L 476 207 L 513 243 L 505 368 L 499 1034"/></defs>
+<g class="character-space" transform="matrix(0.890538033 0 0 0.890538033 56.044526902 32.000000000)">
+  <rect class="grid-border" x="-27.0" y="0.0" width="1078" height="1078"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1078.0 M -27.0 539.0 H 1051.0 M -27.0 0.0 L 1051.0 1078.0 M -27.0 1078.0 L 1051.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#03-hanzi-complex-main-stroke-0" data-stroke="0"/><use class="outline-preview" href="#03-hanzi-complex-main-stroke-1" data-stroke="1"/><use class="outline-preview" href="#03-hanzi-complex-main-stroke-2" data-stroke="2"/><use class="outline-preview" href="#03-hanzi-complex-main-stroke-3" data-stroke="3"/></g>
+  <g class="guide-layer"><use class="median-guide" href="#03-hanzi-complex-main-stroke-0" data-stroke="0" stroke="#357fa9"/><use class="median-guide" href="#03-hanzi-complex-main-stroke-1" data-stroke="1" stroke="#b26838"/><use class="median-guide" href="#03-hanzi-complex-main-stroke-2" data-stroke="2" stroke="#358776"/><use class="median-guide" href="#03-hanzi-complex-main-stroke-3" data-stroke="3" stroke="#8863a2"/></g>
+  <g class="start-layer"><circle class="start-dot" data-stroke="0" cx="194" cy="426" r="39" fill="#357fa9"/><text class="start-label" x="194" y="426">1</text><circle class="start-dot" data-stroke="1" cx="262" cy="433" r="39" fill="#b26838"/><text class="start-label" x="262" y="433">2</text><circle class="start-dot" data-stroke="2" cx="316" cy="674" r="39" fill="#358776"/><text class="start-label" x="316" y="674">3</text><circle class="start-dot" data-stroke="3" cx="449" cy="201" r="39" fill="#8863a2"/><text class="start-label" x="449" y="201">4</text></g>
+</g></svg></div>
+  <p class="writing-instruction">从数字圆点起笔，顺着细线描一描</p>
+  <div class="zone-secondary queue-zone">
+    <div class="queue-head"><span>这一组要描的字</span><span>描完一个，再往前一步</span></div>
+    <div class="queue" role="list" aria-label="待描字列表"><div class="queue-card is-done" role="listitem" aria-label="已描完 一"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="hanzi:一 真实骨架笔型预览" data-key="hanzi:一">
+<title>hanzi:一 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;hanzi:一&quot;, &quot;medians&quot;: [[[121, 631], [193, 652], [417, 622], [827, 590], [920, 623]]], &quot;source&quot;: &quot;current/assets/data/hanzi-cache/一.json&quot;, &quot;evidence&quot;: &quot;B: hanzi-writer-data; pen preview BETA&quot;, &quot;rawSha256&quot;: &quot;ed728673d86fb9aa559c5b150e59ffbee666b085d4a55597c524079a91ebc8ce&quot;}</metadata>
+<defs><path id="03-hanzi-complex-q0-stroke-0" d="M 121 631 L 193 652 L 417 622 L 827 590 L 920 623"/></defs>
+<g class="character-space" transform="matrix(0.937500000 0 0 0.937500000 32.000000000 32.000000000)">
+  <rect class="grid-border" x="0.0" y="0.0" width="1024" height="1024"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1024.0 M 0.0 512.0 H 1024.0 M 0.0 0.0 L 1024.0 1024.0 M 0.0 1024.0 L 1024.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#03-hanzi-complex-q0-stroke-0" data-stroke="0"/></g>
+  <g class="guide-layer"></g>
+  <g class="start-layer"></g>
+</g></svg></div><div class="queue-card is-done" role="listitem" aria-label="已描完 三"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="hanzi:三 真实骨架笔型预览" data-key="hanzi:三">
+<title>hanzi:三 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;hanzi:三&quot;, &quot;medians&quot;: [[[316, 369], [367, 379], [416, 376], [660, 332], [722, 332]], [[331, 617], [375, 619], [628, 581], [657, 581], [700, 592]], [[127, 872], [158, 882], [195, 885], [500, 846], [846, 820], [881, 824], [955, 850]]], &quot;source&quot;: &quot;current/assets/data/hanzi-cache/三.json&quot;, &quot;evidence&quot;: &quot;B: hanzi-writer-data; pen preview BETA&quot;, &quot;rawSha256&quot;: &quot;917763e15ac14a5ece5067913da4156f3060f33ae0e172d3533275a494cec99c&quot;}</metadata>
+<defs><path id="03-hanzi-complex-q1-stroke-0" d="M 316 369 L 367 379 L 416 376 L 660 332 L 722 332"/><path id="03-hanzi-complex-q1-stroke-1" d="M 331 617 L 375 619 L 628 581 L 657 581 L 700 592"/><path id="03-hanzi-complex-q1-stroke-2" d="M 127 872 L 158 882 L 195 885 L 500 846 L 846 820 L 881 824 L 955 850"/></defs>
+<g class="character-space" transform="matrix(0.937500000 0 0 0.937500000 32.000000000 32.000000000)">
+  <rect class="grid-border" x="0.0" y="0.0" width="1024" height="1024"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1024.0 M 0.0 512.0 H 1024.0 M 0.0 0.0 L 1024.0 1024.0 M 0.0 1024.0 L 1024.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#03-hanzi-complex-q1-stroke-0" data-stroke="0"/><use class="outline-preview" href="#03-hanzi-complex-q1-stroke-1" data-stroke="1"/><use class="outline-preview" href="#03-hanzi-complex-q1-stroke-2" data-stroke="2"/></g>
+  <g class="guide-layer"></g>
+  <g class="start-layer"></g>
+</g></svg></div><div class="queue-card is-done" role="listitem" aria-label="已描完 上"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="hanzi:上 真实骨架笔型预览" data-key="hanzi:上">
+<title>hanzi:上 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;hanzi:上&quot;, &quot;medians&quot;: [[[446, 243], [462, 249], [498, 290], [493, 865], [472, 888]], [[531, 576], [551, 562], [627, 551], [698, 531], [768, 528]], [[134, 932], [171, 948], [212, 952], [458, 921], [841, 892], [932, 925]]], &quot;source&quot;: &quot;current/assets/data/hanzi-cache/上.json&quot;, &quot;evidence&quot;: &quot;B: hanzi-writer-data; pen preview BETA&quot;, &quot;rawSha256&quot;: &quot;9eed5643ff92171f9bf1ae5d4b70d717f2a3fd6961f72e81c0245ce13523d865&quot;}</metadata>
+<defs><path id="03-hanzi-complex-q2-stroke-0" d="M 446 243 L 462 249 L 498 290 L 493 865 L 472 888"/><path id="03-hanzi-complex-q2-stroke-1" d="M 531 576 L 551 562 L 627 551 L 698 531 L 768 528"/><path id="03-hanzi-complex-q2-stroke-2" d="M 134 932 L 171 948 L 212 952 L 458 921 L 841 892 L 932 925"/></defs>
+<g class="character-space" transform="matrix(0.937500000 0 0 0.937500000 32.000000000 32.000000000)">
+  <rect class="grid-border" x="0.0" y="0.0" width="1024" height="1024"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1024.0 M 0.0 512.0 H 1024.0 M 0.0 0.0 L 1024.0 1024.0 M 0.0 1024.0 L 1024.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#03-hanzi-complex-q2-stroke-0" data-stroke="0"/><use class="outline-preview" href="#03-hanzi-complex-q2-stroke-1" data-stroke="1"/><use class="outline-preview" href="#03-hanzi-complex-q2-stroke-2" data-stroke="2"/></g>
+  <g class="guide-layer"></g>
+  <g class="start-layer"></g>
+</g></svg></div><div class="queue-card is-current" role="listitem" aria-label="当前 中"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="hanzi:中 真实骨架笔型预览" data-key="hanzi:中">
+<title>hanzi:中 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;hanzi:中&quot;, &quot;medians&quot;: [[[194, 426], [229, 452], [236, 471], [295, 701]], [[262, 433], [281, 445], [471, 413], [719, 383], [741, 386], [777, 428], [732, 564], [702, 578]], [[316, 674], [330, 659], [689, 615], [749, 619], [768, 626]], [[449, 201], [476, 207], [513, 243], [505, 368], [499, 1034]]], &quot;source&quot;: &quot;current/assets/data/hanzi-cache/中.json&quot;, &quot;evidence&quot;: &quot;B: hanzi-writer-data; pen preview BETA&quot;, &quot;rawSha256&quot;: &quot;6982c8c16e7e7f769011edef0608289443711dbb34046dd9ca763e79ec29192f&quot;}</metadata>
+<defs><path id="03-hanzi-complex-q3-stroke-0" d="M 194 426 L 229 452 L 236 471 L 295 701"/><path id="03-hanzi-complex-q3-stroke-1" d="M 262 433 L 281 445 L 471 413 L 719 383 L 741 386 L 777 428 L 732 564 L 702 578"/><path id="03-hanzi-complex-q3-stroke-2" d="M 316 674 L 330 659 L 689 615 L 749 619 L 768 626"/><path id="03-hanzi-complex-q3-stroke-3" d="M 449 201 L 476 207 L 513 243 L 505 368 L 499 1034"/></defs>
+<g class="character-space" transform="matrix(0.890538033 0 0 0.890538033 56.044526902 32.000000000)">
+  <rect class="grid-border" x="-27.0" y="0.0" width="1078" height="1078"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1078.0 M -27.0 539.0 H 1051.0 M -27.0 0.0 L 1051.0 1078.0 M -27.0 1078.0 L 1051.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#03-hanzi-complex-q3-stroke-0" data-stroke="0"/><use class="outline-preview" href="#03-hanzi-complex-q3-stroke-1" data-stroke="1"/><use class="outline-preview" href="#03-hanzi-complex-q3-stroke-2" data-stroke="2"/><use class="outline-preview" href="#03-hanzi-complex-q3-stroke-3" data-stroke="3"/></g>
+  <g class="guide-layer"></g>
+  <g class="start-layer"></g>
+</g></svg></div><div class="queue-card " role="listitem" aria-label="待描 书"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="hanzi:书 真实骨架笔型预览" data-key="hanzi:书">
+<title>hanzi:书 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;hanzi:书&quot;, &quot;medians&quot;: [[[304, 464], [359, 468], [525, 441], [628, 415], [660, 419], [699, 450], [666, 567], [660, 581], [635, 600]], [[165, 671], [233, 679], [431, 640], [705, 617], [789, 613], [818, 626], [841, 662], [789, 828], [760, 889], [739, 906], [641, 856]], [[465, 225], [499, 251], [511, 268], [512, 286], [495, 1068]], [[721, 287], [797, 344], [816, 378]]], &quot;source&quot;: &quot;current/assets/data/hanzi-cache/书.json&quot;, &quot;evidence&quot;: &quot;B: hanzi-writer-data; pen preview BETA&quot;, &quot;rawSha256&quot;: &quot;d913959d55b2bc53bec49bf50e44d6cf6df84d664cad9940c3983f061e4a6704&quot;}</metadata>
+<defs><path id="03-hanzi-complex-q4-stroke-0" d="M 304 464 L 359 468 L 525 441 L 628 415 L 660 419 L 699 450 L 666 567 L 660 581 L 635 600"/><path id="03-hanzi-complex-q4-stroke-1" d="M 165 671 L 233 679 L 431 640 L 705 617 L 789 613 L 818 626 L 841 662 L 789 828 L 760 889 L 739 906 L 641 856"/><path id="03-hanzi-complex-q4-stroke-2" d="M 465 225 L 499 251 L 511 268 L 512 286 L 495 1068"/><path id="03-hanzi-complex-q4-stroke-3" d="M 721 287 L 797 344 L 816 378"/></defs>
+<g class="character-space" transform="matrix(0.863309353 0 0 0.863309353 69.985611511 32.000000000)">
+  <rect class="grid-border" x="-44.0" y="0.0" width="1112" height="1112"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1112.0 M -44.0 556.0 H 1068.0 M -44.0 0.0 L 1068.0 1112.0 M -44.0 1112.0 L 1068.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#03-hanzi-complex-q4-stroke-0" data-stroke="0"/><use class="outline-preview" href="#03-hanzi-complex-q4-stroke-1" data-stroke="1"/><use class="outline-preview" href="#03-hanzi-complex-q4-stroke-2" data-stroke="2"/><use class="outline-preview" href="#03-hanzi-complex-q4-stroke-3" data-stroke="3"/></g>
+  <g class="guide-layer"></g>
+  <g class="start-layer"></g>
+</g></svg></div></div>
+  </div>
+  <div class="zone-toolbar preview-toolbar" role="group" aria-label="描红工具栏">
+    <button class="secondary-button" type="button">清除笔迹</button>
+    <button class="secondary-button" type="button">重看笔顺</button>
+    <button class="primary-button next-button" type="button" disabled>下一字</button>
+  </div>
+</div>
+</section></main></div></div></body></html>

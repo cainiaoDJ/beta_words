@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Phase 10 · 02-number-queue · 静态设计稿</title>
+<link rel="icon" href="data:,"/>
+<link rel="stylesheet" href="../styles.css"/>
+<link rel="stylesheet" href="../mockup.css"/>
+<link rel="stylesheet" href="../mockup-frame.css"/>
+</head><body data-game="tracingPreview"><div class="stage"><div class="stage-canvas"><main class="app">
+<section class="screen active" aria-labelledby="game-title">
+<div class="game-topbar preview-topbar">
+  <button class="text-button" type="button">换练习</button>
+  <div><p class="eyebrow">田字格描红 · 数字</p><h2 id="game-title">先看笔顺，再描一描</h2></div>
+  <span class="preview-tag">设计预览</span>
+</div>
+<div class="preview-hud"><span class="progress">第 2 / 3 字</span><span>先看 1 笔怎么写</span></div>
+<div class="zone-stack preview-host">
+  <div class="zone-primary writing-board"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="numbers:7 真实骨架笔型预览" data-key="numbers:7">
+<title>numbers:7 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;numbers:7&quot;, &quot;medians&quot;: [[[350, 250], [520, 250], [690, 250], [630, 380], [570, 510], [510, 640], [450, 770]]], &quot;source&quot;: {&quot;textbook&quot;: &quot;人教版《数学》一年级上册（2022 年 8 月第 2 版，ISBN 978-7-107-36922-3）&quot;, &quot;page&quot;: 40, &quot;form&quot;: &quot;田字格点线字形&quot;, &quot;verified&quot;: true}, &quot;evidence&quot;: &quot;A: existing textbook form review; direction is product convention; pen preview BETA&quot;}</metadata>
+<defs><path id="02-number-queue-main-stroke-0" d="M 350 250 L 520 250 L 690 250 L 630 380 L 570 510 L 510 640 L 450 770"/></defs>
+<g class="character-space" transform="matrix(0.937500000 0 0 0.937500000 32.000000000 32.000000000)">
+  <rect class="grid-border" x="0.0" y="0.0" width="1024" height="1024"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1024.0 M 0.0 512.0 H 1024.0 M 0.0 0.0 L 1024.0 1024.0 M 0.0 1024.0 L 1024.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#02-number-queue-main-stroke-0" data-stroke="0"/></g>
+  <g class="guide-layer"><use class="median-guide" href="#02-number-queue-main-stroke-0" data-stroke="0" stroke="#357fa9"/></g>
+  <g class="start-layer"><circle class="start-dot" data-stroke="0" cx="350" cy="250" r="39" fill="#357fa9"/><text class="start-label" x="350" y="250">1</text></g>
+</g></svg></div>
+  <p class="writing-instruction">从数字圆点起笔，顺着细线描一描</p>
+  <div class="zone-secondary queue-zone">
+    <div class="queue-head"><span>这一组要描的字</span><span>描完一个，再往前一步</span></div>
+    <div class="queue" role="list" aria-label="待描字列表"><div class="queue-card is-done" role="listitem" aria-label="已描完 1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="numbers:1 真实骨架笔型预览" data-key="numbers:1">
+<title>numbers:1 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;numbers:1&quot;, &quot;medians&quot;: [[[620, 250], [555, 380], [490, 510], [425, 640], [360, 770]]], &quot;source&quot;: {&quot;textbook&quot;: &quot;人教版《数学》一年级上册（2022 年 8 月第 2 版，ISBN 978-7-107-36922-3）&quot;, &quot;page&quot;: 16, &quot;form&quot;: &quot;田字格点线字形&quot;, &quot;verified&quot;: true}, &quot;evidence&quot;: &quot;A: existing textbook form review; direction is product convention; pen preview BETA&quot;}</metadata>
+<defs><path id="02-number-queue-q0-stroke-0" d="M 620 250 L 555 380 L 490 510 L 425 640 L 360 770"/></defs>
+<g class="character-space" transform="matrix(0.937500000 0 0 0.937500000 32.000000000 32.000000000)">
+  <rect class="grid-border" x="0.0" y="0.0" width="1024" height="1024"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1024.0 M 0.0 512.0 H 1024.0 M 0.0 0.0 L 1024.0 1024.0 M 0.0 1024.0 L 1024.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#02-number-queue-q0-stroke-0" data-stroke="0"/></g>
+  <g class="guide-layer"></g>
+  <g class="start-layer"></g>
+</g></svg></div><div class="queue-card is-current" role="listitem" aria-label="当前 7"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="numbers:7 真实骨架笔型预览" data-key="numbers:7">
+<title>numbers:7 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;numbers:7&quot;, &quot;medians&quot;: [[[350, 250], [520, 250], [690, 250], [630, 380], [570, 510], [510, 640], [450, 770]]], &quot;source&quot;: {&quot;textbook&quot;: &quot;人教版《数学》一年级上册（2022 年 8 月第 2 版，ISBN 978-7-107-36922-3）&quot;, &quot;page&quot;: 40, &quot;form&quot;: &quot;田字格点线字形&quot;, &quot;verified&quot;: true}, &quot;evidence&quot;: &quot;A: existing textbook form review; direction is product convention; pen preview BETA&quot;}</metadata>
+<defs><path id="02-number-queue-q1-stroke-0" d="M 350 250 L 520 250 L 690 250 L 630 380 L 570 510 L 510 640 L 450 770"/></defs>
+<g class="character-space" transform="matrix(0.937500000 0 0 0.937500000 32.000000000 32.000000000)">
+  <rect class="grid-border" x="0.0" y="0.0" width="1024" height="1024"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1024.0 M 0.0 512.0 H 1024.0 M 0.0 0.0 L 1024.0 1024.0 M 0.0 1024.0 L 1024.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#02-number-queue-q1-stroke-0" data-stroke="0"/></g>
+  <g class="guide-layer"></g>
+  <g class="start-layer"></g>
+</g></svg></div><div class="queue-card " role="listitem" aria-label="待描 5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="numbers:5 真实骨架笔型预览" data-key="numbers:5">
+<title>numbers:5 · 真实 median；等宽圆头笔预览</title>
+<metadata>{&quot;key&quot;: &quot;numbers:5&quot;, &quot;medians&quot;: [[[675, 255], [540, 255], [395, 255], [385, 375], [375, 500], [455, 475], [555, 480], [625, 535], [650, 620], [625, 705], [550, 755], [440, 750]]], &quot;source&quot;: {&quot;textbook&quot;: &quot;人教版《数学》一年级上册（2022 年 8 月第 2 版，ISBN 978-7-107-36922-3）&quot;, &quot;page&quot;: 16, &quot;form&quot;: &quot;田字格点线字形&quot;, &quot;verified&quot;: true}, &quot;evidence&quot;: &quot;A: existing textbook form review; direction is product convention; pen preview BETA&quot;}</metadata>
+<defs><path id="02-number-queue-q2-stroke-0" d="M 675 255 L 540 255 L 395 255 L 385 375 L 375 500 L 455 475 L 555 480 L 625 535 L 650 620 L 625 705 L 550 755 L 440 750"/></defs>
+<g class="character-space" transform="matrix(0.937500000 0 0 0.937500000 32.000000000 32.000000000)">
+  <rect class="grid-border" x="0.0" y="0.0" width="1024" height="1024"/>
+  <path class="grid-lines" d="M 512.0 0.0 V 1024.0 M 0.0 512.0 H 1024.0 M 0.0 0.0 L 1024.0 1024.0 M 0.0 1024.0 L 1024.0 0.0"/>
+  <g class="grey-layer"><use class="outline-preview" href="#02-number-queue-q2-stroke-0" data-stroke="0"/></g>
+  <g class="guide-layer"></g>
+  <g class="start-layer"></g>
+</g></svg></div></div>
+  </div>
+  <div class="zone-toolbar preview-toolbar" role="group" aria-label="描红工具栏">
+    <button class="secondary-button" type="button">清除笔迹</button>
+    <button class="secondary-button" type="button">重看笔顺</button>
+    <button class="primary-button next-button" type="button" disabled>下一字</button>
+  </div>
+</div>
+</section></main></div></div></body></html>

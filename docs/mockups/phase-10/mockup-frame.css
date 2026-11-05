@@ -1,0 +1,12 @@
+/* Phase 10 静态预览：与 Phase 9 相同的 360×640 设计画布，不运行 stage.js。 */
+html, body, .stage { width: 360px; height: 640px; overflow: hidden; }
+.stage { position: relative; }
+.stage-canvas {
+  position: relative !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 360px !important;
+  height: 640px !important;
+  transform: none !important;
+}
+*, *::before, *::after { animation: none !important; transition: none !important; }
