@@ -196,3 +196,22 @@ ssh -T sophie520 "cp -a '/var/www/games/current.bak.trace-restore-448-nested-202
     数字额外偏移 1.9e-04px、最小留白 16.6px、console/pageerror/CDN 请求均 0
   - 浏览器逐字复核：数字 1–10 无镜像；数字 8 序号合并为 `1·2`；汉字「子」三色引导线贴合灰字
 - 回滚：见本文件上一条（回退轮）的备份路径；回滚到恢复版即 `current.bak.trace-restore-448-*`
+
+### 2026-11-06 — 数字 9 字形修正（教材范字量测）
+
+- 变更：只改 `current/assets/data/trace-numbers.js` 里 `"9"` 的 `strokes` / `medians`，
+  其它数字、汉字、格子、引导层逻辑与样式一律不动
+- 问题：旧 9 = 圈 + `L 370 770`，尾巴从圈**右上角**直切左下，斜穿圈内部 → 显示成「斜杠 O」
+- 依据：人教版《数学》一上 p51 范字（PDF p56，400dpi 量测）
+  - 圈是**闭合圆**：圈心 (608.4, 3589.1) px、r 46.6 px
+  - 尾巴从圈**右下（约 4:30）**离开，沿 27.4° 左倾下行，长 3.19r，**全程在圈外**，
+    末端圆头；即尾巴红线与圈右下沿相切而非穿心
+- 重建（1024 设计空间，沿用作者原有圈尺寸与位置，`scale=1` 不变）：
+  - 圈：椭圆，圈心 (504.6, 376.3)、rx 121.5、ry 126.3，四段三次贝塞尔闭合
+  - 起笔点 = 尾巴分叉点 (624.3, 398.2)（对应教材约 3:20 的起笔红点）
+  - 尾巴：直线至 tip (431.2, 770.8)；笔宽 32、round cap/join 不变
+- 验收：
+  - 圈内墨迹采样：旧 **1564 px** → 新 **0 px**（斜杠消失）
+  - `scripts/mobile-one-screen-test.js` → **Total: 448, Failed: 0**
+  - `scripts/trace-restore-test.js` → 通过；consoleErrors 0 / pageErrors 0 / CDN 0
+- 回滚：本文件上一条备份目录内的 `assets/data/trace-numbers.js`（md5 a66591fa…）
