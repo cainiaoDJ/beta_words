@@ -1,5 +1,10 @@
-// 描红恢复专项验收：实际 Canvas 绘制命令 + 独立原数据 + 浏览器几何测量。
-// 不通过像素估计边界；像素只用于确认灰/红笔迹存在且没有蓝线。
+// 描红专项验收：实际 Canvas 绘制命令 + 独立原数据 + 浏览器几何测量。
+// 不通过像素估计边界；像素只用于确认灰字、红笔迹、彩色笔顺引导线各自存在。
+//
+// 笔顺引导层（2026-11）约定：
+//   · 进场/换字自动播一遍演示，期间 .trace-stage.is-locked 锁住画布
+//   · 演示结束后引导线与序号常驻，作为描红底稿
+//   · 范字仍必须来自数据 path，主画布 fillText 只允许画序号数字
 // BASE_URL=http://127.0.0.1:4174/ node scripts/trace-restore-test.js
 const { chromium } = require('/tmp/node_modules/playwright');
 const assert = require('node:assert/strict');
@@ -51,6 +56,7 @@ references.hanziScale = 960 / (Math.max(Math.max(...xs) - Math.min(...xs), Math.
       window.__traceDraws = [];
       window.__traceFrame = null;
       window.__traceTextCalls = 0;
+      window.__traceTextLabels = [];
       const proto = CanvasRenderingContext2D.prototype;
       const matrixOf = ctx => { const m = ctx.getTransform(); return [m.a, m.b, m.c, m.d, m.e, m.f]; };
       for (const method of ['fill', 'stroke', 'fillText', 'strokeText', 'clearRect', 'strokeRect']) {
@@ -58,7 +64,10 @@ references.hanziScale = 960 / (Math.max(Math.max(...xs) - Math.min(...xs), Math.
         proto[method] = function (...args) {
           const main = this.canvas.id === 'trace-canvas';
           if (main && method === 'clearRect') { window.__traceDraws = []; window.__traceFrame = null; }
-          if ((main || this.canvas.closest('#trace-remaining')) && /Text$/.test(method)) window.__traceTextCalls++;
+          if ((main || this.canvas.closest('#trace-remaining')) && /Text$/.test(method)) {
+            window.__traceTextCalls++;
+            if (main) window.__traceTextLabels.push(String(args[0]));
+          }
           if (main && sources.has(args[0])) {
             window.__traceDraws.push({
               method, paths: sources.get(args[0]), matrix: matrixOf(this),
@@ -95,7 +104,9 @@ references.hanziScale = 960 / (Math.max(Math.max(...xs) - Math.min(...xs), Math.
         const [r, g, b, a] = data.slice(i, i + 4);
         if (a < 100) continue;
         if (r === 176 && g === 176 && b === 176) gray++;
-        if (r > 180 && g < 150 && b < 115) red++;
+        // 只认孩子笔迹 #d86d4c 的核心色：金色引导线 (#A9761B) 与白底混合时
+        // 也会落进「偏红」的宽松区间，必须收紧，否则会把引导线误判成笔迹。
+        if (r >= 200 && r <= 235 && g >= 90 && g <= 130 && b >= 55 && b <= 100) red++;
         if (b > r + 20 && b > g + 10) blue++;
       }
       return { gray, red, blue };
@@ -198,13 +209,20 @@ references.hanziScale = 960 / (Math.max(Math.max(...xs) - Math.min(...xs), Math.
 
     for (const size of [3, 5]) {
       await page.click(`.difficulty[data-size="${size}"]`);
+      // 进场自动播一遍笔顺：演示期间画布锁定
+      await page.waitForSelector('.trace-stage.is-locked', { timeout: 20000 });
       await ready();
+      assert.equal((await page.locator('#hint').textContent()).trim(), '从数字圆点起笔，顺着细线描一描');
       assert.equal(await page.locator('#trace-order-svg').count(), 0);
       assert.equal(await page.locator('#trace-host svg').count(), 0);
       assert.equal(await page.locator('#trace-remaining canvas').count(), 10);
-      assert.equal(await page.evaluate(() => window.__traceTextCalls), 0);
+      // 范字必须来自数据 path；主画布仅允许序号圆点用 fillText（纯数字标签）。
+      const labels = await page.evaluate(() => window.__traceTextLabels);
+      assert(labels.length > 0, '笔顺序号点未绘制');
+      assert(labels.every(t => /^\d+(·\d+)*$/.test(t)), `主画布出现非序号文字: ${JSON.stringify([...new Set(labels)])}`);
       const first = await pixels();
-      assert(first.gray > 100 && first.red === 0 && first.blue === 0, `灰字/笔顺颜色异常: ${JSON.stringify(first)}`);
+      // 引导层已恢复：灰字在、无红笔迹、彩色引导线存在（蓝是第 1 笔的颜色）
+      assert(first.gray > 100 && first.red === 0 && first.blue > 0, `灰字/笔顺颜色异常: ${JSON.stringify(first)}`);
       await page.click('#trace-next');
       assert.equal(await page.evaluate(() => state.traceIndex), 0);
       assert.equal(await page.locator('#hint').textContent(), '先描几笔，再换下一个字');
@@ -234,9 +252,11 @@ references.hanziScale = 960 / (Math.max(Math.max(...xs) - Math.min(...xs), Math.
             loading: !document.querySelector('#trace-loading').hidden };
         });
         assert.equal(next.index, i + 1);
-        assert(!next.disabled && !next.locked && !next.loading, '下一字未同步解锁');
+        assert(!next.loading, '下一字仍在加载');
         assert.equal(requests.filter(url => url.includes('/hanzi-cache/')).length, loads, '切字又加载数据');
         if (i < 9) assert.equal((await pixels()).red, 0, '切字未清空红色笔迹');
+        // 换字后自动播新字的笔顺（is-locked），等演示结束再让孩子描。
+        if (next.locked) await ready();
       }
       await page.locator('#complete-panel').waitFor({ state: 'visible' });
       assert.equal(await page.locator('#complete-stats').textContent(), '描完 10 / 10 个字');
@@ -272,7 +292,7 @@ references.hanziScale = 960 / (Math.max(Math.max(...xs) - Math.min(...xs), Math.
       console.log(`描红池 size=${size}: 完成/重玩/全部 ${keys.length} 字形几何 PASS`);
     }
     assert(!requests.some(url => /jsdelivr/i.test(url)), '发出了 jsdelivr CDN 请求');
-    report.checks.push('9 个入口；数字/汉字可选、拼音隐藏；两池各描完10字并重玩；清除/resize/同步下一字；0系统字体范字；0蓝线；0 CDN');
+    report.checks.push('9 个入口；数字/汉字可选、拼音隐藏；两池各描完10字并重玩；清除/resize/同步下一字；0系统字体范字；笔顺引导+序号常驻；0 CDN');
 
     // 大屏覆盖所有游戏，特别检查从描红返回后其它八个游戏的容器和 HUD。
     await page.click('[data-action="back-lobby"]');

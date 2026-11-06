@@ -3409,8 +3409,8 @@ img.compare-emoji {
 .trace-toolbar {
   display: grid;             /* 沿用 .zone-toolbar 的 grid 即可 */
   width: 100%;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
 }
 
 .trace-tool-button {
@@ -3427,6 +3427,27 @@ img.compare-emoji {
   background: white;
   color: rgb(110, 110, 110);
   border-color: var(--line, #d8e2dc);
+}
+
+/* 「重看笔顺」：中性的次要操作，夹在清除与下一字之间 */
+.trace-replay-button {
+  background: rgb(232, 242, 238);
+  color: rgb(47, 140, 115);
+  border-color: rgb(206, 226, 217);
+}
+
+.trace-replay-button:hover:not(:disabled) {
+  background: rgb(220, 236, 230);
+  border-color: rgb(47, 140, 115);
+}
+
+.trace-replay-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.trace-replay-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .trace-clear-button:hover:not(:disabled) {
