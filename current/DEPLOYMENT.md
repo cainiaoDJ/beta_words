@@ -175,3 +175,24 @@ ssh -T sophie520 "cp -a '/var/www/games/current.bak.trace-restore-448-nested-202
 - 验收：110/110 文件 md5 == `main:current/`；移动端回归 Total: 448, Failed: 0；
   公网浏览器实测 9 入口 / 两池可玩 / 汉字字心偏差 0.5px / 笔迹落点偏差 0.5px /
   console error 0 / pageerror 0 / CDN 请求 0
+
+### 2026-11-06 — 笔顺动画引导重做上线（自动播）
+
+- 变更：只重做「笔顺引导」这一层，灰字/格子/红笔迹/工具栏/进度一律不动
+  - 引导线与灰字**共用同一个 canvas 与同一个 ctx transform**（scale → translate → scale），
+    从机制上排除旧 SVG 方案「两套坐标系各自 auto-fit」造成的镜像与错位
+  - 汉字走 `medians`（中轴）Catmull-Rom 平滑后展平；数字走 `strokes`（教材点线字形）弧长采样
+  - 进场与换字**自动播**一遍：逐笔按弧长生长，笔间停顿 90ms；单笔 280~560ms，
+    最长字「旗」14 笔约 5.3s；演示期间 `.trace-stage.is-locked` 锁画布并提示「先看一遍笔顺，等一下再描」
+  - 演示结束后引导线与序号常驻，作为描红底稿；工具栏新增「重看笔顺」（重播不清空笔迹）
+  - 序号圆心严格等于 `medians[i][0]` 经同一 transform 的映射，序号正立；
+    起笔点完全重合时（数字 4 / 8）合并为一个圆点、标签为 `1·2`，圆心仍是该起点
+  - 四色循环 `#3E88B5` / `#8863A2` / `#28816A` / `#A9761B`，**刻意避开橙红**：
+    孩子笔迹是 `#d86d4c`，橙褐引导线会和自己的笔迹糊在一起
+- 数据文件零改动：`trace-numbers.js` / `trace-hanzi.js` / `hanzi-cache/` 字节不变
+- 验收：
+  - `scripts/mobile-one-screen-test.js` → **Total: 448, Failed: 0**
+  - `scripts/trace-restore-test.js` → exit 0；汉字字心误差 4.6e-05px、
+    数字额外偏移 1.9e-04px、最小留白 16.6px、console/pageerror/CDN 请求均 0
+  - 浏览器逐字复核：数字 1–10 无镜像；数字 8 序号合并为 `1·2`；汉字「子」三色引导线贴合灰字
+- 回滚：见本文件上一条（回退轮）的备份路径；回滚到恢复版即 `current.bak.trace-restore-448-*`

@@ -326,6 +326,8 @@ const state = {
   traceIsDrawing: false,    // 指针按住中
   traceActivePointer: null, // 当前 pointerId
   traceLoadToken: 0,        // 防竞态 token（切池 / 快速返回 setup）
+  traceGuide: null,         // 笔顺演示状态 { done, active, grow, total, timer, raf }
+  traceGuideShown: false,   // 演示结束后引导线是否常驻
   // 算术闪卡专用状态
   mathSession: null,        // 引擎会话
   mathHard: false,          // 困难模式开关
@@ -602,6 +604,7 @@ const traceStage = traceHost?.querySelector(".trace-stage");
 const traceCanvas = document.querySelector("#trace-canvas");
 const traceRemaining = document.querySelector("#trace-remaining");
 const traceClearBtn = document.querySelector("#trace-clear");
+const traceReplayBtn = document.querySelector("#trace-replay");
 const traceNextBtn = document.querySelector("#trace-next");
 const traceLoading = document.querySelector("#trace-loading");
 const traceCtx = traceCanvas?.getContext("2d") || null;
@@ -3583,6 +3586,64 @@ const TRACE_POOL_SAMPLE = { 3: 10, 5: 10 };
 const traceGlyphCache = new Map();
 
 // 开局一次准备整池，之后切字完全同步；失败不缓存，返回选关后可重试。
+//
+// 笔顺引导的两条几何来源，都已在适配层统一到 1024×1024 Y-down 设计空间：
+//   汉字 → medians（中轴线），用 Catmull-Rom 平滑成过全部中轴点的三次贝塞尔再展平
+//   数字 → strokes（教材点线字形路径），按弧长采样成折线
+// 两者最终都摊平成「有序折线 + 累计弧长」，渲染层因此能按弧长逐段生长，
+// 演示出真实的运笔方向；平滑/采样后的曲线实测仍 100% 落在灰字墨迹内。
+function smoothMedianPath(points) {
+  if (!points || points.length < 2) return [];
+  if (points.length === 2) return points.slice();
+  // Catmull-Rom → 三次贝塞尔：过全部中轴点，端点保持原值，笔序与方向不倒转。
+  const p = [points[0], ...points, points[points.length - 1]];
+  const flat = [];
+  for (let i = 1; i < p.length - 2; i++) {
+    const [p0, p1, p2, p3] = [p[i - 1], p[i], p[i + 1], p[i + 2]];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    const steps = 24;
+    for (let k = 0; k <= steps; k++) {
+      if (k === 0 && i > 1) continue; // 段间不重复落点
+      const t = k / steps, mt = 1 - t;
+      const a = mt * mt * mt, b = 3 * mt * mt * t, c = 3 * mt * t * t, d = t * t * t;
+      flat.push([
+        a * p1[0] + b * c1[0] + c * c2[0] + d * p2[0],
+        a * p1[1] + b * c1[1] + c * c2[1] + d * p2[1]
+      ]);
+    }
+  }
+  return flat;
+}
+
+// 折线的累计弧长（首点为 0），用于按弧长逐段生长。
+function polylineArcLengths(points) {
+  const acc = [0];
+  for (let i = 1; i < points.length; i++) {
+    acc.push(acc[i - 1] + Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]));
+  }
+  return acc;
+}
+
+// 数字池：把教材点线字形路径按弧长采样为折线，作为该笔的中心线。
+// 采样在适配层借同一个隐藏 SVG 完成，渲染层不再解析路径字符串。
+function sampleStrokePath(measure, d, isHanzi) {
+  const ns = "http://www.w3.org/2000/svg";
+  const path = document.createElementNS(ns, "path");
+  path.setAttribute("d", d);
+  if (isHanzi) path.setAttribute("transform", "matrix(1 0 0 -1 0 1024)");
+  measure.replaceChildren(path);
+  const total = path.getTotalLength();
+  if (!(total > 0)) return [];
+  const steps = 48;
+  const pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const pt = path.getPointAtLength((total * i) / steps);
+    pts.push([pt.x, pt.y]);
+  }
+  return pts;
+}
+
 function prepareTraceGlyphs(pool) {
   if (traceGlyphCache.has(pool.id)) return traceGlyphCache.get(pool.id);
   const pending = (async () => {
@@ -3630,8 +3691,22 @@ function prepareTraceGlyphs(pool) {
         });
         measure.replaceChildren(group);
         const bounds = group.getBBox();
+        // 笔顺引导几何：与灰字同源、同一次适配。
+        //   汉字：guides = medians（中轴线）平滑后的有序中心线；起点 = medians[i][0]
+        //   数字：guides = strokes（教材点线字形路径）采样后的中心线；起点 = medians[i][0]
+        // 两者都在 1024×1024 Y-down 设计空间内产出，渲染层不再有翻转分支。
+        const guides = data.medians.map((median, i) => {
+          const pts = median.map(([x, y]) => (isHanzi ? [x, 1024 - y] : [x, y]));
+          const flat = isHanzi ? smoothMedianPath(pts) : sampleStrokePath(measure, data.strokes[i], isHanzi);
+          const arc = polylineArcLengths(flat);
+          return { pts: flat, arc, length: arc.length ? arc[arc.length - 1] : 0 };
+        });
+        const starts = data.medians.map(median => {
+          const [x, y] = median[0];
+          return isHanzi ? [x, 1024 - y] : [x, y];
+        });
         glyphs.set(item.charKey, {
-          paths, cell, scale, paint: isHanzi ? "fill" : "stroke",
+          paths, guides, starts, cell, scale, paint: isHanzi ? "fill" : "stroke",
           // 汉字以可见轮廓中心对齐格心；数字严格保留教材源位置。
           dx: isHanzi ? 512 - scale * (bounds.x + bounds.width / 2) : 0,
           dy: isHanzi ? 512 - scale * (bounds.y + bounds.height / 2) : 0
@@ -3668,19 +3743,31 @@ async function startTraceTianGame(size) {
   if (traceStage) traceStage.classList.add("is-locked");
   if (traceNextBtn) traceNextBtn.disabled = true;
   if (traceClearBtn) traceClearBtn.disabled = true;
+  if (traceReplayBtn) traceReplayBtn.disabled = true;
   const nextBtn = document.querySelector("#next-board");
   if (nextBtn) nextBtn.hidden = true;
   try {
     const glyphs = await prepareTraceGlyphs(pool);
     if (token !== state.traceLoadToken) return;
     state.traceGlyphs = glyphs;
+    state.traceGuideShown = false;
     renderTraceRemaining();
     drawTraceStage();
     if (traceLoading) traceLoading.hidden = true;
-    if (traceStage) traceStage.classList.remove("is-locked");
     if (traceNextBtn) traceNextBtn.disabled = false;
     if (traceClearBtn) traceClearBtn.disabled = false;
-    setHint("看着灰字，动手描一描");
+    // 进场自动播一遍笔顺：演示期间锁画布，演示完再让孩子描。
+    if (traceStage) traceStage.classList.add("is-locked");
+    if (traceReplayBtn) traceReplayBtn.disabled = true;
+    setHint("先看一遍笔顺，等一下再描");
+    playTraceGuide(() => {
+      if (token !== state.traceLoadToken) return;
+      state.traceGuideShown = true;
+      drawTraceStage();
+      if (traceStage) traceStage.classList.remove("is-locked");
+      if (traceReplayBtn) traceReplayBtn.disabled = false;
+      setHint("从数字圆点起笔，顺着细线描一描");
+    });
   } catch {
     if (token !== state.traceLoadToken) return;
     if (traceLoading) traceLoading.hidden = true;
@@ -3701,6 +3788,212 @@ function drawTraceGlyph(ctx, glyph, size, color) {
   ctx.lineJoin = "round";
   for (const path of glyph.paths) ctx[glyph.paint](path);
   ctx.restore();
+}
+
+// ====== 笔顺引导层 ======
+// 引导线与灰字共用同一个 ctx transform（scale → translate → scale），
+// 因此两者在屏幕上的相对位置由同一份 glyph.dx/dy/scale 唯一决定，
+// 不存在两套坐标系各自 auto-fit 的可能 —— 这正是旧 SVG 方案镜像/错位的根因。
+//
+// 四色循环，取自设计稿 docs/mockups/phase-10/out/01-hanzi-guide.png 的配色族。
+// 刻意避开橙红色系：孩子自己的笔迹是 #d86d4c（陶红），
+// 引导线若用橙褐（原 #C26134）会与自己的笔迹糊在一起，分不清描到哪。
+const TRACE_GUIDE_COLORS = ["#3E88B5", "#8863A2", "#28816A", "#A9761B"];
+// 引导线宽 ≈ 灰字笔画宽（32）的四分之一。
+const TRACE_GUIDE_WIDTH = 8;
+
+// 序号字体只解析一次：动画每帧都要写序号，逐帧 getComputedStyle 太贵。
+let traceBadgeFontFamily = null;
+function traceBadgeFontFamilyCached() {
+  if (traceBadgeFontFamily === null) {
+    const v = getComputedStyle(document.body).getPropertyValue("--font-numeric").trim();
+    traceBadgeFontFamily = v || "system-ui, sans-serif";
+  }
+  return traceBadgeFontFamily;
+}
+
+// 把一条引导几何画到 ctx。grow ∈ [0,1] 表示该笔已生长到的弧长比例，
+// grow = 1 表示整笔画完。分笔生长让演示真实呈现运笔方向。
+function strokeTraceGuide(ctx, guide, color, width, grow = 1) {
+  if (!guide || !guide.pts || guide.pts.length < 2) return;
+  const { pts, arc, length } = guide;
+  if (!(length > 0)) return;
+  const target = length * Math.max(0, Math.min(1, grow));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  if (target >= length) {
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  } else {
+    // 找到 target 落在哪一段，线性插值出端点
+    for (let i = 1; i < pts.length; i++) {
+      if (arc[i] >= target) {
+        const seg = arc[i] - arc[i - 1];
+        const t = seg > 0 ? (target - arc[i - 1]) / seg : 0;
+        const x = pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t;
+        const y = pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t;
+        ctx.lineTo(x, y);
+        break;
+      }
+      ctx.lineTo(pts[i][0], pts[i][1]);
+    }
+  }
+  ctx.stroke();
+}
+
+// 画引导线与序号圆点。
+// done: 已完整画出的笔数（这些笔按全长绘制）。
+// active: 正在生长的笔索引（-1 表示无），该笔按 grow 比例绘制。
+// grow: 当前笔的生长比例 [0,1]。
+function drawTraceGuide(ctx, glyph, size, done, grow = 1, active = -1) {
+  if (!glyph?.guides?.length) return;
+  const guides = glyph.guides;
+  const starts = glyph.starts || [];
+  const total = guides.length;
+
+  // 1) 引导线：与灰字同一 transform
+  ctx.save();
+  ctx.scale(size / 1024, size / 1024);
+  ctx.translate(glyph.dx, glyph.dy);
+  ctx.scale(glyph.scale, glyph.scale);
+  for (let i = 0; i < total; i++) {
+    if (i < done) {
+      strokeTraceGuide(ctx, guides[i], TRACE_GUIDE_COLORS[i % TRACE_GUIDE_COLORS.length], TRACE_GUIDE_WIDTH, 1);
+    } else if (i === active && grow > 0) {
+      strokeTraceGuide(ctx, guides[i], TRACE_GUIDE_COLORS[i % TRACE_GUIDE_COLORS.length], TRACE_GUIDE_WIDTH, grow);
+    }
+  }
+  ctx.restore();
+
+  // 2) 序号圆点：在屏幕坐标画，保证序号正立不随汉字翻转
+  //    圆心严格等于 medians[i][0] 经同一 transform 映射后的位置。
+  //
+  //    起笔点完全重合时（数字 4 / 8 的两笔同起于一点），两个圆点会互相盖住。
+  //    合并成一个圆点、标签列出该点起笔的所有笔序（"1·2"），
+  //    圆心仍严格等于 medians[i][0]（重合时各笔的起点是同一个点）。
+  const visible = [];
+  const shown = Math.max(done, active >= 0 ? active + 1 : 0);
+  for (let i = 0; i < total; i++) {
+    if (i >= shown) continue;
+    const start = starts[i];
+    if (!start) continue;
+    visible.push({
+      i,
+      start,
+      sx: (size / 1024) * (glyph.dx + glyph.scale * start[0]),
+      sy: (size / 1024) * (glyph.dy + glyph.scale * start[1]),
+    });
+  }
+
+  // 按起笔点精确分组
+  const groups = new Map();
+  for (const b of visible) {
+    const key = `${b.start[0]},${b.start[1]}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(b);
+  }
+
+  for (const members of groups.values()) {
+    const lead = members[0];
+    const color = TRACE_GUIDE_COLORS[lead.i % TRACE_GUIDE_COLORS.length];
+    // 演示时让「正在描的那一笔」的序号保持醒目，其余相邻序号淡出。
+    // 注意起笔点完全重合的笔已合并成同一个圆点（标签 "1·2"），
+    // 这里只对「不含当前笔」的圆点淡出，避免把当前笔自己的序号也压暗。
+    const dim = members.length > 1 && active >= 0 && !members.some(m => m.i === active);
+    const radius = size * (dim ? 0.024 : 0.029);
+    const label = members.map(m => m.i + 1).join("·");
+    const fontSize = members.length > 1
+      ? Math.round(radius * (members.length > 2 ? 1.05 : 1.15))
+      : Math.round(radius * 1.45);
+    ctx.save();
+    ctx.globalAlpha = dim ? 0.3 : 1;
+    ctx.beginPath();
+    ctx.arc(lead.sx, lead.sy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    // 浅色描边：与相邻圆点重叠时仍能分辨出是各自的序号
+    ctx.lineWidth = Math.max(1.5, radius * 0.16);
+    ctx.strokeStyle = "rgba(255,255,255,0.92)";
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `800 ${fontSize}px ${traceBadgeFontFamilyCached()}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, lead.sx, lead.sy + radius * 0.05);
+    ctx.restore();
+  }
+}
+
+// ====== 笔顺演示动画 ======
+// 每笔时长按总笔数自适应：单笔 280~560ms，笔间停顿 90ms。
+// 实测最长字「旗」14 笔约 5.1s，最短单笔字约 0.6s —— 既看得清运笔，
+// 又不至于让孩子干等。演示期间画布锁住（is-locked），避免跟着没演完的笔画乱描。
+const TRACE_GUIDE_GAP_MS = 90;
+function traceGuideStrokeMs(total) {
+  if (total <= 1) return 560;
+  return Math.max(280, Math.min(560, Math.round(3600 / total)));
+}
+
+function stopTraceGuide() {
+  const g = state.traceGuide;
+  if (!g) return;
+  if (g.timer) clearTimeout(g.timer);
+  if (g.raf) cancelAnimationFrame(g.raf);
+  state.traceGuide = null;
+}
+
+// 播放当前字的笔顺演示。onDone 在演示结束后调用（用于解锁画布）。
+//
+// 状态机：g.done = 已完整画出的笔数，g.active = 正在生长的笔（-1 表示无）。
+// 渲染时「已画完的笔」按全长绘制，「正在生长的笔」按弧长比例绘制，
+// 尚未开始的笔完全不画 —— 避免出现「下一笔先整条出现再退回重来」。
+function playTraceGuide(onDone) {
+  stopTraceGuide();
+  const item = state.traceItems[state.traceIndex];
+  const glyph = state.traceGlyphs?.get(item?.charKey);
+  const total = glyph?.guides?.length || 0;
+  if (!total) {
+    if (typeof onDone === "function") onDone();
+    return;
+  }
+  const per = traceGuideStrokeMs(total);
+  const g = { done: 0, active: -1, grow: 0, total, timer: null, raf: null };
+  state.traceGuide = g;
+
+  const runStroke = () => {
+    const cur = state.traceGuide;
+    if (!cur) return;
+    const started = performance.now();
+    const animate = () => {
+      if (state.traceGuide !== cur) return;
+      const t = Math.min(1, (performance.now() - started) / per);
+      cur.grow = t;
+      drawTraceStage();
+      if (t < 1) {
+        cur.raf = requestAnimationFrame(animate);
+        return;
+      }
+      cur.raf = null;
+      cur.grow = 1;
+      cur.done = cur.active + 1;
+      cur.active = -1;
+      drawTraceStage();
+      if (cur.done >= cur.total) {
+        state.traceGuide = null;
+        if (typeof onDone === "function") onDone();
+        return;
+      }
+      cur.active = cur.done;
+      cur.timer = setTimeout(runStroke, TRACE_GUIDE_GAP_MS); // 笔间停顿
+    };
+    cur.raf = requestAnimationFrame(animate);
+  };
+
+  g.active = 0;
+  runStroke();
 }
 
 // ====== Z4 待选列表渲染 ======
@@ -3754,6 +4047,16 @@ function drawTraceStage() {
   if (!glyph) return;
   drawMiGrid(traceCtx, cssSize, glyph.cell);
   drawTraceGlyph(traceCtx, glyph, cssSize, "#b0b0b0");
+  // 引导层与灰字在同一画布、同一 transform 上叠加。
+  const guide = state.traceGuide;
+  if (guide) {
+    drawTraceGuide(traceCtx, glyph, cssSize, guide.done, guide.grow, guide.active);
+  } else if (state.traceGuideShown) {
+    // 演示结束后引导线常驻，作为「从数字圆点起笔，顺着细线描一描」的描红底稿
+    drawTraceGuide(traceCtx, glyph, cssSize, glyph.guides.length, 1, -1);
+  }
+  // 孩子的红色笔迹画在引导层之上，重播时不能被擦掉。
+  drawUserStrokes();
 }
 
 // 格线与范字共用 1024 设计坐标；数字使用作者格，汉字使用骨架推导格。
@@ -3914,10 +4217,37 @@ function onTraceNext() {
     return;
   }
   renderTraceRemaining();
+  state.traceGuideShown = false;
   drawTraceStage();
-  if (traceStage) traceStage.classList.remove("is-locked");
   if (traceNextBtn) traceNextBtn.disabled = false;
-  setHint("看着灰字，动手描一描");
+  // 换字后自动播新字的笔顺
+  if (traceStage) traceStage.classList.add("is-locked");
+  if (traceReplayBtn) traceReplayBtn.disabled = true;
+  setHint("先看一遍笔顺，等一下再描");
+  playTraceGuide(() => {
+    state.traceGuideShown = true;
+    drawTraceStage();
+    if (traceStage) traceStage.classList.remove("is-locked");
+    if (traceReplayBtn) traceReplayBtn.disabled = false;
+    setHint("从数字圆点起笔，顺着细线描一描");
+  });
+}
+
+// 「重看笔顺」：重播当前字的笔顺演示，不清空孩子已描的笔迹。
+function onTraceReplay() {
+  if (!state.traceGlyphs) return;
+  state.traceGuideShown = false;
+  drawTraceStage();
+  if (traceStage) traceStage.classList.add("is-locked");
+  if (traceReplayBtn) traceReplayBtn.disabled = true;
+  setHint("先看一遍笔顺，等一下再描");
+  playTraceGuide(() => {
+    state.traceGuideShown = true;
+    drawTraceStage();
+    if (traceStage) traceStage.classList.remove("is-locked");
+    if (traceReplayBtn) traceReplayBtn.disabled = false;
+    setHint("从数字圆点起笔，顺着细线描一描");
+  });
 }
 
 // ====== 完成流程 ======
@@ -3951,6 +4281,7 @@ function finishTraceTianGame() {
 // ====== 离开游戏清理 ======
 function teardownTraceTian() {
   stopTraceDrawing();
+  stopTraceGuide();
   state.traceLoadToken += 1;  // 让所有 in-flight 加载失效
   state.traceStrokes = [];
   state.traceGlyphs = null;
@@ -3958,6 +4289,7 @@ function teardownTraceTian() {
   state.traceIndex = 0;
   state.traceIsDrawing = false;
   state.traceActivePointer = null;
+  state.traceGuideShown = false;
   if (traceStage) {
     traceStage.classList.remove("is-locked", "is-drawing", "is-completed");
   }
@@ -3968,6 +4300,7 @@ function teardownTraceTian() {
 // ====== 启动 Pointer 监听 + Toolbar 按钮（仅一次）======
 attachTracePointerHandlers();
 traceClearBtn?.addEventListener("click", onTraceClear);
+traceReplayBtn?.addEventListener("click", onTraceReplay);
 traceNextBtn?.addEventListener("click", onTraceNext);
 
 // 窗口大小变化时重画米字格 + 重放笔迹
@@ -3976,8 +4309,7 @@ window.addEventListener("resize", () => {
   if (state.game !== GAMES.traceTian.id) return;
   if (traceResizeRaf) cancelAnimationFrame(traceResizeRaf);
   traceResizeRaf = requestAnimationFrame(() => {
-    drawTraceStage();
-    drawUserStrokes();
+    drawTraceStage();  // 内部已重绘孩子的笔迹
   });
 });
 
