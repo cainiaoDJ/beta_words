@@ -15,9 +15,9 @@
 ### 测试覆盖
 
 - **7 个手机 viewport**：iPhone 13 / SE 2nd / 12 mini / 8、Pixel 5、小屏 (360×640)、极小屏 (320×568)
-- **每个 viewport × 59 个测试点**：lobby + 8 个 setup + 25 组游戏难度 × (gameplay + complete panel)；当前开放 8 个游戏，描红已撤下
-- **共 413 个断言（2026-11-05 脚本实测 Total: 413, Failed: 0）**，验证所有游戏状态在所有手机上**一屏内可见、无滚动**
-- 实测由旧 462 减少为 413：撤下描红同时移除其 setup 与 gameplay/complete 测试点；总数以脚本输出为准。
+- **每个 viewport × 64 个测试点**：lobby + 9 个 setup + 26 组游戏难度 × (gameplay + complete panel)；当前开放 9 个游戏，描红已恢复（数字/汉字两池，拼音隐藏）
+- **共 448 个断言（2026-11-06 脚本实测 Total: 448, Failed: 0）**，验证所有游戏状态在所有手机上**一屏内可见、无滚动**
+- 2026-11-06 描红恢复后由 413 增至 448：描红重新计入 setup + 2 个难度（数字/汉字）× (gameplay + complete)；拼音池因无字形数据隐藏，比撤下前少 14 个点（旧 462）。总数以脚本输出为准。
 - 断言细节（2026-07-29 架构变更后）：
   - 主断言：`.stage-canvas` 的 getBoundingClientRect 完全在 viewport 内（设计画布缩放后 fit 进视口）
   - 次断言：`.screen.active` 的 scrollHeight ≤ 640 设计 px（内部内容不溢出）
@@ -37,7 +37,7 @@ BASE_URL=http://127.0.0.1:4174/ node scripts/mobile-one-screen-test.js
 
 # 3) 看输出
 #   ✅ = 通过；❌ = 该状态下画布超出视口或内部溢出
-#   Total: 413, Failed: 0   ← Failed 必须为 0（fail 时 exit 1）
+#   Total: 448, Failed: 0   ← Failed 必须为 0（fail 时 exit 1）
 ```
 
 ### Pass 标准（**硬性**）
@@ -110,20 +110,20 @@ Phase A 基础设施/框架   →  Phase B 试点（Pilot）  →  Phase C 推�
 
 - 范围：CSS token、共享类（`.zone-*`、`.btn-*`）、抽象层、纯工具函数
 - **硬性约束**：**绝对不动任何具体业务页面**（不修改游戏 `.screen.active` 内部的 HTML/CSS/JS）
-- 完成标志：跑现有测试 413/413 通过（**没改业务但要证明没坏**）→ commit
+- 完成标志：跑现有测试 448/448 通过（**没改业务但要证明没坏**）→ commit
 
 #### Phase B：试点（pilot first，**不能跳**）
 
 - 范围：**只选 1 个最简子集**（结构最简单、依赖最少、最不会触雷的那个）
 - 试点失败的代价最低——能验证框架是否真的可用
-- 完成标志：试点子集跑测试 413/413 通过 → commit
+- 完成标志：试点子集跑测试 448/448 通过 → commit
 - **试点失败必须回 Phase A 改框架**，不能"先这样以后再优化"——框架有缺陷时越往后越难回头
 
 #### Phase C：推广（rollout one-by-one）
 
 - 范围：剩余子集**一个个**迁移，**绝对不批量**
 - 每个子集独立 commit、独立跑测试
-- 完成标志：全套测试 413/413 通过 → merge 回 main
+- 完成标志：全套测试 448/448 通过 → merge 回 main
 
 ### 3. 回归测试（**修复 commit 的灵魂**）
 
@@ -170,7 +170,7 @@ message 必须包含：
 
 ### 7. merge 回 main
 
-- 分支上**所有 phase 完成** + 全套测试 413/413 通过
+- 分支上**所有 phase 完成** + 全套测试 448/448 通过
 - `git checkout main && git merge --no-ff feat/<topic>`（**保留分支拓扑**，便于将来追到这次大改）
 - merge 后**立刻**部署（tar+ssh 流式同步），不要让分支留在 main 上没部署
 

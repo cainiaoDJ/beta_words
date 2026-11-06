@@ -17,6 +17,7 @@
 //   match/memory/stroop/quiz 都至少 1 个 .zone-primary（棋盘或题目卡）
 //   quiz 类（pinyin-friend + listen-card）多 1 个 .zone-secondary（选项网格）
 //   stroop-train 用 .stroop-track 作为 primary，旧待选区已隐藏，保留 1 个 .zone-toolbar
+//   trace-tian 多 1 个 .zone-secondary（待选字）+ 1 个 .zone-toolbar（清除/下一字）
 //   idiom-fill 多 1 个 .zone-secondary（候选字池）
 
 const { chromium } = require('/tmp/node_modules/playwright/index.js');
@@ -31,7 +32,7 @@ const TESTS = [
   { name: 'Small phone   (360x640)',  vp: { width: 360, height: 640 } },
   { name: 'Tiny phone    (320x568)',  vp: { width: 320, height: 568 } },
 ];
-const GAMES = ['open-match', 'open-memory', 'open-pinyin-friend', 'open-listen-card', 'open-stroop-train', 'open-compare', 'open-idiom-fill', 'open-math-flash'];
+const GAMES = ['open-match', 'open-memory', 'open-pinyin-friend', 'open-listen-card', 'open-stroop-train', 'open-compare', 'open-idiom-fill', 'open-trace-tian', 'open-math-flash'];
 const DESIGN_W = 360;
 const DESIGN_H = 640;
 
@@ -40,6 +41,7 @@ const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:4174/';
 
 // 各游戏可测的难度 size
 const GAME_SIZES = {
+  'open-trace-tian': [3, 5], // 拼音没有可用字形数据，选关页隐藏。
   'open-compare':    [3, 5, 6],
   'open-idiom-fill': [3, 5, 7],
   'open-math-flash': [3, 4, 5, 6],
@@ -55,6 +57,7 @@ const ZONE_EXPECT = {
   'pinyin-friend': { primary: 1, secondary: 1, toolbar: 0 },
   'listen-card':   { primary: 1, secondary: 1, toolbar: 0 },
   'stroop-train':  { primary: 1, secondary: 0, toolbar: 1 },
+  'trace-tian':    { primary: 1, secondary: 1, toolbar: 1 },
   'idiom-fill':    { primary: 1, secondary: 1, toolbar: 0 },  // Phase 8A: 滚筒 + 候选字池
   'math-flash':    { primary: 1, secondary: 1, toolbar: 0 },
 };
