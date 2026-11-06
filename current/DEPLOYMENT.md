@@ -149,3 +149,29 @@ ssh -T sophie520 "cp -a '/var/www/games/current.bak.trace-rollback-66adfd8-neste
 - 验收：两个路径 md5 均 == `main:current/`（110/110 文件一致）；
   浏览器冒烟 8 个入口、描红入口与 DOM 全不存在、console error 0、pageerror 0
 - 描红重建方案：`docs/phase-plans/phase-10-tracing-rebuild.md`（重建完成并通过移动端回归后再开放入口）
+
+### 2026-11-06 — 描红游戏恢复上线（撤销误删 + 移除 SVG 笔顺层）
+
+- 提交：`d69305a`（merge `feat/trace-restore`），线上内容 == `main:current/`（110/110 文件 md5 一致）
+- 背景：2026-11-06 上午那次「回退描红」把**整个描红游戏**误删（app.js 700 行 / CSS 278 行 /
+  大厅入口），主人明确只要求回退 SVG 笔顺那一层。本轮把游戏恢复，笔顺层照旧撤下。
+- 变更：
+  - 恢复大厅第 9 个入口、米字格 canvas、灰色范字、红色笔迹、待选字列表、
+    清除/下一字、进度与完成流程
+  - 移除 `#trace-order-svg`、`renderTraceOrderSvg()`、`playStrokeGuide()`、起点圆点与序号、
+    以及只服务于引导层的汉字 CDN 依赖（线上 jsdelivr 引用 = 0）
+  - 灰字改由数据 path 渲染（数字描边 / 汉字填充），`fillText` 清零，不再用系统字体
+  - 拼音池无字形数据，选关页隐藏 size 4
+- 备份（回滚用，路径原样勿手打）：
+  - 外层：`/var/www/games/current.bak.trace-restore-448-20261106-125406`
+  - 嵌套：`/var/www/games/current.bak.trace-restore-448-nested-20261106-125406`
+- 回滚命令：
+
+```bash
+ssh -T sophie520 "cp -a '/var/www/games/current.bak.trace-restore-448-20261106-125406' /var/www/games/current"
+ssh -T sophie520 "cp -a '/var/www/games/current.bak.trace-restore-448-nested-20261106-125406' /var/www/games/current/current"
+```
+
+- 验收：110/110 文件 md5 == `main:current/`；移动端回归 Total: 448, Failed: 0；
+  公网浏览器实测 9 入口 / 两池可玩 / 汉字字心偏差 0.5px / 笔迹落点偏差 0.5px /
+  console error 0 / pageerror 0 / CDN 请求 0
