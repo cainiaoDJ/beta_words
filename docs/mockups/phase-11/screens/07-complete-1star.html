@@ -28,21 +28,24 @@
         </div>
 
         <div class="game-hud" aria-label="游戏状态">
-          <span id="progress" class="hud-progress">45 / 45</span>
-          <span id="timer" class="hud-timer">03:18</span>
+          <span id="progress" class="hud-progress">66 / 66</span>
+          <span id="timer" class="hud-timer">04:05</span>
           <span id="hint" class="hud-hint">选一个答案</span>
         </div>
 
         <div id="math-host" class="math-host zone-stack">
 
-        <div class="math-card zone-primary" aria-label="题目卡片">
-          <div class="math-card__inner">
-            <div class="math-card__face math-card__face--front">
-              <div class="math-card__head"><span class="math-card__badge">10 以内加法</span><span class="math-card__label">第 45 题</span></div>
-              <div class="math-eq"><span>4</span><span class="op">+</span><span>3</span><span class="op">=</span><span class="q">?</span></div>
-            </div>
-            <div class="math-card__face math-card__face--back">
-              <div class="math-card__watermark">+ −</div>
+        <div class="math-flip-pair zone-primary">
+          <div class="math-card">
+            <div class="math-card__inner">
+              <div class="math-card__face math-card__face--front">
+                <div class="math-card__timer" hidden><i style="width:100%"></i></div>
+                <div class="math-card__head"><span class="math-card__badge">10 以内加法</span><span class="math-card__label">第 66 题</span></div>
+                <div class="math-eq"><span>4</span><span class="op">+</span><span>3</span><span class="op">=</span><span class="q">?</span></div>
+              </div>
+              <div class="math-card__face math-card__face--back">
+                <div class="math-card__watermark">+ −</div>
+              </div>
             </div>
           </div>
         </div>
@@ -81,8 +84,8 @@
           </div>
           <div class="star-row" aria-label="星星数"><svg class="star is-earned" data-star="1" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L14.85 8.5L22 9.27L16.5 14.14L18.18 21L12 17.27L5.82 21L7.5 14.14L2 9.27L9.15 8.5L12 2Z"/></svg><svg class="star" data-star="2" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L14.85 8.5L22 9.27L16.5 14.14L18.18 21L12 17.27L5.82 21L7.5 14.14L2 9.27L9.15 8.5L12 2Z"/></svg><svg class="star" data-star="3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L14.85 8.5L22 9.27L16.5 14.14L18.18 21L12 17.27L5.82 21L7.5 14.14L2 9.27L9.15 8.5L12 2Z"/></svg></div>
           <p class="complete-title" data-tier="ok">完成啦！</p>
-          <p id="complete-stats" class="complete-stats complete-stats--timed">用时 03:18
-答对 35 / 45（78%）</p>
+          <p id="complete-stats" class="complete-stats complete-stats--timed">用时 04:05
+答对 44 / 66（67%）</p>
 
           <div class="actions">
             <button id="play-again" class="primary-button" type="button">再玩一次</button>

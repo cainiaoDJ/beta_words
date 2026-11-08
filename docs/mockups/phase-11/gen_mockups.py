@@ -82,18 +82,27 @@ def hud(progress="12 / 45", timer="00:24", timer_cls="", hint="选一个答案")
 
 
 def card(eq_left, op, eq_right, badge="", question_label=""):
-    """闪卡：纸质名片，正面是算式。困难模式的 .math-card__timer 进度条已移除。"""
+    """闪卡：纸质名片。
+
+    结构逐字照抄产品 current/index.html 的 #math-host：
+      .math-flip-pair.zone-primary > .math-card > .math-card__inner > .math-card__face
+    .math-card__timer（困难模式倒计时条）普通模式本就是 hidden，产品里保留了
+    这个 DOM —— 设计稿也保留，与线上一致，不自己删改名片结构。
+    """
     badge_html = '<span class="math-card__badge">%s</span>' % badge if badge else ""
     label = '<span class="math-card__label">%s</span>' % question_label if question_label else ""
     return """
-        <div class="math-card zone-primary" aria-label="题目卡片">
-          <div class="math-card__inner">
-            <div class="math-card__face math-card__face--front">
-              <div class="math-card__head">%s%s</div>
-              <div class="math-eq"><span>%s</span><span class="op">%s</span><span>%s</span><span class="op">=</span><span class="q">?</span></div>
-            </div>
-            <div class="math-card__face math-card__face--back">
-              <div class="math-card__watermark">+ −</div>
+        <div class="math-flip-pair zone-primary">
+          <div class="math-card">
+            <div class="math-card__inner">
+              <div class="math-card__face math-card__face--front">
+                <div class="math-card__timer" hidden><i style="width:100%%"></i></div>
+                <div class="math-card__head">%s%s</div>
+                <div class="math-eq"><span>%s</span><span class="op">%s</span><span>%s</span><span class="op">=</span><span class="q">?</span></div>
+              </div>
+              <div class="math-card__face math-card__face--back">
+                <div class="math-card__watermark">+ −</div>
+              </div>
             </div>
           </div>
         </div>
@@ -204,11 +213,11 @@ def screen_setup():
         <div class="difficulty-grid" role="list" aria-label="关卡选择">
           <button class="difficulty" type="button" data-size="3" data-recommended="true">
             <strong>10 以内加法</strong>
-            <span>45 题 · 入门</span>
+            <span>66 题 · 入门</span>
           </button>
           <button class="difficulty" type="button" data-size="4">
             <strong>10 以内减法</strong>
-            <span>45 题 · 熟练</span>
+            <span>66 题 · 熟练</span>
           </button>
           <button class="difficulty" type="button" data-size="5">
             <strong>20 以内加法</strong>
@@ -238,7 +247,7 @@ def screen_play():
       </section>
 """ % (
         TOPBAR,
-        hud(progress="12 / 45", timer="00:24"),
+        hud(progress="12 / 66", timer="00:24"),
         card("4", "+", "3", badge="10 以内加法", question_label="第 12 题"),
         options([6, 7, 8, 5]),
     )
@@ -305,9 +314,9 @@ SCREENS_SPEC = {
     "02-play": screen_play,
     "03-play-timer-warning": screen_play_warning,
     "04-play-timer-danger": screen_play_danger,
-    "05-complete-3star": lambda: screen_complete(3, "太快啦！", "perfect", "01:12", 38, 45, True),
-    "06-complete-2star": lambda: screen_complete(2, "稳稳的！", "good", "02:05", 41, 45, False),
-    "07-complete-1star": lambda: screen_complete(1, "完成啦！", "ok", "03:18", 35, 45, False),
+    "05-complete-3star": lambda: screen_complete(3, "太快啦！", "perfect", "01:12", 38, 66, True),
+    "06-complete-2star": lambda: screen_complete(2, "稳稳的！", "good", "03:20", 51, 66, False),
+    "07-complete-1star": lambda: screen_complete(1, "完成啦！", "ok", "04:05", 44, 66, False),
 }
 
 
