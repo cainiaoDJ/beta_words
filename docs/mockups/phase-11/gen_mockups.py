@@ -246,7 +246,7 @@ def screen_play():
 
 
 def screen_play_warning():
-    """计时器越过 90 秒（三星线）→ 变橙。"""
+    """计时器越过 90 秒（三星线）→ 变橙。题：L4 退位减法 13−7=6（a∈[10,18]）。"""
     body = """
       <section id="game" class="screen active" aria-labelledby="game-title">
 %s%s
@@ -257,8 +257,8 @@ def screen_play_warning():
 """ % (
         TOPBAR,
         hud(progress="38 / 45", timer="01:42", timer_cls="timed-warning"),
-        card("8", "−", "3", badge="20 以内减法", question_label="第 38 题"),
-        options([4, 5, 6, 7]),
+        card("13", "−", "7", badge="20 以内减法", question_label="第 38 题"),
+        options([5, 6, 7, 8]),
     )
     return shell("mathFlash", body)
 
