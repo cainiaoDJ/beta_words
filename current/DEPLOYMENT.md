@@ -215,3 +215,50 @@ ssh -T sophie520 "cp -a '/var/www/games/current.bak.trace-restore-448-nested-202
   - `scripts/mobile-one-screen-test.js` → **Total: 448, Failed: 0**
   - `scripts/trace-restore-test.js` → 通过；consoleErrors 0 / pageErrors 0 / CDN 0
 - 回滚：本文件上一条备份目录内的 `assets/data/trace-numbers.js`（md5 a66591fa…）
+
+### 2026-11-10 — 算术闪卡改为整局计时 + 教材表全量牌堆上线
+
+- 变更（仅算术闪卡，其它 8 个游戏零改动）：
+  - **牌堆**：每关把教材表整张出完，每张卡恰好出现 1 次，不重不漏
+    - L1 10以内加法 `a≥0,b≥0,a≤10,b≤10,a+b≤10` → **66 张**
+    - L2 10以内减法 `b≤a≤10` → **66 张**
+    - L3 20以内进位加法 `1≤a,b≤9, 10≤a+b≤18` → **45 张**
+    - L4 20以内退位减法 `10≤a≤18, 1≤b≤9, 1≤a-b≤9` → **45 张**
+    - 选关页文案同步：`66 题 · 入门` / `66 题 · 熟练` / `45 题 · 进位` / `45 题 · 退位`
+  - **评星改按总耗时**（主人 2026-11-10 拍板 Q2：答错不扣时）：
+    阈值常量 `STAR_MS_PER_QUESTION = { three: 2000, two: 3333 }` 整数毫秒/题
+    → 66 张：132s / 220s；45 张：90s / 150s；最低 1 星，永不 0 星
+    奖杯 3★gold / 2★silver / 1★bronze；标题 3★「太快啦！」/ 2★「稳稳的！」/ 1★「完成啦！」
+  - **最佳记录换新口径**（主人拍板 Q3：只显示最快用时并标记错误数量）：
+    新 key `beta_words_mathflash_timed_best_{size}`，存 `{elapsedMs, wrongCount, timestamp}`，
+    **只比用时**；显示「最快 MM:SS · 错 N 题」，错题数是该记录那一局的。
+    旧的 `beta_words_mathflash_best_{size}`（10 题制）不读不写。
+  - **移除困难模式**：`#math-hard-row` 整块 DOM、`mathHard` state、`restoreMathHard` /
+    `syncMathHardToggle`、5 秒倒计时与其 CSS、`.mode-row` 系列样式全部清除。
+    `.math-card__timer` DOM 保留但加 `hidden`（普通模式本就是 hidden、0×0）；
+    `.toggle-switch` / `.toggle-knob` 保留给 BGM 开关。名片卡片视觉一个像素未动。
+  - 新增算术闪卡专用计时显示（`.timed-warning` 橙 / `.timed-danger` 红），
+    **共用 `updateTimerDisplay` 未动**（其它 8 个游戏仍在用）。
+    完成面板统计用算术闪卡专用 24px（`.complete-stats--timed`），
+    共用 `.complete-stats` 32px 未动。
+- 验收：
+  - `scripts/mobile-one-screen-test.js` → **Total: 448, Failed: 0**
+  - `scripts/math-flash-test.js` → 通过 5 / 失败 0
+  - `scripts/math-flash-deck-test.js` → 通过 12 / 失败 0
+  - `scripts/math-flash-play-test.js` → 整局 45/45 跑通，pageerror 0 / console.error 0
+  - `scripts/smoke-live-math-flash.js`（直连 https://sophie520.top/games/）→ 全部通过：
+    线上 `buildDeck` / `calcStarsByTime` / `calcTrophyByStars` / `getStarThresholds` 可调用，
+    旧 `submitTimeout` / `calcStars(wrongCount)` 已消失；四关牌堆 66/66/45/45 且不重复；
+    困难模式 DOM 与 localStorage key 均已消失；整局 45 个算式互不相同；
+    完成统计「用时 00:33 / 答对 45 / 45（100%）」、记录行「新纪录！00:33 · 错 0 题」；
+    统计 24px 逻辑行宽 271px < 容器 280px 不折行；配对游戏棋盘正常、记录行复位正确
+  - 部署前后全量比对：仓库 110 / 生产 110 / 命中 110（外层与嵌套路径各一轮）
+- 备份（回滚用，路径原样勿手打）：
+  - 外层：`/var/www/games/current.bak.mathflash-timed-638d9b56b4e5629ede75556f4bdeaa69-20261110-070552`
+  - 嵌套：`/var/www/games/current.bak.mathflash-timed-nested-638d9b56b4e5629ede75556f4bdeaa69-20261110-070552`
+- 回滚命令：
+
+```bash
+ssh -T sophie520 "rm -rf '/var/www/games/current' && cp -a '/var/www/games/current.bak.mathflash-timed-638d9b56b4e5629ede75556f4bdeaa69-20261110-070552' '/var/www/games/current'"
+ssh -T sophie520 "rm -rf '/var/www/games/current/current' && cp -a '/var/www/games/current.bak.mathflash-timed-nested-638d9b56b4e5629ede75556f4bdeaa69-20261110-070552' '/var/www/games/current/current'"
+```
