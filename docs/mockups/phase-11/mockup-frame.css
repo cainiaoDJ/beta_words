@@ -1,0 +1,57 @@
+/* Phase 9 设计稿 — 画布固定 360x640，绕开 stage.js 的缩放，直接出设计稿尺寸 */
+html, body {
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+}
+
+.stage {
+  position: relative;
+  width: 360px;
+  height: 640px;
+}
+
+.stage-canvas {
+  position: relative !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 360px !important;
+  height: 640px !important;
+  transform: none !important;
+}
+
+/* 大厅第 8 个入口落在第 5 行（孤儿行），吉祥物占右半空位 */
+.game-list { align-content: start; }
+
+/* ===== 渲染确定化 =====
+ * 设计稿要的是「静止终态」，但线上 CSS 大量动画是 opacity 0 → 1 / translateY，
+ * headless 抓帧时机不稳会拍到半透明（已实测出现过整屏发白）。
+ * 这里把动画全部关掉，并把需要「运动中」表达的撒花改成静态散落。 */
+.screen.active,
+.complete-panel,
+.complete-panel .star,
+.complete-panel .trophy,
+.option-button.is-correct,
+.option-button.is-wrong,
+.math-card,
+.math-card__inner,
+.math-card__face,
+.game-entry {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* 撒花：静态散落在画面上部，不再下落 */
+.confetti-host {
+  position: absolute !important;
+  inset: 0 !important;
+}
+
+.confetti-piece {
+  animation: none !important;
+  top: 6% !important;
+}
+
+.confetti-mini-piece {
+  animation: none !important;
+}

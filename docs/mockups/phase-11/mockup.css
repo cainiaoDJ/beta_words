@@ -1,0 +1,39 @@
+/* Phase 11 设计稿 — 算术闪卡全量随机 + 计时评星
+ *
+ * 只放本阶段新增/改动的样式；其余全部复用产品真实 current/styles.css。
+ * 困难模式相关的 .math-card__timer / .math-card.is-urgent 已在产品侧删除，
+ * 这里也不复现。
+ */
+
+/* 选关页：四关统一 45 题，困难模式整行删除后需要重新分配栅格留白 */
+#setup .difficulty-grid {
+  align-content: start;
+  row-gap: 12px;
+}
+
+/* 计时器：算术闪卡专用阈值（90s 橙 / 150s 红）。
+   产品侧会新增专用函数，此处仅供设计稿预览该状态。 */
+.hud-timer.timed-warning { color: #d98b2b; }
+.hud-timer.timed-danger  { color: #d86d4c; }
+
+/* 卡片不改样式。
+ * 名片（纸质卡片）的全部视觉都在产品 current/styles.css 里：
+ * .math-card__face 的纸面材质、.math-card__head 的「名片抬头行」、
+ * .math-card__eq 的浅浮雕算式。设计稿直接复用，不在此处覆写。
+ * （曾经在这里加过 .math-card__face--front { padding-top: 18px } 来给
+ *   删掉的倒计时条让位 —— 是错的：倒计时条普通模式本就是 hidden，
+ *   线上真实卡片 332x200、卡面无额外 padding。已移除。）
+ */
+
+/* 完成面板：计时制的星级 + 新纪录 */
+.complete-panel .complete-title[data-tier="perfect"] { color: #d4a72c; }
+.complete-panel .complete-title[data-tier="good"]    { color: rgb(var(--color-primary-strong)); }
+.complete-panel .complete-title[data-tier="ok"]      { color: #6b7280; }
+
+/* 计时制统计文案：45 题的「答对 N / 45（100%）」在 32px 下实测宽 361px，
+   超出面板可用宽度 280px 达 81px → 必然折行。
+   实测最坏值 24px = 271px < 280px，全档安全。
+   .complete-stats 被 8 个游戏共用，所以这里用算术闪卡专用修饰类，不改全局。 */
+.complete-panel .complete-stats--timed {
+  font-size: 24px;
+}

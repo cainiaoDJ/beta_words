@@ -777,16 +777,6 @@
           </button>
         </div>
 
-        <!-- Phase 9 — 算术闪卡：困难模式开关（默认隐藏，仅 mathFlash 显示） -->
-        <div class="mode-row" id="math-hard-row" hidden>
-          <span class="mode-row-text">
-            <span class="mode-row-title">困难模式</span>
-            <span class="mode-row-sub">每题 5 秒，超时算错</span>
-          </span>
-          <button id="math-hard-toggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="困难模式">
-            <span class="toggle-knob"></span>
-          </button>
-        </div>
       </section>
 
       <section id="game" class="screen" aria-labelledby="game-title">
@@ -857,7 +847,7 @@
             <div class="math-card">
               <div class="math-card__inner">
                 <div class="math-card__face math-card__face--front">
-                  <div class="math-card__timer"><i style="width:100%"></i></div>
+                  <div class="math-card__timer" hidden><i style="width:100%"></i></div>
                   <div class="math-card__head">
                     <span class="math-card__badge"></span>
                     <span class="math-card__label"></span>
