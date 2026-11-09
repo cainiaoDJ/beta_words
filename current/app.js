@@ -95,7 +95,7 @@ const GAMES = {
     title: "算一算，选答案",
     boardLabel: "算术闪卡题目区",
     startHint: "选一个答案",
-    recordPrefix: "beta_words_mathflash_best"
+    recordPrefix: "beta_words_mathflash_timed_best"
   }
 };
 
@@ -330,10 +330,9 @@ const state = {
   traceGuideShown: false,   // 演示结束后引导线是否常驻
   // 算术闪卡专用状态
   mathSession: null,        // 引擎会话
-  mathHard: false,          // 困难模式开关
-  mathTickId: null,         // 每题倒计时 interval
+  mathTimerId: null,        // 整局计时刷新 interval
   mathStartAt: 0,           // 本局开始时间戳
-  mathDeadline: 0,          // 当前题截止时间戳
+  mathEndAt: 0,             // 最后一题判定时间戳
   mathLocked: false,
   mathFrameId: null         // 翻卡下一帧
 };
@@ -611,8 +610,6 @@ const traceCtx = traceCanvas?.getContext("2d") || null;
 // 算术闪卡沿用静态纸卡 DOM，延迟回调在离开或重玩时统一取消。
 const mathHost = document.querySelector("#math-host");
 const mathOptions = document.querySelector("#math-options");
-const mathHardRow = document.querySelector("#math-hard-row");
-const mathHardToggle = document.querySelector("#math-hard-toggle");
 const mathTimeouts = new Set();
 
 const BEST_RECORD_TTL = 365 * 24 * 60 * 60 * 1000;
@@ -629,16 +626,6 @@ document.querySelector("#open-idiom-fill")?.addEventListener("click", () => choo
 // Phase trace-tian — 田字格描红入口
 document.querySelector("#open-trace-tian")?.addEventListener("click", () => chooseGame(GAMES.traceTian.id));
 document.querySelector("#open-math-flash")?.addEventListener("click", () => chooseGame(GAMES.mathFlash.id));
-mathHardToggle?.addEventListener("click", () => {
-  stopMathCountdown();
-  state.mathHard = !state.mathHard;
-  try {
-    localStorage.setItem("beta_words_mathflash_hard", state.mathHard ? "1" : "0");
-  } catch (error) {
-    // 存储不可用时，当前页面仍可切换模式。
-  }
-  syncMathHardToggle();
-});
 document.querySelector("#play-again").addEventListener("click", () => startGame(state.size));
 document.querySelector("#replay-sound").addEventListener("click", () => playReplayVoice());
 // “再听一遍” 按钮在听音点卡 + 看字识颜色 中隐藏（不依赖读音重播）
@@ -761,7 +748,6 @@ function leaveGame() {
 
 function chooseGame(gameId) {
   state.game = gameId;
-  if (gameId === GAMES.mathFlash.id) restoreMathHard();
   const game = getCurrentGame();
   setupTitle.textContent = `${game.name} · 选择难度`;
   syncTheme(gameId);  // 同步主题色到 body[data-game]
@@ -778,8 +764,6 @@ function syncSetupForGame(gameId) {
   const isCompare = gameId === GAMES.compare.id;
   const isTraceTian = gameId === GAMES.traceTian.id;
   const isMathFlash = gameId === GAMES.mathFlash.id;
-  if (mathHardRow) mathHardRow.hidden = !isMathFlash;
-  if (isMathFlash) restoreMathHard();
   document.querySelectorAll('#setup .difficulty').forEach((btn) => {
     const size = parseInt(btn.dataset.size, 10);
     const strongEl = btn.querySelector('strong');
@@ -859,6 +843,8 @@ function startGame(size) {
   state.replayText = null;
   completePanel.hidden = true;
   bestRecord.hidden = true;
+  bestRecord.textContent = "新纪录！";
+  completeTime?.classList.remove("complete-stats--timed");
   if (completeTime) completeTime.textContent = "用时 00:00 · 成功率 0 / 0（0%）";
   const game = getCurrentGame();
   gameSubtitle.textContent = `${game.name} ${size} x ${size}`;
@@ -996,41 +982,75 @@ function startGame(size) {
   window.bgmController?.playForGame(state.game);
 }
 
-// ===== 算术闪卡：独立会话、纸质翻卡与每题倒计时 =====
-function syncMathHardToggle() {
-  mathHardToggle?.setAttribute("aria-checked", String(state.mathHard));
-  mathHardRow?.classList.toggle("is-on", state.mathHard);
+// ===== 算术闪卡：独立会话、纸质翻卡与整局计时 =====
+// 算术闪卡专用计时显示：阈值按本关题量换算（66 张 → 132s 橙 / 220s 红；45 张 → 90s 橙 / 150s 红）。
+// 不动共用的 updateTimerDisplay（其它 8 个游戏在用）。
+function updateMathTimerDisplay(elapsedMs) {
+  const session = state.mathSession;
+  if (!session) return;
+  const { three, two } = MathFlashEngine.getStarThresholds(session.deck.length);
+  timer.textContent = formatTime(elapsedMs);
+  timer.classList.remove("warning", "danger");
+  timer.classList.toggle("timed-warning", elapsedMs > three && elapsedMs <= two);
+  timer.classList.toggle("timed-danger", elapsedMs > two);
 }
 
-function restoreMathHard() {
+function startMathTimer() {
+  stopMathTimer();
+  updateMathTimerDisplay(0);
+  state.mathTimerId = window.setInterval(() => {
+    updateMathTimerDisplay(Date.now() - state.mathStartAt);
+  }, 250);
+}
+
+function stopMathTimer() {
+  window.clearInterval(state.mathTimerId);
+  state.mathTimerId = null;
+}
+
+function getMathBestRecord(size) {
+  const key = `${GAMES.mathFlash.recordPrefix}_${size}`;
   try {
-    state.mathHard = localStorage.getItem("beta_words_mathflash_hard") === "1";
-  } catch (error) {
-    state.mathHard = false;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const record = JSON.parse(raw);
+    if (!record || !Number.isFinite(record.elapsedMs) || record.elapsedMs < 0 ||
+        !Number.isInteger(record.wrongCount) || record.wrongCount < 0 ||
+        !Number.isFinite(record.timestamp) || Date.now() - record.timestamp > BEST_RECORD_TTL) {
+      window.localStorage.removeItem(key);
+      return null;
+    }
+    return record;
+  } catch {
+    return null;
   }
-  syncMathHardToggle();
 }
 
-function stopMathCountdown() {
-  clearInterval(state.mathTickId);
-  state.mathTickId = null;
+function saveMathBestRecord(size, elapsedMs, wrongCount) {
+  const record = { elapsedMs, wrongCount, timestamp: Date.now() };
+  try {
+    window.localStorage.setItem(`${GAMES.mathFlash.recordPrefix}_${size}`, JSON.stringify(record));
+  } catch {
+    // 存储不可用时仍正常展示本局成绩。
+  }
+  return record;
 }
 
 function clearMathFlash() {
-  stopMathCountdown();
+  stopMathTimer();
   mathTimeouts.forEach((id) => clearTimeout(id));
   mathTimeouts.clear();
   cancelAnimationFrame(state.mathFrameId);
   state.mathFrameId = null;
   state.mathSession = null;
   state.mathLocked = false;
-  state.mathDeadline = 0;
-  timer.classList.remove("is-countdown", "is-urgent");
+  state.mathEndAt = 0;
+  timer.classList.remove("timed-warning", "timed-danger");
   // 中途返回也只保留一张模板卡，避免下一局带入旧动画。
   const cards = mathHost?.querySelectorAll(".math-card") || [];
   cards.forEach((card, i) => {
     if (i < cards.length - 1) card.remove();
-    else card.classList.remove("is-out", "is-in", "is-urgent");
+    else card.classList.remove("is-out", "is-in");
   });
 }
 
@@ -1046,10 +1066,10 @@ function scheduleMathFlash(callback, delay) {
 function startMathFlashGame(size) {
   state.mathSession = MathFlashEngine.createSession(size);
   state.mathLocked = false;
-  state.mathStartAt = Date.now();
   MathFlashEngine.startQuestion(state.mathSession);
   renderMathQuestion();
-  if (!state.mathHard) startTimer();
+  state.mathStartAt = Date.now();
+  startMathTimer();
   playVoiceVariant("prompt.start", { replayable: false });
 }
 
@@ -1057,13 +1077,10 @@ function renderMathQuestion(card = mathHost.querySelector(".math-card:last-child
   const session = state.mathSession;
   const question = session.current;
   const level = MathFlashEngine.LEVELS[session.size];
-  card.querySelector(".math-card__badge").textContent = level.name + (state.mathHard ? " · 困难" : "");
+  card.querySelector(".math-card__badge").textContent = level.name;
   card.querySelector(".math-card__label").textContent = `第 ${session.cursor + 1} 题`;
   card.querySelector(".math-eq").innerHTML =
     `<span>${question.a}</span><span class="op">${question.op}</span><span>${question.b}</span><span class="op">=</span><span class="q">?</span>`;
-  card.classList.remove("is-urgent");
-  card.querySelector(".math-card__timer").hidden = !state.mathHard;
-  card.querySelector(".math-card__timer i").style.width = "100%";
   mathOptions.innerHTML = "";
   session.options.forEach((value) => {
     const button = document.createElement("button");
@@ -1076,51 +1093,26 @@ function renderMathQuestion(card = mathHost.querySelector(".math-card:last-child
     button.addEventListener("click", () => handleMathOptionClick(value, button));
     mathOptions.appendChild(button);
   });
-  progress.textContent = `${session.cursor + 1} / 10`;
+  progress.textContent = `${session.cursor + 1} / ${session.deck.length}`;
   setHint("选一个答案");
-  stopMathCountdown();
-  timer.classList.remove("is-countdown", "is-urgent");
-  if (state.mathHard) startMathCountdown(card);
-}
-
-function startMathCountdown(card) {
-  state.mathDeadline = Date.now() + 5000;
-  function tick() {
-    const remaining = Math.max(0, state.mathDeadline - Date.now());
-    card.querySelector(".math-card__timer i").style.width = `${remaining / 5000 * 100}%`;
-    timer.textContent = Math.ceil(remaining / 1000);
-    timer.classList.add("is-countdown");
-    timer.classList.toggle("is-urgent", remaining <= 2000);
-    card.classList.toggle("is-urgent", remaining <= 2000);
-    if (remaining <= 0) handleMathTimeout();
-  }
-  state.mathTickId = setInterval(tick, 100);
-  tick();
 }
 
 function handleMathOptionClick(value, button) {
   const session = state.mathSession;
   if (!session || session.locked || state.mathLocked) return;
-  // 截止时刻以时间戳为准，避免点击赶在下一次 tick 前抢答。
-  if (state.mathHard && Date.now() >= state.mathDeadline) {
-    handleMathTimeout();
-    return;
-  }
   const result = MathFlashEngine.submitAnswer(session, value);
-  if (result) showMathFeedback(result, button);
-}
-
-function handleMathTimeout() {
-  const session = state.mathSession;
-  if (!session || session.locked || state.mathLocked) return;
-  const result = MathFlashEngine.submitTimeout(session);
-  if (!result) return;
-  mathHost.querySelector(".math-card:last-child").classList.add("is-urgent");
-  showMathFeedback(result);
+  if (result) {
+    if (session.cursor === session.deck.length - 1) {
+      // 最后一题判定即冻结成绩，后续反馈动画不计入用时。
+      state.mathEndAt = Date.now();
+      stopMathTimer();
+      updateMathTimerDisplay(state.mathEndAt - state.mathStartAt);
+    }
+    showMathFeedback(result, button);
+  }
 }
 
 function showMathFeedback(result, button) {
-  stopMathCountdown();
   mathOptions.querySelectorAll("button").forEach((option) => { option.disabled = true; });
   if (result.correct) {
     button.classList.add("is-correct");
@@ -1146,11 +1138,10 @@ function showMathFeedback(result, button) {
 }
 
 function flipMathCard(nextRenderFn) {
-  stopMathCountdown();
   const pair = mathHost.querySelector(".math-flip-pair");
   const oldCard = pair.querySelector(".math-card:last-child");
   const newCard = oldCard.cloneNode(true);
-  newCard.classList.remove("is-out", "is-in", "is-urgent");
+  newCard.classList.remove("is-out", "is-in");
   newCard.classList.add("is-in");
   nextRenderFn(newCard);
   pair.appendChild(newCard);
@@ -1165,28 +1156,30 @@ function flipMathCard(nextRenderFn) {
 }
 
 function completeMathFlash() {
-  stopMathCountdown();
-  stopTimer();
+  stopMathTimer();
   state.mathLocked = true;
   const session = state.mathSession;
   session.locked = true;
-  const elapsed = Date.now() - state.mathStartAt;
-  const stars = MathFlashEngine.calcStars(session.wrongCount);
-  showTrophy(MathFlashEngine.calcTrophy(session.wrongCount));
+  const elapsed = (state.mathEndAt || Date.now()) - state.mathStartAt;
+  const stars = MathFlashEngine.calcStarsByTime(elapsed, session.deck.length);
+  showTrophy(MathFlashEngine.calcTrophyByStars(stars));
   showStars(stars);
   const title = document.querySelector(".complete-title");
   title.textContent = MathFlashEngine.calcTitle(stars);
-  title.dataset.tier = stars === 3 ? "perfect" : stars === 2 ? "good" : "tryAgain";
+  title.dataset.tier = stars === 3 ? "perfect" : stars === 2 ? "good" : "ok";
   playVoiceVariant(stars >= 2 ? "prompt.complete" : "prompt.tryAgain", { replayable: false });
   setMascotState(stars === 3 ? "celebrate" : stars > 0 ? "happy" : "sad");
-  const pct = Math.round(session.correctCount / 10 * 100);
-  completeTime.textContent = `用时 ${formatTime(elapsed)}\n答对 ${session.correctCount} / 10（${pct}%）`;
-  const best = getBestRecord(state.size);
+  const pct = Math.round(session.correctCount / session.deck.length * 100);
+  completeTime.classList.add("complete-stats--timed");
+  completeTime.textContent = `用时 ${formatTime(elapsed)}\n答对 ${session.correctCount} / ${session.deck.length}（${pct}%）`;
+  const best = getMathBestRecord(state.size);
   const showRecord = session.correctCount > 0 && (!best || elapsed < best.elapsedMs);
-  bestRecord.hidden = !showRecord;
-  if (showRecord) saveBestRecord(state.size, elapsed);
-  timer.classList.remove("is-countdown", "is-urgent");
-  updateTimerDisplay(elapsed);
+  const record = showRecord ? saveMathBestRecord(state.size, elapsed, session.wrongCount) : best;
+  bestRecord.hidden = !record;
+  if (record) {
+    bestRecord.textContent = `${showRecord ? "新纪录！" : "最快 "}${formatTime(record.elapsedMs)} · 错 ${record.wrongCount} 题`;
+  }
+  updateMathTimerDisplay(elapsed);
   setHint("完成");
   document.querySelector("#next-board").hidden = !MathFlashEngine.LEVELS[state.size + 1];
   scheduleMathFlash(() => {

@@ -151,7 +151,7 @@ function parseLabel(label) {
         await page.evaluate(() => {
           document.querySelector('#complete-panel').hidden = false;
           const stats = document.querySelector('#complete-stats');
-          if (stats) stats.textContent = '用时 00:42 · 成功率 8 / 8（100%）';
+          if (stats) stats.textContent = '用时 04:05\n答对 66 / 66（100%）';
           // 向后兼容（Phase 4 之前用 #complete-time）
           const legacy = document.querySelector('#complete-time');
           if (legacy) legacy.textContent = '本次用时 00:42';

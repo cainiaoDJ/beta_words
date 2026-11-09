@@ -3637,37 +3637,6 @@ body[data-game="traceTian"] {
   color: var(--theme-accent);
 }
 
-/* 倒计时进度条：贴在纸的下缘，像卡片压边 */
-.math-card__timer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 5px;
-  background: rgba(122, 100, 68, 0.14);
-}
-
-.math-card__timer i {
-  display: block;
-  height: 100%;
-  width: 100%;
-  background: var(--theme-accent);
-  transition: width 100ms linear;
-}
-
-.math-card.is-urgent .math-card__timer i {
-  background: rgb(var(--color-danger));
-}
-
-.math-card.is-urgent .math-card__face--front {
-  border-color: rgb(var(--color-danger));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 rgba(122, 100, 68, 0.08),
-    0 2px 3px rgba(31, 44, 36, 0.1),
-    0 14px 22px -12px rgba(216, 109, 76, 0.42);
-}
-
 /* ===== 翻卡：旧卡侧立翻走，下一题卡从相反方向推入 ===== */
 .math-card.is-out .math-card__inner {
   transform: rotateY(-82deg) translateX(-40px) translateZ(-10px);
@@ -3747,60 +3716,11 @@ body[data-game="traceTian"] {
   }
 }
 
-/* ===== HUD：困难模式倒计时 ===== */
-.hud-timer.is-countdown {
-  background: rgb(var(--color-warning));
-  color: #222;
-}
-
-.hud-timer.is-urgent {
-  background: rgb(var(--color-danger-soft));
-  border-color: rgb(var(--color-danger));
-  color: rgb(var(--color-danger-strong));
-  animation: math-countdown-pulse 0.5s ease-in-out infinite;
-}
-
-@keyframes math-countdown-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-}
-
-/* ===== 选关界面：困难模式开关行 ===== */
-.mode-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  margin-top: 10px;
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: var(--radius-md);
-  flex-shrink: 0;
-}
-
-.mode-row-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.mode-row-title {
-  font-size: 15px;
-  font-weight: var(--fw-black);
-  color: var(--theme-ink);
-}
-
-.mode-row-sub {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-/* 开关打开时整行染主题色（和 .difficulty[data-recommended] 一个味道） */
-.mode-row.is-on {
-  border-color: var(--theme-ink);
-  background: var(--theme-accent-soft);
-}
+/* Phase 11 — 算术闪卡：计时制专用阈值与 1 星档位 */
+.hud-timer.timed-warning { color: #d98b2b; }
+.hud-timer.timed-danger { color: #d86d4c; }
+.complete-panel .complete-stats--timed { font-size: 24px; }
+.complete-panel .complete-title[data-tier="ok"] { color: #6b7280; }
 
 /* ===== 大厅入口：算术闪卡 ===== */
 .game-entry[id="open-math-flash"] {
